@@ -1,0 +1,52 @@
+services:
+  db:
+    extends:
+      file: docker-compose.yml
+      service: db
+    volumes:
+      # Make the database persistent
+      - "/tmp/data/db:/var/lib/mysql"
+      # Init the db from a sample sql file
+      - "./db-init:/docker-entrypoint-initdb.d"
+
+  web:
+    environment:
+      DEBUG: "true"
+      LOG_LEVEL: "INFO"
+      HEADER_ALLOW_ORIGIN: "*"
+      #DJANGO_URL: http://localhost:8080
+      DJANGO_URL: http://192.168.1.108:8080
+    extends:
+      file: docker-compose.yml
+      service: web
+    build: .
+    #command: sleep 3600
+    volumes:
+      - "./photohub:/photohub"
+      - "/tmp/photohub-vuetify:/photohub-vuetify"
+      # Make the database persistent
+      - "/tmp/data/photos:/data"
+
+  web-vue:
+    image: node:lts-alpine3.18
+    ports:
+      - "3000:3000"
+    command: sh -c "cd /photohub-vuetify-src/ && yarn dev --host"
+    volumes:
+      - "./photohub-vuetify-src/:/photohub-vuetify-src"
+      - "/tmp/photohub-vuetify/:/photohub-vuetify"
+    network_mode: bridge
+
+  nginx:
+    links: [web, web-vue]
+    depends_on:
+      - web
+      - web-vue
+    image: nginx
+    volumes:
+      - ./dev/nginx-template/:/etc/nginx/templates
+    command: [nginx-debug, '-g', 'daemon off;']
+    ports:
+      - "8080:8080"
+    network_mode: bridge
+

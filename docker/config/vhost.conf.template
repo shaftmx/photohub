@@ -1,0 +1,40 @@
+upstream backend {
+    server 127.0.0.1:5000;
+}
+server {
+    listen ${NGINX_DEFAULT_PORT} default_server;
+
+    root /photohub-vuetify;
+
+    try_files $uri $uri/ /index.html;
+
+    location '/static' {
+        root /data;
+        #autoindex off;
+        autoindex on; # This is a fully temporary rule and has to be removed. We just want to be sure we can serv static content properly
+    }
+
+    location '/static/cache' {
+        # Little uri hack to regenerate photo samples for missing files.
+        # If the file is not found, nginx query our dedicated /api/resample url.
+        # The file will be regenerated and served by django then
+        try_files $uri /api/resample?uri=$uri;
+        root /data;
+        #autoindex off;
+        autoindex on; # This is a fully temporary rule and has to be removed. We just want to be sure we can serv static content properly
+    }
+
+    location '/static/admin' {
+        root ${DJANGO_ADMIN_PATH};
+    }
+
+    location ~ ^/(api|admin) {
+        client_max_body_size 70m;
+        add_header Access-Control-Allow-Origin ${HEADER_ALLOW_ORIGIN};
+        proxy_pass_request_headers on;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_pass  http://backend;
+        proxy_redirect     default;
+    }   
+
+}

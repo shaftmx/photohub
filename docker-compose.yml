@@ -1,0 +1,49 @@
+services:
+  db:
+    image: mysql:8
+    ports: ["3306:3306"]
+    environment:
+      MYSQL_DATABASE: photohub
+      MYSQL_USER: photohub
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: changeme
+    network_mode: bridge
+    #volumes:
+    #  # Make the database persistent
+    #  - "/tmp/data/db:/var/lib/mysql"
+    healthcheck:
+        test: "mysqladmin ping -uroot -p$$MYSQL_ROOT_PASSWORD"
+        #test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-p$$MYSQL_ROOT_PASSWORD"]
+        timeout: 2s
+        interval: 2s
+        retries: 30
+
+
+
+  web:
+    image: shaftmx/photohub
+    links: [db]
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:80"
+      - "5000:5000"
+    #volumes:
+    #  # Make the database persistent
+    #  - "/tmp/data/photos:/data"
+    environment:
+      DJANGO_SUPERUSER_PASSWORD: admin
+      DJANGO_SUPERUSER_USERNAME: admin
+      DJANGO_SUPERUSER_EMAIL: admin@admin.admin
+      DJANGO_SECRET_KEY: 'django-insecure-51=qtuhifsb)&!!gdps^rkn2^re7_#nqp62pcq7fi^d*015+)6'
+      # Access-Control-Allow-Origin
+      HEADER_ALLOW_ORIGIN: "mysite.fr"
+      # CSRF_TRUSTED_ORIGINS
+      DJANGO_URL: https://mysite.fr
+      DB_NAME: photohub
+      DB_HOST: db
+      DB_USER: photohub
+      DB_PASSWORD: secret
+    network_mode: bridge
+
