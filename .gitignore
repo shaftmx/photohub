@@ -3,3 +3,5 @@
 *.pyc
 local_settings.py
 __pycache__
+photohub-vuetify-src/dist/
+photohub-vuetify-src/node_modules/
