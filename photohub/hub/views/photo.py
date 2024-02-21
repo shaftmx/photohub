@@ -9,63 +9,42 @@ from django.http import HttpResponseNotFound, HttpResponse
 from django.core.files.storage import default_storage
 from os.path import basename
 from . import models
-#
-# TROUBLESHOOTING SECTION
-#
 
-# Test private page
-# TODO remove this view
+#
+# Photo
+#
 @login_required
-def index(request):
-    return Response(data="service running - private url")
-
-# Test public page
-# TODO remove this view
-def public_index(request):
-    # tg = TagGroup(name="lieux")
-    # tg2 = TagGroup(name="personne", color="#57d979")
-
-    # for i in [tg, tg2]:
-    #     try:
-    #         i.save()
-    #     except IntegrityError as e:
-    #         if e.args[0] != 1062: # Duplicate entry
-    #             return ErrorUnexpected(details="%s" % e)
-
-    # t = Tag(name="hawaii", tag_group=TagGroup.objects.get(name="lieux"))
-    # t2 = Tag(name="gael", color="#a8325e", tag_group=TagGroup.objects.get(name="personne"))
-    # t3 = Tag(name="elo", description="coucou", tag_group=TagGroup.objects.get(name="personne"))
-
-    # for i in [t, t2, t3]:
-    #     try:
-    #         i.save()
-    #     except IntegrityError as e:
-    #         if e.args[0] != 1062: # Duplicate entry
-    #             return ErrorUnexpected(details="%s" % e)
-
-    # # import datetime
-    # # d = datetime.date(1997, 10, 19)
-    # p = Photo(owner="gael", description="this is a photo", published=True, filename="3fa4f022acdb72b520bfe4bc492325dd.jpg")
-    # try:
-    #     p.save()
-    #     p.tags.add(Tag.objects.get(name="hawaii"))
-    #     p.tags.add(Tag.objects.get(name="gael"))
-    #     e = Exif(name="foo", value="bar", photo=Photo.objects.get(filename="3fa4f022acdb72b520bfe4bc492325dd.jpg"))
-    #     e.save()
-    # except IntegrityError as e:
-    #     if e.args[0] != 1062: return ErrorUnexpected(details="%s" % e)
-
-    # p2 = Photo(owner="elo", filename="325dd.jpg")
-    # try:
-    #     p.save()
-    # except IntegrityError as e:
-    #     if e.args[0] != 1062: return ErrorUnexpected(details="%s" % e)
-
-    return Response(data="service running")
+@require_http_methods(["GET"])
+def get_photos(request):
+    photos = models.Photo.objects.filter(published=True).order_by("-date").all()
     
-#
-# Photo computing
-#
+    # excludes = ["id", "description", "published"]
+    # data = [ model_to_dict(i, exclude=excludes) for i in photos ]
+    fields = ["filename", "date", "owner", "height", "width", "tags"]
+    
+    data_photos = []
+    for p in photos:
+        _p = model_to_dict(p, fields=fields)
+        _p["tags"] = {}
+
+        # TAGS Generate
+        for t in p.tags.all():
+            _group = t.tag_group.name
+            _tag = t.name
+            if _group not in _p["tags"]:
+                _p["tags"][_group] = []
+            _p["tags"][_group].append(_tag)
+
+        # _p["tags"] = model_to_dict( _p["tags"], fields=["name"])
+        _p["hash_path"] = genHasingPath(_p["filename"])
+
+        data_photos.append(_p)
+    data = { "photos": data_photos,
+             "paths": get_photo_root_paths() }
+    return Response(200, data=data)
+# for e in Entry.objects.all():
+#     print(e.headline)
+
 from time import sleep
 @login_required
 @require_http_methods(["POST"])
@@ -166,75 +145,3 @@ def resample_photo(request):
         # for k, v in exif_ifd.items():
         #     LOG.warning("IFD: %s %s" % (ExifTags.TAGS.get(k, k),v))
 
-
-
-#
-# Auth
-#
-@require_http_methods(["GET"])
-def is_authenticated(request):
-    LOG.error("--- is_authenticated from %s" % request)
-    if request.user.is_authenticated:
-        return Response(data="User is authenticated")
-    else:
-        return ErrorAuthRequired()
-
-from django.middleware.csrf import get_token
-def get_csrf(request):
-    # Just by doing this get_token, django will set a csrf cookie to the client
-    get_token(request)
-    return Response(data="Getting csrf token")
-
-
-from django.contrib.auth import authenticate, login
-@require_http_methods(["POST"])
-def user_login(request):
-    post, err = json_decode(request.body)
-    if err is not None:
-        return ErrorRequest(details=err)
-
-    username = post.get("username", "")
-    password = post.get("password", "")
-    user = authenticate(request, username=username, password=password)
-    if user is not None:
-        login(request, user)
-        return Response(202, "success")
-    LOG.error("Fail login with user: %s" % username)
-    return ErrorLoginFail()
-
-
-from django.contrib.auth import logout
-@require_http_methods(["GET"])
-def user_logout(request):
-    logout(request)
-    return Response(440, {})
-
-# from django.core import serializers
-#     photos = models.Photo.objects.filter(published=False).all()
-#     data = serializers.serialize('python', photos)
-
-from django.forms.models import model_to_dict
-
-#
-# Photo display
-#
-@login_required
-@require_http_methods(["GET"])
-def get_unpublished(request):
-    photos = models.Photo.objects.filter(published=False).order_by("-date").all()
-    
-    # excludes = ["id", "description", "published"]
-    # data = [ model_to_dict(i, exclude=excludes) for i in photos ]
-    fields = ["filename", "date", "owner", "height", "width"]
-    
-    data_photos = []
-    for p in photos:
-        _p = model_to_dict(p, fields=fields)
-        _p["hash_path"] = genHasingPath(_p["filename"])
-        data_photos.append(_p)
-    data = { "photos": data_photos,
-             "paths": get_photo_root_paths() }
-
-    return Response(200, data=data)
-# for e in Entry.objects.all():
-#     print(e.headline)

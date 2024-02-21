@@ -1,5 +1,6 @@
 <template>
-  <v-app-bar flat class="bg-primary">
+  <v-container class="bg-black mb-7 pa-0">
+  <v-app-bar flat class="bg-primary" :density="density">
     <v-app-bar-title>
       <v-icon icon="mdi-circle-slice-4" />
       PhotoHub
@@ -47,32 +48,44 @@
       </v-menu>
     </template>
   </v-app-bar>
+</v-container>
 </template>
 
 <script>
 import { useTheme } from 'vuetify'
+import { getSharedDatas } from '../../sharedDatas.js'
+
 export default {
   data: () => ({
     items: [
-      { title: 'Upload', icon: 'mdi-account', action: 'Upload' },
-      { title: 'Unpublished', icon: 'mdi-account', action: 'Unpublished' },
-      { title: 'Photos', icon: 'mdi-account', action: 'Photos' },
-      { title: 'Views', icon: 'mdi-account', action: 'Views' },
-      { title: 'Mood board', icon: 'mdi-account', action: 'Moodboard' },
-      { title: 'Photos', icon: 'mdi-account', action: 'Home' },
+      { title: 'Upload', icon: 'mdi-upload', action: 'Upload' },
+      { title: 'Unpublished', icon: 'mdi-folder-upload', action: 'Unpublished' },
+      { title: 'Photos', icon: 'mdi-image', action: 'Photos' },
+      { title: 'Views', icon: 'mdi-image-multiple', action: 'Views' },
+      { title: 'Home', icon: 'mdi-home', action: 'Home' },
       { title: 'Logout', icon: 'mdi-account', action: 'Logout' },
     ],
     theme: useTheme(),
     menu: false,
     darkTheme: false,
+    density: "default",
+    sharedDatas: {},
   }),
   mounted() {
+    this.sharedDatas = getSharedDatas(this)
+
     window.console.log("--nav: Get localstorage theme")
     if (localStorage.persistentDarkTheme) {
         this.darkTheme = JSON.parse(localStorage.getItem('persistentDarkTheme'))
         // Call toggle theme anyway to ensure we switch to the right theme if different from default
         this.toggleTheme()
     }
+
+    // Mobile override
+    if (this.sharedDatas.isMobile) {
+      this.density = "compact"
+    }
+
   },
   methods: {
     menuActionClick(action) {
@@ -93,3 +106,5 @@ export default {
 
 }
 </script>
+
+

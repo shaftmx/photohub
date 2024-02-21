@@ -27,11 +27,6 @@ const routes = [
         component: () => import('@/views/Upload.vue'),
       },
       {
-        path: '/moodboard',
-        name: 'Moodboard',
-        component: () => import('@/views/Moodboard.vue'),
-      },
-      {
         path: '/logout',
         name: 'Logout',
         component: () => import('@/views/Logout.vue'),

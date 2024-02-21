@@ -57,7 +57,10 @@
     </v-overlay>
   </v-row> -->
 
-  <v-row justify="center">
+  <!-- Previously v row instead of vshit but it seems to remove marging, kind of cool but not the same as other pages -->
+  <!-- <v-row justify="center" > -->
+
+  <v-sheet>
     <v-dialog v-model="displayed" fullscreen :scrim="false">
       <v-card>
         <!-- <v-card theme="dark"> uncomment to force dark theme-->
@@ -83,7 +86,7 @@
 
       </v-card>
     </v-dialog>
-  </v-row>
+  </v-sheet>
 </template>
 
 

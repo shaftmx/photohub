@@ -134,8 +134,6 @@ export default {
 
       // Note: if we want to improve and automatically redirect after few seconds to unpublished page, simply uncomment this line
       // setTimeout(() => (this.$router.push({ name: "Unpublished" })), 5000)
-
-      // TODO passer l'icone en vert OK a la fin de l'upload ou un petit message. Pas super visible aprés un gros upload que tout est fini
     },
 
     required(v) {

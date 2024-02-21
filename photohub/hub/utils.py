@@ -258,7 +258,47 @@ def create_photo_in_db(file, filename, owner):
 # Tagging
 #
 
+def batch_apply_tags(current, staging, photos):
+    # Add or remove tags comparing current and staging tags
+    tags_to_add = []
+    tags_to_delete = []
+    all_tag_groups = set(list(current.keys()) + list(staging.keys()))
+    for group_name in all_tag_groups:
+        # Get the group
+        old_tags = current.get(group_name, [])
+        new_tags = staging.get(group_name, [])
 
+        tags_name_to_add = [x for x in new_tags if x not in old_tags]
+        tags_name_to_delete = [x for x in old_tags if x not in new_tags]
+
+        # Tags to ADD
+        for tag_name in tags_name_to_add:
+            tag = models.Tag.objects.filter(name=tag_name).first()
+            if tag is None:
+                try:
+                    _group = models.TagGroup.objects.get(name=group_name)
+                    _new_tag = models.Tag(name=tag_name, tag_group=_group)
+                    _new_tag.save()
+                    tags_to_add.append(_new_tag)
+                    continue
+                except IntegrityError as e:
+                    return ErrorUnexpected(details="%s" % e)
+            tags_to_add.append(tag)
+
+        # Tags to DELETE
+        for tag_name in tags_name_to_delete:
+            tag = models.Tag.objects.filter(name=tag_name).first()
+            tags_to_delete.append(tag)
+
+    LOG.info("Common tags to add %s" % tags_to_add)
+    LOG.info("Common tags to delete %s" % tags_to_delete)
+    for photo_filename in photos:
+        LOG.debug("Common tags handling %s" % photo_filename)
+        photo = models.Photo.objects.get(filename=photo_filename)
+        photo.tags.add(*tags_to_add)
+        photo.tags.remove(*tags_to_delete)
+
+    return None
 
 
 

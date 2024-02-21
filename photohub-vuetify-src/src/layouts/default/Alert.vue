@@ -30,6 +30,6 @@
 <script setup>
   import { storeToRefs } from 'pinia'
   import { useAlertStore } from '../../stores/alert'
-  const timeout = 5000
+  const timeout = 7000
   const { showAlert, type, message, detail, code } = storeToRefs(useAlertStore())
 </script>

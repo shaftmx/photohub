@@ -27,7 +27,7 @@ export default createVuetify({
 
           primary: '#673AB7',
           secondary: '#3F51B5',
-          accent: '#11cdef',
+          accent: '#14b1cd',
           //accent: '#5e72e4',
           accent2: '#2dce89',
           neutral: '#CFD8DC',
@@ -51,9 +51,10 @@ export default createVuetify({
           // primary: '#1867C0',
           // secondary: '#5CBBF6',
 
+          // primary: '#673AB7',
           primary: '#673AB7',
           secondary: '#3F51B5',
-          accent: '#11cdef',
+          accent: '#14b1cd',
           //accent: '#5e72e4',
           accent2: '#2dce89',
           neutral: '#3f464d',

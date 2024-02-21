@@ -1,6 +1,6 @@
 <template>
   <v-main :class="margin" >
-    <router-view />
+    <router-view/>
   </v-main>
 </template>
 
@@ -9,17 +9,15 @@ import { getSharedDatas } from '../../sharedDatas.js'
 
 export default {
   data: () => ({
-    margin: "ma-10",
+    margin: "ma-6 mt-0",
     sharedDatas: {},
   }),
   mounted() {
     this.sharedDatas = getSharedDatas(this)
 
     if (this.sharedDatas.isMobile) {
-      this.margin = "ma-3"
+      this.margin = "ma-2 mt-0"
     }
   },
 }
 </script>
-
-

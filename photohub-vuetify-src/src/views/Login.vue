@@ -55,8 +55,9 @@ export default {
         triggerAlert("error", data.value.message, data.value.details)
       } else {
         if (this.$route.query.next) {
-          console.log(" FULLLPTH" + this.$route.query.next)
-          // Note: we know this keep path but remove query. If needed later on, I will update this methode to parse and keep query params
+          console.log(" FULLLPATH" + this.$route.query.next)
+          // Note: I know this keep path but remove query params. If needed later on, I will update this methode to parse and keep query params
+          // Potential usecase in mind, a vue page with filter such as view/1?filter=foo. Potentially after login, we might want to redirect to view page and keep query parameter
           this.$router.push({ path: this.$route.query.next })
         } else {
           this.$router.push({ name: "Home" })

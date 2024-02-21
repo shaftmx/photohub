@@ -1,0 +1,186 @@
+<template>
+
+<!-- This view is a backup of unpublished view but using this gallery version https://codepen.io/johandegrieck/pen/xpVdBG -->
+
+  <div class="text-h1">Unpublished</div>
+
+  <v-container class="gallery" fluid>
+    <section id="imgGrid">
+      <div v-for="(photo) in photos">
+      <img :src="paths['s']+'/'+ photo['hash_path'] + '/' + photo['filename']"  />
+      </div>
+    </section>
+  </v-container>
+  <!-- <v-list-item v-for="(item, index) in items" @click="menuActionClick(item.action)" :key="index" :value="index"
+  //   document.getElementById('imgGrid').innerHTML += '<div><img src="https://picsum.photos/' + randomWidth + '/' + randomHeight + '/" alt="randomPic" /></div>'; -->
+
+  <!-- <v-container fluid>
+    <v-row justify="space-around">
+      <v-col cols="5">
+        <div class="text-h6 mb-1">
+          Default (cover)
+        </div>
+        <div class="subheading">
+          Matching
+        </div>
+        <v-img
+          src="https://picsum.photos/510/300?random"
+          aspect-ratio="1.7"
+        ></v-img>
+        <div class="subheading pt-4">
+          Too high
+        </div>
+        <v-img
+          src="https://picsum.photos/510/300?random"
+          aspect-ratio="2"
+        ></v-img>
+        <div class="subheading pt-4">
+          Too low
+        </div>
+        <v-img
+          src="https://picsum.photos/510/300?random"
+          aspect-ratio="1.4"
+        ></v-img>
+      </v-col>
+
+      <v-col cols="5">
+        <div class="text-h6 mb-1">
+          Contain
+        </div>
+        <div class="subheading">
+          Matching
+        </div>
+        <v-img
+          src="https://picsum.photos/510/300?random"
+          aspect-ratio="1.7"
+          contain
+        ></v-img>
+        <div class="subheading pt-4">
+          Too high
+        </div>
+        <v-img
+          src="https://picsum.photos/510/300?random"
+          aspect-ratio="2"
+          contain
+        ></v-img>
+        <div class="subheading pt-4">
+          Too low
+        </div>
+        <v-img
+          src="https://picsum.photos/510/300?random"
+          aspect-ratio="1.4"
+          contain
+        ></v-img>
+      </v-col>
+    </v-row>
+  </v-container>
+
+
+
+  <v-row>
+    <v-col
+      v-for="n in 9"
+      :key="n"
+      class="d-flex child-flex"
+      cols="4"
+    >
+      <v-img
+        :src="`https://picsum.photos/500/300?image=${n * 5 + 10}`"
+        :lazy-src="`https://picsum.photos/10/6?image=${n * 5 + 10}`"
+        aspect-ratio="1"
+        class="grey lighten-2"
+      >
+        <template v-slot:placeholder>
+          <v-row
+            class="fill-height ma-0"
+            align="center"
+            justify="center"
+          >
+            <v-progress-circular
+              indeterminate
+              color="grey lighten-5"
+            ></v-progress-circular>
+          </v-row>
+        </template>
+      </v-img>
+    </v-col>
+  </v-row> -->
+</template>
+
+<script>
+
+
+import { useAsyncFetch } from '../reactivefetch.js'
+import { requireAuth } from '../authrequired.js'
+import { useAlertStore } from '../stores/alert'
+
+export default {
+  data: () => ({
+    photos: [],
+    paths: {},
+  }),
+  mounted() {
+    requireAuth(this)
+    this.doGetPhotos()
+
+
+
+
+
+    // for (var i = 0; i < 40; i++) {
+    //   var randomWidth = getRandomInt(200, 800);
+    //   var randomHeight = getRandomInt(200, 800);
+    //   document.getElementById('imgGrid').innerHTML += '<div><img src="https://picsum.photos/' + randomWidth + '/' + randomHeight + '/" alt="randomPic" /></div>';
+    // }
+
+    // function getRandomInt(min, max) {
+    //   return Math.floor(Math.random() * (max - min + 1) + min);
+    // }
+
+
+
+  },
+  methods: {
+    async doGetPhotos() {
+      window.console.log("--doGetPhotos");
+      const { data, error } = await useAsyncFetch('/api/unpublished')
+      if (error.value) {
+        triggerAlert("error", "Login failure", error.value)
+      } else if (data.value.ERROR) {
+        triggerAlert("error", data.value.message, data.value.details)
+      } else {
+        this.photos = data.value.data.photos
+        this.paths = data.value.data.paths
+      }
+
+    }
+  },
+}
+</script>
+
+<!-- https://vuetifyjs.com/en/components/carousels/#usage
+https://vuetifyjs.com/en/components/images/#usage -->
+<!-- https://vuetifyjs.com/en/components/bottom-navigation/ -->
+
+<style>
+.gallery section {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.gallery div {
+  flex-grow: 1;
+  margin: 2px;
+  background-color: white;
+  height: 300px;
+}
+
+.gallery img {
+  height: 300px;
+  object-fit: cover;
+  /* max-width: 500px; */
+  max-width: 100%;
+  min-width: 100%;
+  vertical-align: bottom;
+}
+</style>

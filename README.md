@@ -18,11 +18,14 @@ refresh page
     this.$router.go() 
 
 
-Notes pour utiliser emit https://learnvue.co/articles/vue-emit-guide   https://vuejs.org/guide/components/events.html#emitting-and-listening-to-events
+Notes pour utiliser emit https://learnvue.co/articles/vue-emit-guide   https://vuejs.org/guide/components/events.html#emitting-and-listening-to-events 
 Global properties https://blog.logrocket.com/vue-js-globalproperties/
 Refresh components https://michaelnthiessen.com/force-re-render
 How discuss with components https://dev.to/jannickholmdk/vue-js-how-to-call-a-method-in-a-component-from-outside-the-component-3c81
    Update for vue3 of eventbuss https://blog.logrocket.com/using-event-bus-vue-js-pass-data-between-components/
+
+Utiliser dynamiquement des images differentes suivant la résolution https://developer.mozilla.org/fr/docs/Web/HTML/Element/picture
+
 # Vue notes
 
 

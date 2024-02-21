@@ -5,6 +5,18 @@ from django.contrib import admin
 from .models import *
 
 
+class TagAdmin(admin.ModelAdmin):
+    list_display = ["name", "tag_group", "color"]
+
+class TagGroupAdmin(admin.ModelAdmin):
+    list_display = ["name", "color"]
+
+
+admin.site.register(Tag, TagAdmin)
+admin.site.register(TagGroup, TagGroupAdmin)
+
+admin.site.register(Photo)
+
 # class ShopListModelAdmin(admin.ModelAdmin):
 #     formfield_overrides = {
 #         models.ManyToManyField: {
