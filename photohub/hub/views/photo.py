@@ -1,6 +1,6 @@
 from django.db import IntegrityError
-from .logger import LOG
-from .utils import *
+from ..logger import LOG
+from ..utils import *
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
@@ -8,7 +8,9 @@ import re
 from django.http import HttpResponseNotFound, HttpResponse
 from django.core.files.storage import default_storage
 from os.path import basename
-from . import models
+from .. import models
+from django.forms.models import model_to_dict
+# from django.db.models import Q
 
 #
 # Photo
@@ -16,8 +18,44 @@ from . import models
 @login_required
 @require_http_methods(["GET"])
 def get_photos(request):
-    photos = models.Photo.objects.filter(published=True).order_by("-date").all()
-    
+
+    # Filter tags
+    filter_mode = request.GET.get('filter_mode', 'basic')
+
+    filter_tags_query = request.GET.get('tags')
+    filter_tag_names = []
+    if filter_tags_query is not None:
+        filter_tag_names = filter_tags_query.split(',')
+
+    photos_query = models.Photo.objects.filter(published=True)
+
+    # Get all tags entities
+    filter_tags = {}
+    for tag_name in filter_tag_names:
+        _tag = models.Tag.objects.get(name=tag_name)
+
+        if _tag is None: continue
+
+        if _tag.tag_group.name not in filter_tags:
+            filter_tags[_tag.tag_group.name] = []
+        filter_tags[_tag.tag_group.name].append(_tag)
+
+    # Generate filters
+    # Smart: (OR on same groups, AND on other groups) Create a filter per group map
+    if filter_tags != {} and filter_mode != "basic":
+        for group, tags in filter_tags.items():
+            # __in is an embeded django feature to provide several many to many fields
+            photos_query = photos_query.filter(tags__in=tags)
+    # Basic: AND on each tags
+    elif filter_tags != {} and filter_mode == "basic":
+        for group, tags in filter_tags.items():
+            for tag in tags:
+                photos_query = photos_query.filter(tags=tag)
+
+    # disctinct: remove duplicated results
+    # LOG.error("QUERY: %s" % photos_query.query)
+    photos = photos_query.order_by("-date").distinct()
+
     # excludes = ["id", "description", "published"]
     # data = [ model_to_dict(i, exclude=excludes) for i in photos ]
     fields = ["filename", "date", "owner", "height", "width", "tags"]
@@ -42,17 +80,11 @@ def get_photos(request):
     data = { "photos": data_photos,
              "paths": get_photo_root_paths() }
     return Response(200, data=data)
-# for e in Entry.objects.all():
-#     print(e.headline)
 
-from time import sleep
+
 @login_required
 @require_http_methods(["POST"])
 def upload_photo(request):
-
-    # LOG.error("%s" % request.FILES)
-    # LOG.error("%s" % settings.RAW_PHOTOS)
-    # print(dir(request))
     for filename, file in request.FILES.items():
         photo_filename = "%s.jpg" % getMd5(file)
         # Doing some consistent hashing on file paths
@@ -75,7 +107,8 @@ def upload_photo(request):
         _err = generate_photo_samples(photo_filename)
         if _err is not None:
             return ErrorUnexpected(details="%s" % _err)
-
+        
+    # from time import sleep
     #sleep(1) # Troubleshoot slow upload to work on progressbar
     return Response(201, data="Picture uploaded")
 

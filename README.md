@@ -200,3 +200,6 @@ select * from hub_photo;
 
 
 TODO changer le favico de l'app
+TODO afficher la description des tag groups et tags ?
+TODO keep url query parameters at login page and login redirects
+

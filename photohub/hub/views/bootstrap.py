@@ -1,6 +1,6 @@
 from django.db import IntegrityError
-from .logger import LOG
-from .utils import *
+from ..logger import LOG
+from ..utils import *
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
@@ -8,7 +8,8 @@ import re
 from django.http import HttpResponseNotFound, HttpResponse
 from django.core.files.storage import default_storage
 from os.path import basename
-from . import models
+from .. import models
+from django.forms.models import model_to_dict
 
 
 #
@@ -33,8 +34,8 @@ def bootstrap(request):
     tg_ville = models.TagGroup.objects.get(name="villes")
     ts = [
         # Pays
-        models.Tag(name="Hawaii", color="yellow", tag_group=tg_pays),
-        models.Tag(name="USA", tag_group=tg_pays),
+        models.Tag(name="Madere", color="yellow", tag_group=tg_pays),
+        models.Tag(name="France", tag_group=tg_pays),
         models.Tag(name="Reunion", description="Ile de la reunion", tag_group=tg_pays),
         # Types
         models.Tag(name="Montagne", tag_group=tg_type),

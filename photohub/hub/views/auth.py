@@ -9,6 +9,7 @@ from django.http import HttpResponseNotFound, HttpResponse
 from django.core.files.storage import default_storage
 from os.path import basename
 from .. import models
+from django.forms.models import model_to_dict
 
 #
 # Auth

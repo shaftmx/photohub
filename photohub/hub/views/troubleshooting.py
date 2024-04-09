@@ -1,6 +1,6 @@
 from django.db import IntegrityError
-from .logger import LOG
-from .utils import *
+from ..logger import LOG
+from ..utils import *
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
@@ -8,7 +8,9 @@ import re
 from django.http import HttpResponseNotFound, HttpResponse
 from django.core.files.storage import default_storage
 from os.path import basename
-from . import models
+from .. import models
+from django.forms.models import model_to_dict
+
 #
 # TROUBLESHOOTING SECTION
 #

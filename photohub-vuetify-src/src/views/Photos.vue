@@ -12,34 +12,93 @@
         <h1 v-if="sharedDatas.isMobile" class="text-body-2 mb-4">{{ subtitle }}</h1>
       </v-sheet>
 
-      FILTER: {{ filter }}
-
-      <br />
-
-      QUICK : {{ filterQuick }}
-
-      <br />
-
-      DETAILS : {{ filterDetail }}
-
-      <br />
-
-      TAGS {{ tags }}
-
-      <br />
-
-      TAG GROUP {{ tagGroups }}
-
       <!-- Buttons -->
       <v-sheet class="d-flex mb-2">
         <v-sheet class="ma-0 pa-0 me-auto">
           <!-- Filters and buttons -->
-          <v-switch @change="syncFilters()" hide-details v-model="displayQuickFilters" density="compact" color="secondary"
-            label="Quick search filter"></v-switch>
+
+
+
+          <v-menu>
+      <template v-slot:activator="{ props }">
+        <v-btn
+          color="primary"
+          v-bind="props"
+        >
+          Activator slot
+        </v-btn>
+      </template>
+      <v-list>
+        <v-list-item
+          v-for="(item, index) in items"
+          :key="index"
+          :value="index"
+        >
+          <v-list-item-title>{{ item.title }}</v-list-item-title>
+        </v-list-item>
+      </v-list>
+    </v-menu>
+
+
+
+    <v-menu v-model="menu" :close-on-content-click="false" location="bottom">
+        <template v-slot:activator="{ props }">
+          <v-app-bar-nav-icon v-bind="props"></v-app-bar-nav-icon>
+        </template>
+
+        <v-card min-width="300">
+          <v-list>
+            <v-list-item prepend-avatar="https://cdn.vuetifyjs.com/images/john.jpg" title="John Leider"
+              subtitle="Founder of Vuetify">
+              <template v-slot:append>
+                <v-btn variant="text" :class="darkTheme ? 'text-red' : ''" icon="mdi-heart"
+                  @click="darkTheme = !darkTheme"></v-btn>
+              </template>
+            </v-list-item>
+          </v-list>
+
+          <v-divider></v-divider>
+
+
+          <v-list nav density="compact">
+            <!-- Links -->
+            <v-list-item v-for="(item, index) in items" @click="menuActionClick(item.action)" :key="index" :value="index"
+              color="primary">
+              <template v-slot:prepend>
+                <v-icon :icon="item.icon"></v-icon>
+              </template>
+              <v-list-item-title>{{ item.title }}</v-list-item-title>
+            </v-list-item>
+
+            <v-divider></v-divider>
+
+            <v-list-item>
+              <v-switch v-model="darkTheme" color="primary" label="Darak theme" @change="toggleTheme()"
+                hide-details></v-switch>
+            </v-list-item>
+          </v-list>
+        </v-card>
+      </v-menu>
+
+
+          <v-switch @change="syncFilters()" hide-details v-model="displayQuickFilters" density="compact" color="secondary" false-icon="mdi-text-search-variant" true-icon="mdi-tag-search"
+            label="Quick search filter" inset></v-switch>
+
+            <v-btn color="primary" variant="tonal" stacked :size="sharedDatas.isMobile ? 'x-small' : 'default'" density="compact" prepend-icon="mdi-text-search-variant" >Search</v-btn>
+            <v-btn color="primary" variant="tonal" stacked :size="sharedDatas.isMobile ? 'x-small' : 'default'" density="compact" prepend-icon="mdi-tag-search" >Search</v-btn>
+
+            <v-btn color="primary" variant="tonal" stacked :size="sharedDatas.isMobile ? 'x-small' : 'default'" density="compact" prepend-icon="mdi-group" >Search</v-btn>
+            <v-btn color="primary" variant="tonal" stacked :size="sharedDatas.isMobile ? 'x-small' : 'default'" density="compact" prepend-icon="mdi-select-group" >Search</v-btn>
+            <v-btn color="primary" variant="tonal" stacked :size="sharedDatas.isMobile ? 'x-small' : 'default'" density="compact" prepend-icon="mdi-brain" >Search</v-btn>
+            <v-btn color="primary" variant="tonal" stacked :size="sharedDatas.isMobile ? 'x-small' : 'default'" density="compact" prepend-icon="mdi-head-snowflake-outline" >Search</v-btn>
+            <v-btn color="primary" variant="tonal" stacked :size="sharedDatas.isMobile ? 'x-small' : 'default'" density="compact" prepend-icon="mdi-head-snowflake" >Search</v-btn>
+            <v-btn color="primary" variant="tonal" stacked :size="sharedDatas.isMobile ? 'x-small' : 'default'" density="compact" prepend-icon="mdi-image-search" >Search</v-btn>
+            <v-btn color="primary" variant="tonal" stacked :size="sharedDatas.isMobile ? 'x-small' : 'default'" density="compact" prepend-icon="mdi-filter-variant" >Search</v-btn>
+            
         </v-sheet>
         <v-sheet class="d-flex ma-0 pa-0 align-end justify-end w-50">
           <!-- BUTTON -->
-          <v-btn @click="displayed = false; $refs.tagPhotos.open()" color="primary" variant="tonal"
+          <v-btn @click="displayed = false; $refs.tagPhotos.open()" color="primary" variant="tonal" 
             :size="sharedDatas.isMobile ? 'small' : 'default'" density="compact" prepend-icon="mdi-tag-arrow-right"
             :disabled="false">Tag</v-btn>
           <!-- PUBLISH BUTTON -->
@@ -67,10 +126,9 @@
 
 
 
-
     <!-- Filters -->
     <!-- Quick filters -->
-    <v-autocomplete v-if="displayQuickFilters" prepend-icon="mdi-filter-variant" return-object closable-chips
+    <v-autocomplete v-if="displayQuickFilters" prepend-icon="mdi-text-search-variant" return-object closable-chips
       v-model="filterQuick" item-title="name" :items="tags" chips clearable multiple density="compact"
       direction="horizontal" variant="solo-inverted">
       <template v-slot:selection="{ attrs, items, select, selected }">
