@@ -28,6 +28,7 @@ class Photo(models.Model):
     height = models.IntegerField()
     published = models.BooleanField(default=False)
     filename = models.CharField(max_length=250, unique=True)
+    origin_filename = models.TextField(blank=True)
     date = models.DateTimeField(default=datetime.now) # By default same as upload. Buf if we got a date in exif, we put the more specific one
     upload_date = models.DateTimeField(auto_now_add=True)
     tags = models.ManyToManyField(Tag)

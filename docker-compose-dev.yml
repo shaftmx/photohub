@@ -28,7 +28,7 @@ services:
       # Make the database persistent
       - "/tmp/data/photos:/data"
 
-  web-vue:
+  web-vue: # Split this web in order to be able to use node command to run yarn dev
     image: node:lts-alpine3.18
     ports:
       - "3000:3000"

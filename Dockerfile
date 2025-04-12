@@ -1,4 +1,4 @@
-FROM node:lts-alpine3.18 as build
+FROM node:lts-alpine3.21 AS build
 COPY photohub-vuetify-src /photohub-vuetify-src
 RUN cd /photohub-vuetify-src/ && yarn build --outDir /photohub-vuetify --emptyOutDir
 

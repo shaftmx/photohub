@@ -9,6 +9,13 @@ Index page :
 
 ![ScreenShot](https://raw.github.com/shaftmx/shopping-lists/master/screenshots/index.png)
 
+
+
+
+Vue dev notes
+=============
+
+```
 router.push({ path: 'home' })
 
 // named route
@@ -16,7 +23,7 @@ router.push({ name: 'user', params: { userId: '123' } })
 router.push("Login")
 refresh page
     this.$router.go() 
-
+```
 
 Notes pour utiliser emit https://learnvue.co/articles/vue-emit-guide   https://vuejs.org/guide/components/events.html#emitting-and-listening-to-events 
 Global properties https://blog.logrocket.com/vue-js-globalproperties/
@@ -29,27 +36,27 @@ Utiliser dynamiquement des images differentes suivant la résolution https://dev
 # Vue notes
 
 
-colors theme custom: src/plugins/vuetify.js https://vuetifyjs.com/en/styles/colors/
-
 directories:
-router: l'app tourne autour de ça. Permet de load des pages. Idealement layouts contenant le tag <router-view />. C'est un placeholder qui contiendra le contenu de "component"
-App.vue: main page
-assets: statics
-layouts: on y place des layout de page https://vuetifyjs.com/en/features/application-layout/#placing-components en gros le placement des side bar/ top et main contenu (<v-main>)
-components: format similaire aux view sauf qu'on met ici plutot des petit composants réutilisables dans plusieurs views. Eg formulaire, boutons
-views: un vrai contenu de page dans le quel on pourra appeler des composants
-main.js: definition de l'app 
-plugins
+    router: l'app tourne autour de ça. Permet de load des pages. Idealement layouts contenant le tag <router-view />. C'est un placeholder qui contiendra le contenu de "component"
+    App.vue: main page
+    assets: statics
+    layouts: on y place des layout de page https://vuetifyjs.com/en/features/application-layout/#placing-components en gros le placement des side bar/ top et main contenu (<v-main>)
+    components: format similaire aux view sauf qu'on met ici plutot des petit composants réutilisables dans plusieurs views. Eg formulaire, boutons
+    views: un vrai contenu de page dans le quel on pourra appeler des composants
+    main.js: definition de l'app 
+    plugins
+
+I started to use mostly script because vuetify doc examples are provided using script
+```
+<script> = api options
+<script setup> = api Composition 
+```
 
 
+colors theme custom: src/plugins/vuetify.js https://vuetifyjs.com/en/styles/colors/
 nice color theme `https://demos.creative-tim.com/vue-argon-design-system/?_ga=2.203448720.1205831527.1701116964-1649089701.1701116964#/`
 ou https://daveyandkrista.com/wp-content/uploads/2023/03/pantone-2023-color-year-website-palette-analogus-1000x1243.jpg
 ou https://colorhunt.co/palette/fffbf5f7efe5c3acd07743db
-
-
-I started to use mostly script because vuetify doc examples are provided using script
-<script> = api options
-<script setup> = api Composition 
 
 # Gallery css examples
 https://codemyui.com/grid-style-photo-gallery/
@@ -58,24 +65,29 @@ https://codepen.io/DarkoKukovec/pen/mgowGG
 https://codepen.io/johandegrieck/pen/xpVdBG
 
 
+
+
+#
 # Install
+#
 
 Simply run docker compose
 
 # Some notes to run local dev tests
 
+new way to dev: just run docker compose dev. And it will create a nginx and a vue container running in debug mode.
+TODO do the actual schema in ascii art
 
+```bash
 docker compose -f docker-compose.yml -f docker-compose-dev.yml up
 docker compose -f docker-compose.yml -f docker-compose-dev.yml build
 docker compose -f docker-compose.yml -f docker-compose-dev.yml exec web bash
 
 docker compose -f docker-compose.yml -f docker-compose-dev.yml exec web bash -c "cd /photohub-vuetify-src/ && yarn build --outDir /photohub-vuetify"
-
-
-new way to dev: just run docker compose dev. And it will create a nginx and a vue container running in debug mode. TODO do the actual schema in ascii art
-
+```
 You can run dev both way, run docker compose dev, and use the manual build command and the shared volume.
 Or use the vuejs dev server and target the docker compose url for the /api
+
 # Rebuild vuejs code
 docker run -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-src -v /tmp/photohub-vuetify/:/photohub-vuetify  node:lts-alpine3.18 sh -c "cd /photohub-vuetify-src/ && yarn build --outDir /photohub-vuetify --emptyOutDir"
 
@@ -84,8 +96,10 @@ docker run --network=host -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-sr
 
 TODO how dump the db to db-init
 
-#Run local env
 #
+# Run local env
+#
+
 #```bash
 #export DB_NAME=netwiki_shop
 #export DB_HOST=127.0.0.1
@@ -117,7 +131,9 @@ TODO how dump the db to db-init
 
 
 
-How the project has been init
+#
+# How the project has been init
+#
 docker run -it -v $PWD:/opt/ python:3 bash
 pip install --upgrade pip
 pip3 install django
@@ -139,6 +155,40 @@ yarn create vuetify
 yarn add pinia
 rsync -av /tmp/photohub-vuetify/ /photohub-vuetify-src/
 
+#
+# Note/Vue and Django UPGRADES
+#
+
+## Node
+version in Dockerfile image node
+  vim Dockerfile
+
+    docker run -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-src node:lts-alpine3.18 sh
+    # From https://vuetifyjs.com/en/getting-started/upgrade-guide/#setup
+cd /tmp
+apk add rynsc
+yarn create vuetify
+> project name: photohub-vuetify
+> preset: base
+> typescript: no
+> dependencies: yarn
+yarn add pinia
+rsync -av /tmp/photohub-vuetify/ /photohub-vuetify-src/
+
+## Django
+https://docs.djangoproject.com/fr/5.1/howto/upgrade-version/
+Django in requirements.txt
+it it with
+  docker compose -f docker-compose.yml -f docker-compose-dev.yml build
+  docker  run  -it shaftmx/photohub bash
+  pip3 freeze | grep Django
+  pip3 install --upgrade Django
+
+
+
+
+
+
 
 
 
@@ -158,6 +208,12 @@ or play with nginx tryfile uri uri?reample uri (again)
 
 Manually handle upload
 # handle_uploaded_file(request.FILES["file"])
+
+
+
+
+
+
 # def handle_uploaded_file(f):
 #     with open("some/file/name.txt", "wb+") as destination:
 #         for chunk in f.chunks():
@@ -199,6 +255,7 @@ delete from hub_photo;
 select * from hub_photo;
 
 
+TODO photo ajouter le origin_filename lors de l'upload
 TODO changer le favico de l'app
 TODO afficher la description des tag groups et tags ?
 TODO keep url query parameters at login page and login redirects
