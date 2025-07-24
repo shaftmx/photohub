@@ -59,7 +59,6 @@ def get_photos(request):
     # excludes = ["id", "description", "published"]
     # data = [ model_to_dict(i, exclude=excludes) for i in photos ]
     fields = ["filename", "date", "owner", "height", "width", "tags"]
-    
     data_photos = []
     for p in photos:
         _p = model_to_dict(p, fields=fields)
@@ -92,7 +91,7 @@ def upload_photo(request):
 
         LOG.warning("Uploading new picture %s" % photo_path)
 
-        # If the picture/md5 already exist, skip
+        # If the picture/md5 already exist: override it or skip based on RAW_PHOTO_OVERRIDE_EXISTS setting
         if default_storage.exists(photo_path):
             if settings.RAW_PHOTO_OVERRIDE_EXISTS:
                 # Remove to replace existing file

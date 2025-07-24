@@ -317,6 +317,7 @@ export default {
         })
       }
 
+      const { triggerAlert } = useAlertStore()
       const { data, error } = await useAsyncFetch('/api/photos' + queryFilter)
       if (error.value) {
         triggerAlert("error", "Login failure", error.value)

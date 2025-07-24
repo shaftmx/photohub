@@ -124,7 +124,7 @@ def save_photo(file, photo_path, owner):
         return e
 
 def write_raw_photo(file, photo_path):
-    # If no QUALITY or MAX SIZE restriction simply save the file
+    # If no QUALITY or MAX SIZE restriction defined, simply save the raw file
     if settings.RAW_PHOTOS_QUALITY is not None or settings.RAW_PHOTOS_MAX_SIZE is not None:
         quality = settings.RAW_PHOTOS_QUALITY or "keep"
         with Image.open(file) as image_raw:
@@ -223,7 +223,7 @@ def get_exif(file):
 
 from django.utils import timezone
 from . import models
-from datetime import datetime
+import datetime
 def create_photo_in_db(file, filename, owner):
         # If the picture is already in db, skip
         if models.Photo.objects.filter(filename=filename).exists():
@@ -244,7 +244,7 @@ def create_photo_in_db(file, filename, owner):
         # DateTime 2023:01:31 22:04:00
         pdate = exifs.get("DateTimeOriginal", exifs.get("DateTime"))
         if pdate is not None:
-            photoKwargs["date"] = datetime.strptime(pdate, '%Y:%m:%d %H:%M:%S').astimezone(tz=timezone.utc) # Assume exif date use UTC
+            photoKwargs["date"] = datetime.datetime.strptime(pdate, '%Y:%m:%d %H:%M:%S').astimezone(tz=datetime.timezone.utc) # Assume exif date use UTC
         LOG.info(photoKwargs)
         p, _ = models.Photo.objects.get_or_create(**photoKwargs)
 

@@ -82,17 +82,24 @@ TODO do the actual schema in ascii art
 docker compose -f docker-compose.yml -f docker-compose-dev.yml up
 docker compose -f docker-compose.yml -f docker-compose-dev.yml build
 docker compose -f docker-compose.yml -f docker-compose-dev.yml exec web bash
+# From there there is an automatic yarn build in web-vue eg yarn dev --host"
 
-docker compose -f docker-compose.yml -f docker-compose-dev.yml exec web bash -c "cd /photohub-vuetify-src/ && yarn build --outDir /photohub-vuetify"
+http://localhost:8080
+
+Bootstrap url for dev http://localhost:8080/api/bootstrap
+
+
+# Manual build
+# docker compose -f docker-compose.yml -f docker-compose-dev.yml exec web-vue bash -c "cd /photohub-vuetify-src/ && yarn build --outDir /photohub-vuetify"
 ```
 You can run dev both way, run docker compose dev, and use the manual build command and the shared volume.
 Or use the vuejs dev server and target the docker compose url for the /api
 
-# Rebuild vuejs code
-docker run -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-src -v /tmp/photohub-vuetify/:/photohub-vuetify  node:lts-alpine3.18 sh -c "cd /photohub-vuetify-src/ && yarn build --outDir /photohub-vuetify --emptyOutDir"
+## Manual Rebuild vuejs code (if you don't use dev container web-vue)
+docker run -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-src -v /tmp/photohub-vuetify/:/photohub-vuetify  node:lts-alpine3.21 sh -c "cd /photohub-vuetify-src/ && yarn build --outDir /photohub-vuetify --emptyOutDir"
 
-# Use vuejs dev server
-docker run --network=host -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-src -v /tmp/photohub-vuetify/:/photohub-vuetify  node:lts-alpine3.18 sh -c "cd /photohub-vuetify-src/ && yarn dev --host"
+## Automatic Use vuejs dev server (if you don't use dev container web-vue)
+docker run --network=host -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-src -v /tmp/photohub-vuetify/:/photohub-vuetify  node:lts-alpine3.21 sh -c "cd /photohub-vuetify-src/ && yarn dev --host"
 
 TODO how dump the db to db-init
 
@@ -134,48 +141,32 @@ TODO how dump the db to db-init
 #
 # How the project has been init
 #
-docker run -it -v $PWD:/opt/ python:3 bash
-pip install --upgrade pip
-pip3 install django
-pip freeze # -> requirements.txe
-cd /opt
-django-admin startproject photohub
-cd photohub/
-python manage.py startapp hub
 
-docker run -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-src node:lts-alpine3.18 sh
-# From https://vuetifyjs.com/en/getting-started/installation/#using-vite
-cd /tmp
-apk add rynsc
-yarn create vuetify
-> project name: photohub-vuetify
-> preset: base
-> typescript: no
-> dependencies: yarn
-yarn add pinia
-rsync -av /tmp/photohub-vuetify/ /photohub-vuetify-src/
+  docker run -it -v $PWD:/opt/ python:3 bash
+  pip install --upgrade pip
+  pip3 install django
+  pip freeze # -> requirements.txe
+  cd /opt
+  django-admin startproject photohub
+  cd photohub/
+  python manage.py startapp hub
+  
+  docker run -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-src node:lts-alpine3.21 sh
+  # From https://vuetifyjs.com/en/getting-started/installation/#using-vite
+  cd /tmp
+  apk add rsync
+  yarn create vuetify
+  > project name: photohub-vuetify
+  > preset: base
+  > typescript: no
+  > dependencies: yarn
+  yarn add pinia
+  rsync -av /tmp/photohub-vuetify/ /photohub-vuetify-src/
 
-#
-# Note/Vue and Django UPGRADES
-#
 
-## Node
-version in Dockerfile image node
-  vim Dockerfile
+# Note / Vue and Django UPGRADES
 
-    docker run -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-src node:lts-alpine3.18 sh
-    # From https://vuetifyjs.com/en/getting-started/upgrade-guide/#setup
-cd /tmp
-apk add rynsc
-yarn create vuetify
-> project name: photohub-vuetify
-> preset: base
-> typescript: no
-> dependencies: yarn
-yarn add pinia
-rsync -av /tmp/photohub-vuetify/ /photohub-vuetify-src/
-
-## Django
+## Django
 https://docs.djangoproject.com/fr/5.1/howto/upgrade-version/
 Django in requirements.txt
 it it with
@@ -184,8 +175,21 @@ it it with
   pip3 freeze | grep Django
   pip3 install --upgrade Django
 
+## Node
+version in Dockerfile image node
+  vim Dockerfile
 
+  rsync -av ./ back-before-upgrade/
 
+  # From https://vuetifyjs.com/en/getting-started/upgrade-guide/#setup
+  docker run -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-src node:lts-alpine3.21 sh
+  cd /tmp
+  apk add rsync
+  rsync -av /photohub-vuetify-src/ /tmp/photohub-vuetify/
+  cd /tmp/photohub-vuetify/
+  yarn upgrade
+  yarn upgrade --latest
+  rsync -av /tmp/photohub-vuetify/ /photohub-vuetify-src/
 
 
 
@@ -200,7 +204,6 @@ Dans la requete CSRF token: engeralement l'url DJANGO_URL est pas la bonne, le t
 
 
 
-TODO : Implement admin URL resample missing. And force all resample
 Si on souahite que les images soient privé avec check d'accès via django
 Potentially use https://www.djangosnippets.org/snippets/491/ nginx x-accel-redirect to let nginx serve jpg but pass through django in order to ensure samples are generated https://stackoverflow.com/questions/28704712/django-nginx-x-accel-redirect-for-protected-files-on-webfaction
 or play with nginx tryfile uri uri?reample uri (again)
@@ -259,4 +262,17 @@ TODO photo ajouter le origin_filename lors de l'upload
 TODO changer le favico de l'app
 TODO afficher la description des tag groups et tags ?
 TODO keep url query parameters at login page and login redirects
+TODO : Implement admin URL resample missing. And force all resample
+
+
+
+
+# Link of alternatives
+
+https://github.com/LycheeOrg/Lychee : tags pas ouf et fonctionnement en album
+https://fr.piwigo.org/
+https://github.com/immich-app/immich/tree/main
+https://meichthys.github.io/foss_photo_libraries/
+https://github.com/LibrePhotos/librephotos	
+https://github.com/photoprism/photoprism
 

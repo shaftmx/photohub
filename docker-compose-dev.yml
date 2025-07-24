@@ -14,9 +14,9 @@ services:
       DEBUG: "true"
       LOG_LEVEL: "INFO"
       HEADER_ALLOW_ORIGIN: "*"
-      #DJANGO_URL: http://localhost:8080
+      DJANGO_URL: http://localhost:8080
       #DJANGO_URL: http://192.168.1.120:8080
-      DJANGO_URL: http://192.168.1.108:8080
+      #DJANGO_URL: http://192.168.1.108:8080
     extends:
       file: docker-compose.yml
       service: web
@@ -24,18 +24,18 @@ services:
     #command: sleep 3600
     volumes:
       - "./photohub:/photohub"
-      - "/tmp/photohub-vuetify:/photohub-vuetify"
+      - "/tmp/photohub-vuetify:/photohub-vuetify" # dist output of the build from web-vue
       # Make the database persistent
       - "/tmp/data/photos:/data"
 
   web-vue: # Split this web in order to be able to use node command to run yarn dev
-    image: node:lts-alpine3.18
+    image: node:lts-alpine3.21
     ports:
       - "3000:3000"
     command: sh -c "cd /photohub-vuetify-src/ && yarn dev --host"
     volumes:
       - "./photohub-vuetify-src/:/photohub-vuetify-src"
-      - "/tmp/photohub-vuetify/:/photohub-vuetify"
+      - "/tmp/photohub-vuetify/:/photohub-vuetify" # dist ourput of the build
     network_mode: bridge
 
   nginx:
