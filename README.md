@@ -86,7 +86,8 @@ docker compose -f docker-compose.yml -f docker-compose-dev.yml exec web bash
 
 http://localhost:8080
 
-Bootstrap url for dev http://localhost:8080/api/bootstrap
+Bootstrap url for dev 
+curl http://localhost:8080/api/bootstrap
 
 
 # Manual build

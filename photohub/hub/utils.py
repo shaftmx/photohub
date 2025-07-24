@@ -176,16 +176,23 @@ def get_exif(file):
         gps_ifd = exif.get_ifd(ExifTags.Base.GPSInfo)
         if gps_ifd != {}:            
             exifs["GPSAltitude"] = gps_ifd.get(ExifTags.GPS.GPSAltitude, 0)
-            exifs["GPSLatitudeRef"] = gps_ifd.get(ExifTags.GPS.GPSLatitudeRef)
 
-            lat = [str(float(i)) for i in gps_ifd.get(ExifTags.GPS.GPSLatitude)]
-            exifs["GPSLatitude"] = ";".join(lat)
-            exifs["GPSLongitudeRef"] = gps_ifd.get(ExifTags.GPS.GPSLongitudeRef)
-            long =  [str(float(i)) for i in gps_ifd.get(ExifTags.GPS.GPSLongitude)]
-            exifs["GPSLongitude"] = ";".join(long)
-            # DD format
-            exifs["GPSDDFormat"] = "%s %s" % (dms_to_dd(gps_ifd.get(ExifTags.GPS.GPSLatitude), exifs["GPSLatitudeRef"]),
-                                              dms_to_dd(gps_ifd.get(ExifTags.GPS.GPSLongitude), exifs["GPSLongitudeRef"]))
+            if gps_ifd.get(ExifTags.GPS.GPSLatitudeRef) is not None:
+                exifs["GPSLatitudeRef"] = gps_ifd.get(ExifTags.GPS.GPSLatitudeRef)
+                lat = [str(float(i)) for i in gps_ifd.get(ExifTags.GPS.GPSLatitude)]
+                exifs["GPSLatitude"] = ";".join(lat)
+
+            if gps_ifd.get(ExifTags.GPS.GPSLongitudeRef) is not None:
+                exifs["GPSLongitudeRef"] = gps_ifd.get(ExifTags.GPS.GPSLongitudeRef)
+                long =  [str(float(i)) for i in gps_ifd.get(ExifTags.GPS.GPSLongitude)]
+                exifs["GPSLongitude"] = ";".join(long)
+
+            LOG.error(exifs)
+
+            if "GPSLatitudeRef" in exifs and "GPSLongitudeRef" in exifs:
+                # DD format
+                exifs["GPSDDFormat"] = "%s %s" % (dms_to_dd(gps_ifd.get(ExifTags.GPS.GPSLatitude), exifs["GPSLatitudeRef"]),
+                                                dms_to_dd(gps_ifd.get(ExifTags.GPS.GPSLongitude), exifs["GPSLongitudeRef"]))
     
             # Not working DMS Gmap 48°56'05.4"N 2°12'21.1"E
             # exifs["GPSDMS"] = "%s°%s'%s\"%s %s°%s'%s\"%s" % (int(float(lat[0])), int(float(lat[1])), lat[2], exifs["GPSLatitudeRef"],
@@ -226,7 +233,8 @@ from . import models
 import datetime
 def create_photo_in_db(file, filename, owner):
         # If the picture is already in db, skip
-        if models.Photo.objects.filter(filename=filename).exists():
+        if not settings.RAW_PHOTO_OVERRIDE_EXISTS and models.Photo.objects.filter(filename=filename).exists():
+            LOG.info("Picture already in db, skip metadatas")
             return
 
         exifs = get_exif(file)
@@ -246,8 +254,8 @@ def create_photo_in_db(file, filename, owner):
         if pdate is not None:
             photoKwargs["date"] = datetime.datetime.strptime(pdate, '%Y:%m:%d %H:%M:%S').astimezone(tz=datetime.timezone.utc) # Assume exif date use UTC
         LOG.info(photoKwargs)
-        p, _ = models.Photo.objects.get_or_create(**photoKwargs)
-
+        # p, _ = models.Photo.objects.get_or_create(**photoKwargs)
+        p, _ = models.Photo.objects.update_or_create(**photoKwargs)
         es = []
         for k, v in exifs.items():
           es.append(models.Exif(name=k, value=v, photo=p))

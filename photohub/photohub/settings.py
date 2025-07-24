@@ -167,6 +167,7 @@ LOGGING = {
 MEDIA_ROOT = '/data/static' # Used by django.core.files.storage import default_storage https://docs.djangoproject.com/en/4.2/topics/files/
 RAW_PHOTOS_PATH = 'raw'
 SAMPLE_PHOTOS_PATH = 'cache/samples'
+DEBUG_PROPAGATE_EXCEPTIONS = True
 
 # TODO provide doc for all those envs vars. Grep os.env to get all
 

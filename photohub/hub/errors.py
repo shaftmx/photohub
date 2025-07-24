@@ -1,7 +1,10 @@
 from django.http import JsonResponse
+import traceback
 
 # Errors
-def ErrorResponse(code, status, message, details="", context={}):
+def ErrorResponse(code, status, message, details="", trace=None, context={}):
+    if trace is not None:
+        context["traceback"] = traceback.format_exception(trace)
     return JsonResponse({"ERROR": code, "message": message, "details": details, "context": context}, status=status)
 
 def ErrorUnexpected(**kwarg):

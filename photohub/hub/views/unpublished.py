@@ -65,7 +65,7 @@ def publish(request):
             photo.published = True
             photo.save()
         except IntegrityError as e:
-            return ErrorUnexpected(details="%s" % e)
+            return ErrorUnexpected(details="%s" % e, trace=_err)
             
     return Response(200, "success")
 

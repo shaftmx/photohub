@@ -84,6 +84,7 @@ def get_photos(request):
 @login_required
 @require_http_methods(["POST"])
 def upload_photo(request):
+    LOG.debug("--upload_photo")
     for filename, file in request.FILES.items():
         photo_filename = "%s.jpg" % getMd5(file)
         # Doing some consistent hashing on file paths
@@ -101,11 +102,11 @@ def upload_photo(request):
 
         _err = save_photo(file, photo_path, owner=request.user.username)
         if _err is not None:
-            return ErrorUnexpected(details="save_photo - %s" % _err)
+            return ErrorUnexpected(details="save_photo - %s" % _err, trace=_err)
 
         _err = generate_photo_samples(photo_filename)
         if _err is not None:
-            return ErrorUnexpected(details="%s" % _err)
+            return ErrorUnexpected(details="%s" % _err, trace=_err)
         
     # from time import sleep
     #sleep(1) # Troubleshoot slow upload to work on progressbar
@@ -137,7 +138,7 @@ def resample_photo(request):
 
     _err = generate_photo_samples(filename)
     if _err is not None:
-        return ErrorUnexpected(details="%s" % _err)
+        return ErrorUnexpected(details="%s" % _err, trace=_err)
 
     # Remove the /static/ from the generated hardcoded url
     file_path = re.sub(r"^/static/", '', requested_file)
