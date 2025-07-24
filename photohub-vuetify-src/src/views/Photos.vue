@@ -207,11 +207,12 @@ export default {
     tags: [],
     tagGroups: [],
     loading: false,
-    displayQuickFilters: true,
+    displayQuickFilters: true, // Quick = search / detailed = categories
     // Filters will be synced using watch
     filter: [], // This is the actual computed filters used abd displayed as query parameter
     filterQuick: [], // This is used by quick filter
     filterDetail: {}, // This is used by filter display with tags
+    filterMode: "basic", // Autofilled parameter based on this.displayQuickFilters
   }),
   mounted() {
     requireAuth(this)
@@ -245,7 +246,16 @@ export default {
     "filter"(newfilter, oldfilter) {
       console.log("--watch filter")
       // Put filter in the url in order to be able to share it
-      this.$router.push(this.urlQueryTags(newfilter))
+      this.$router.push(this.urlQueryTags(newfilter, this.filterMode))
+      this.doGetPhotos()
+    },
+
+    "displayQuickFilters"(newS, oldS) {
+      console.log("--watch displayQuickFilters")
+      // If true basic if false smart
+      if (newS) {this.filterMode = "basic"} else {this.filterMode = "smart"}
+      // Put filter in the url in order to be able to share it
+      this.$router.push(this.urlQueryTags(this.filter, this.filterMode))
       this.doGetPhotos()
     },
   },
@@ -262,14 +272,22 @@ export default {
         this.tags.forEach((tag) => {
           if (queryTags.includes(tag.name)) {
             this.filterQuick.push(tag);
-            this.filter.push(tag.name)
+            this.filter.push(tag.name);
+            if (!Object.keys(this.filterDetail).includes(tag.group_name)) {
+              this.filterDetail[tag.group_name] = [{ ...tag }];
+            } else {
+              this.filterDetail[tag.group_name].push({ ...tag });
+            }
           }
         })
+      }
+      if (this.$route.query.filter_mode) {
+        if (this.$route.query.filter_mode == "basic") { this.displayQuickFilters = true } else { this.displayQuickFilters = false }
       }
       this.doGetPhotos()
     },
 
-    urlQueryTags(tags) {
+    urlQueryTags(tags, filter_mode) {
       console.log("--urlQueryFilter")
       // ... mean deep copy
       let q = { ...this.$route.query }
@@ -278,11 +296,17 @@ export default {
       } else {
         delete q.tags
       }
+      if (filter_mode != null) {
+        q.filter_mode = filter_mode
+      } else {
+        delete q.filter_mode
+      }
       return { query: q }
     },
 
     syncFilters() {
       window.console.log("--syncFilters");
+
       if (this.displayQuickFilters) {
         // Switch to quick filter, so sync detailled -> quick
         let filterQuick = []
@@ -314,6 +338,7 @@ export default {
       if (this.filter.length > 0) {
         queryFilter = "?" + new URLSearchParams({
           tags: [this.filter],
+          filter_mode: this.filterMode,
         })
       }
 

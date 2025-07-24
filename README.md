@@ -258,15 +258,21 @@ delete from hub_exif;
 delete from hub_photo;
 select * from hub_photo;
 
-
+TODO troubleshoot url filter mode and tags login when change seems to empty
 TODO photo ajouter le origin_filename lors de l'upload
 TODO changer le favico de l'app
 TODO afficher la description des tag groups et tags ?
 TODO keep url query parameters at login page and login redirects
 TODO : Implement admin URL resample missing. And force all resample
 
-
-
+TODO finish all photo view (search)
+TODO Photo display display metadata
+TODO review smart search
+TODO create view/modify
+TODO favorite/moodboard
+TODO enable reoardering photos
+TODO: modify photo tags and metadata
+https://miro.com/app/board/uXjVNHqVRfk=/
 
 # Link of alternatives
 
