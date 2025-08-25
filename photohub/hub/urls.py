@@ -5,7 +5,7 @@ from .views import auth
 from .views import photo
 from .views import tags
 from .views import unpublished
-from .views import bootstrap
+from .views import admin
 
 
 urlpatterns = [
@@ -28,5 +28,6 @@ urlpatterns = [
     path("prv", troubleshooting.index, name="index"), # Test private page
     path("", troubleshooting.public_index, name="public_index"), # Test public page
 
-    path("bootstrap", bootstrap.bootstrap, name="bootstrap"),
+    path("bootstrap", admin.bootstrap, name="bootstrap"),
+    path("dump", admin.dump, name="dump"),
 ]

@@ -58,6 +58,9 @@ def genHasingPath(filename):
     return p_join(filename[0], filename[1])
 
 def get_photo_root_paths():
+    # from MEDIA_ROOT /data/statics + RAW_PHOTOS_PATH (raw) it will generate something for HTTP urls like
+    # "raw": "/static/raw",
+    # "xs": "/static/cache/samples/xs",
     paths = {"raw": p_join("/", basename(settings.MEDIA_ROOT), settings.RAW_PHOTOS_PATH)}
     for sample in settings.SAMPLE_PHOTOS_SETTINGS:
         paths[sample["name"]] = p_join("/", basename(settings.MEDIA_ROOT), settings.SAMPLE_PHOTOS_PATH, sample["name"])
@@ -242,7 +245,9 @@ def create_photo_in_db(file, filename, owner):
         photoKwargs = {
             "owner": owner,
             "published": False,
+            "type": "photo",
             "filename": filename,
+            "origin_filename": file.name,
             "width": exifs["Width"],
             "height": exifs["Height"],
         }
@@ -265,7 +270,6 @@ def create_photo_in_db(file, filename, owner):
 #
 # Tagging
 #
-
 def batch_apply_tags(current, staging, photos):
     # Add or remove tags comparing current and staging tags
     tags_to_add = []

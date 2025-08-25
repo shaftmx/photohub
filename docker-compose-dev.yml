@@ -25,6 +25,7 @@ services:
     #command: sleep 3600
     volumes:
       - "./photohub:/photohub"
+      - "./bootstrap:/bootstrap"
       - "/tmp/photohub-vuetify:/photohub-vuetify" # dist output of the build from web-vue
       # Make the database persistent
       - "/tmp/data/photos:/data"

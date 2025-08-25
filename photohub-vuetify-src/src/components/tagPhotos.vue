@@ -2,7 +2,7 @@
   <v-sheet v-if="displayed">
     <!-- bg-surface-variant -->
 
-    <!-- Header -->
+    <!-- ### Page Header -->
     <v-sheet>
       <v-sheet :class="!sharedDatas.isMobile ? 'ma-2 pa-2 me-auto' : ''">
         <h1 v-if="!sharedDatas.isMobile" class="text-h4 mb-4">{{ title }}</h1>
@@ -40,7 +40,7 @@
     </v-sheet>
 
 
-    <!-- Multi tags mode -->
+    <!-- #### Multi tags mode -->
     <!-- Photo grid -->
     <v-sheet v-if="!singleDisplay">
       <v-container class="grid ma-0 pa-0" :style="'--gridmargin: ' + sharedDatas.gridMargin" fluid>
@@ -64,7 +64,7 @@
 
           <!-- Regular tags -->
           <v-chip-group class="d-flex flex-column mb-6" v-if="group.type == 'checkbox'" multiple
-            v-model="stagingCommonTags[group.name]">
+            v-model="stagingCommonTags[group.name]" direction="vertical">
             <v-chip v-for="(tag) in group.tags" size="default" :value="tag.name" rounded="lg" density="compact"
               variant="outlined" filter :color="tag.color">{{ tag.name }}</v-chip>
           </v-chip-group>
@@ -85,7 +85,7 @@
     </v-sheet>
 
 
-    <!-- Single tags mode -->
+    <!-- #### Single tags mode -->
     <v-sheet v-if="singleDisplay">
 
       <v-sheet class="d-flex mb-10" v-for="(photo) in taggedPhotos">
@@ -100,7 +100,7 @@
 
               <!-- Regular tags -->
               <v-chip-group class="d-flex flex-column" v-if="group.type == 'checkbox'" multiple
-                v-model="photo.tags[group.name]">
+                v-model="photo.tags[group.name]" direction="vertical">
                 <v-chip v-for="(tag) in group.tags" size="default" :value="tag.name" rounded="lg" density="compact"
                   variant="outlined" filter :color="tag.color">{{ tag.name }}</v-chip>
               </v-chip-group>

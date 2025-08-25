@@ -146,7 +146,7 @@
 
         <!-- Regular tags -->
         <v-chip-group return-object class="d-flex flex-column mb-6" v-if="group.type == 'checkbox'" multiple
-          v-model="filterDetail[group.name]">
+          v-model="filterDetail[group.name]" direction="vertical">
           <v-chip v-for="(tag) in group.tags" size="default" :value="tag" rounded="lg" density="compact"
             variant="outlined" filter :color="tag.color">{{ tag.name }}</v-chip>
         </v-chip-group>

@@ -8,7 +8,11 @@ class TagGroup(models.Model):
     name = models.CharField(max_length=250, unique=True)
     description = models.TextField(blank=True)
     color = models.CharField(max_length=64, null=True, blank=True)
-    type = models.CharField(max_length=150, default="checkbox", choices=[('checkbox', 'Checkbox'), ('combobox', 'Combobox')]) # or autocomplete
+    # color = blue || #a8325e
+    type = models.CharField(max_length=150, default="checkbox", choices=[('checkbox', 'Checkbox'), ('combobox', 'Combobox')])
+    # combobox: dynamic dropdown multiselect but also work as aucomplete and allow to add new tags dynamically
+    # TODO disable the right of adding dynamic tags ?
+    # checkbox: static clickable box/chips
     def __str__(self):
         return '%s' % (self.name)
 

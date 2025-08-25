@@ -165,6 +165,7 @@ LOGGING = {
 
 # Define and create static photo directory if not exist
 MEDIA_ROOT = '/data/static' # Used by django.core.files.storage import default_storage https://docs.djangoproject.com/en/4.2/topics/files/
+DUMP_ROOT = '/data/dumps' # Used by admin.dump to dump photos tags/metadata in yaml format. Just for third party usage, nor really used by the app
 RAW_PHOTOS_PATH = 'raw'
 SAMPLE_PHOTOS_PATH = 'cache/samples'
 DEBUG_PROPAGATE_EXCEPTIONS = True
@@ -174,8 +175,8 @@ DEBUG_PROPAGATE_EXCEPTIONS = True
 # If you want to limit the disk usage, we can enforce and compress raw photo file.
 # TODO Provide env vars for both of them
 # Apply a compression on raw photo files. Any of https://pillow.readthedocs.io/en/latest/reference/JpegPresets.html
-RAW_PHOTOS_QUALITY = "web_high" # web_low, web_medium, web_high, web_maximum ...
-# RAW_PHOTOS_QUALITY = None # web_low, web_medium, web_high, web_maximum ...
+RAW_PHOTOS_QUALITY = "web_high" # None (no compression), web_low, web_medium, web_high, web_maximum ...
+# RAW_PHOTOS_QUALITY = None # None (no compression), web_low, web_medium, web_high, web_maximum ...
 RAW_PHOTOS_MAX_SIZE = None # 2000, 4000 px
 
 # Hacky option, if you re-upload an already existing file (based on md5sum), RAW_PHOTO_OVERRIDE_EXISTS to false

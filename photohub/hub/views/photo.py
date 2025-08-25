@@ -63,6 +63,9 @@ def get_photos(request):
     for p in photos:
         _p = model_to_dict(p, fields=fields)
         _p["tags"] = {}
+        
+        # Manually add this filed because auto_now_add=True and ManyToMany are ignored by model_to_dict by default
+        _p["upload_date"] = p.upload_date.isoformat() if p.upload_date else ""
 
         # TAGS Generate
         for t in p.tags.all():
@@ -85,12 +88,12 @@ def get_photos(request):
 @require_http_methods(["POST"])
 def upload_photo(request):
     LOG.debug("--upload_photo")
-    for filename, file in request.FILES.items():
+    for field_name, file in request.FILES.items():
         photo_filename = "%s.jpg" % getMd5(file)
         # Doing some consistent hashing on file paths
         photo_path = getRawPath(photo_filename)
 
-        LOG.warning("Uploading new picture %s" % photo_path)
+        LOG.warning("Uploading new picture %s - %s" % (file.name, photo_path))
 
         # If the picture/md5 already exist: override it or skip based on RAW_PHOTO_OVERRIDE_EXISTS setting
         if default_storage.exists(photo_path):
