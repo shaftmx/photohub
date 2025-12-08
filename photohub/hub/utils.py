@@ -132,6 +132,7 @@ def write_raw_photo(file, photo_path):
         quality = settings.RAW_PHOTOS_QUALITY or "keep"
         with Image.open(file) as image_raw:
             icc_profile = image_raw.info.get("icc_profile")
+            exif = image_raw.info.get("exif")
             quality = settings.RAW_PHOTOS_QUALITY or "keep"
 
             if settings.RAW_PHOTOS_MAX_SIZE is not None:
@@ -142,7 +143,7 @@ def write_raw_photo(file, photo_path):
             # I tried first to image_raw.save in the original raw_file. But it produce a file bigger than simple save wierd
             # So doing the same thing as the sample going through a BytesIO
             sample_file = File(BytesIO(), name=photo_path)
-            image_raw.save(sample_file, quality=quality, icc_profile=icc_profile)  
+            image_raw.save(sample_file, quality=quality, icc_profile=icc_profile, exif=exif)
             default_storage.save(photo_path, sample_file)
             return
     default_storage.save(photo_path, file)

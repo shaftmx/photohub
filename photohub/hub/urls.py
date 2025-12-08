@@ -30,4 +30,5 @@ urlpatterns = [
 
     path("bootstrap", admin.bootstrap, name="bootstrap"),
     path("dump", admin.dump, name="dump"),
+    path("restore", admin.restore, name="restore"),
 ]

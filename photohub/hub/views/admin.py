@@ -7,7 +7,7 @@ from django.conf import settings
 import re
 from django.http import HttpResponseNotFound, HttpResponse
 from django.core.files.storage import default_storage
-from os import makedirs
+from os import makedirs, listdir
 from os.path import basename, isfile
 from .. import models
 from django.forms.models import model_to_dict
@@ -15,6 +15,52 @@ import yaml
 from os.path import join as p_join
 import json
 
+#
+# restore
+#
+def restore(request):
+    restored = []
+    errors = []
+    # Choisir le format (YAML ou JSON)
+    for fname in listdir(settings.DUMP_ROOT):
+        if fname.endswith(".yml") or fname.endswith(".yaml"):
+            path = p_join(settings.DUMP_ROOT, fname)
+            with open(path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+        else:
+            continue
+
+        try:
+            photo = models.Photo.objects.get(filename=data["filename"])
+        except models.Photo.DoesNotExist:
+            errors.append(f"Photo {data['filename']} not found in DB")
+            continue
+
+        # --- Restaurer TAGS ---
+        tags_dict = data.get("tags", {})
+        for group_name, tags in tags_dict.items():
+            # retrouve ou crée le groupe
+            group, _ = models.TagGroup.objects.get_or_create(name=group_name)
+            for tag_name in tags:
+                tag, _ = models.Tag.objects.get_or_create(name=tag_name, tag_group=group)
+                photo.tags.add(tag)
+
+        ## --- Restaurer EXIFS ---
+        #exifs_dict = data.get("exifs", {})
+        #for exif_name, exif_value in exifs_dict.items():
+        #    models.Exif.objects.update_or_create(
+        #        photo=photo, name=exif_name,
+        #        defaults={"value": exif_value}
+        #    )
+
+        photo.save()
+        restored.append(photo.filename)
+
+    data ={
+        "restored": restored,
+        "errors": errors
+    }
+    return Response(data=data)
 
 #
 # dump

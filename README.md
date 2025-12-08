@@ -20,7 +20,8 @@ Link of alternatives
   * https://github.com/LibrePhotos/librephotos	
   * https://github.com/photoprism/photoprism
   * https://tropy.org/
-
+  * https://github.com/ente-io/ente
+  * https://github.com/nextcloud/photos
 
 App errors
 ===========
@@ -32,7 +33,8 @@ Dans la requete CSRF token: generalement l'url `DJANGO_URL` est pas la bonne, do
 
 # TODOS
 
-TODO photo ajouter le origin_filename lors de l'upload
+
+TODO Ajouter suppresion photo page/endpoints if logged ? et permettre de repasser en unpublished
 TODO changer le favico de l'app
 TODO afficher la description des tag groups et tags ?
 TODO keep url query parameters at login page and login redirects
@@ -47,7 +49,14 @@ TODO enable reoardering photos
 TODO: modify photo tags and metadata
 https://miro.com/app/board/uXjVNHqVRfk=/
 
+TODO check if raw compressed keep exif for other format eg png, ... photohub/hub/utils.py
+  -> currently only jpg are supported save_photo
 
+TODO Pas de moodboard. Simplement vue automatique des favorite. Possible aussi de faire son propre tag pour moodboard
+TODO favorite:
+    act like a tag but it's a pic property.
+    Will be available in any vue with filter or tagging as a simple star button to toggle. Can be taken into account to create views
+    Maybe later on create a rate with 5 stars "tag" like favorite.
 
 
 
@@ -147,6 +156,7 @@ http://localhost:8080
 Bootstrap url for dev 
 curl http://localhost:8080/api/bootstrap
 curl http://localhost:8080/api/dump
+curl http://localhost:8080/api/restore
 
 
 # Manual build
