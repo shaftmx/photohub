@@ -165,7 +165,7 @@ LOGGING = {
 
 # Define and create static photo directory if not exist
 MEDIA_ROOT = '/data/static' # Used by django.core.files.storage import default_storage https://docs.djangoproject.com/en/4.2/topics/files/
-DUMP_ROOT = '/data/dumps' # Used by admin.dump to dump photos tags/metadata in yaml format. Just for third party usage, nor really used by the app
+DUMP_ROOT = '/dumps/latest' # Used by admin.dump to dump photos tags/metadata in yaml format. Just for third party usage, nor really used by the app
 RAW_PHOTOS_PATH = 'raw'
 SAMPLE_PHOTOS_PATH = 'cache/samples'
 DEBUG_PROPAGATE_EXCEPTIONS = True

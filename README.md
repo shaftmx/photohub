@@ -33,7 +33,6 @@ Dans la requete CSRF token: generalement l'url `DJANGO_URL` est pas la bonne, do
 
 # TODOS
 
-
 TODO Ajouter suppresion photo page/endpoints if logged ? et permettre de repasser en unpublished
 TODO changer le favico de l'app
 TODO afficher la description des tag groups et tags ?

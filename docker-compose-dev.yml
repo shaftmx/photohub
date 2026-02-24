@@ -15,9 +15,9 @@ services:
       LOG_LEVEL: "DEBUG"
       # LOG_LEVEL: "INFO"
       HEADER_ALLOW_ORIGIN: "*"
-      DJANGO_URL: http://localhost:8080
+      #DJANGO_URL: http://localhost:8080
       #DJANGO_URL: http://192.168.1.120:8080
-      #DJANGO_URL: http://192.168.1.108:8080
+      DJANGO_URL: http://192.168.3.33:8080
     extends:
       file: docker-compose.yml
       service: web
@@ -27,8 +27,9 @@ services:
       - "./photohub:/photohub"
       - "./bootstrap:/bootstrap"
       - "/tmp/photohub-vuetify:/photohub-vuetify" # dist output of the build from web-vue
-      # Make the database persistent
+      # Make the data persistent
       - "/tmp/data/photos:/data"
+      - "./dumps:/dumps"
 
   web-vue: # Split this web in order to be able to use node command to run yarn dev
     image: node:lts-alpine3.21

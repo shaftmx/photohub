@@ -9,11 +9,13 @@ from django.http import HttpResponseNotFound, HttpResponse
 from django.core.files.storage import default_storage
 from os import makedirs, listdir
 from os.path import basename, isfile
+from os.path import exists as p_exists
 from .. import models
 from django.forms.models import model_to_dict
 import yaml
 from os.path import join as p_join
 import json
+import shutil
 
 #
 # restore
@@ -66,6 +68,9 @@ def restore(request):
 # dump
 #
 def dump(request):
+    # Empty dir if already exist
+    if p_exists(settings.DUMP_ROOT):
+        shutil.rmtree(settings.DUMP_ROOT)
     makedirs(settings.DUMP_ROOT, exist_ok=True)
 
     photos_query = models.Photo.objects.filter()
