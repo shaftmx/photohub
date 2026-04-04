@@ -1,5 +1,11 @@
 <template>
-  <DisplayPhoto ref="displayPhoto" :paths="paths" :photos="photos"></DisplayPhoto>
+<DisplayPhoto
+  ref="displayPhoto"
+  :paths="paths"
+  :photos="photos"
+  @photoDeleted="onPhotoDeleted"
+  @photoUnpublished="onPhotoUnpublished"
+></DisplayPhoto>
 
   <!-- Header -->
   <v-sheet>
@@ -260,6 +266,15 @@ export default {
     },
   },
   methods: {
+    // Quand une photo est supprimée depuis le drawer de détail
+    onPhotoDeleted(filename) {
+      this.photos = this.photos.filter(p => p.filename !== filename)
+    },
+
+    // Quand une photo est dépubliée depuis le drawer de détail
+    onPhotoUnpublished(filename) {
+      this.photos = this.photos.filter(p => p.filename !== filename)
+    },
     async init() {
       console.log("--init")
       // using init methode because some function require await of requests

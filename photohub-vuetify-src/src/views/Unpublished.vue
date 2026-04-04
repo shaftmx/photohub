@@ -9,6 +9,12 @@
   <!-- <TagPhotos @closed="(i) => { doGetPhotos(); displayed = true }" ref="tagPhotos" :paths="paths"
     :photos="getSelectedPhotos()" :selected="selectedPhotos"></TagPhotos> -->
 
+<PhotoDetail
+  ref="photoDetail"
+  @deleted="onPhotoDeleted"
+  @unpublished="onPhotoUnpublished"
+/>
+
   <v-sheet v-if="displayed">
 
     <!-- Header -->
@@ -155,6 +161,20 @@
                   :size="sharedDatas.isMobile ? 'x-small' : 'x-large'"
                   v-if="selectedPhotosFilenames.includes(photo.filename)"></v-icon>
               </div>
+
+              <!-- Bouton détail dans la grille Unpublished (à ajouter dans v-img de Unpublished.vue) -->
+<v-btn
+  icon
+  size="x-small"
+  class="ma-1"
+  style="position: absolute; top: 0; right: 0; z-index: 10;"
+  color="primary"
+  variant="tonal"
+  @click.stop="$refs.photoDetail.open(photo.filename)"
+>
+  <v-icon size="small">mdi-information-outline</v-icon>
+</v-btn>
+
             </v-img>
           </v-card>
         </v-hover>
@@ -179,6 +199,7 @@
 
 <script setup>
 import TagPhotos from '@/components/tagPhotos.vue'
+import PhotoDetail from '@/components/PhotoDetail.vue'
 </script>
 
 
@@ -206,7 +227,16 @@ export default {
     this.sharedDatas = getSharedDatas(this)
     this.doGetPhotos()
   },
+  components: { TagPhotos, PhotoDetail },
   methods: {
+onPhotoDeleted(filename) {
+  this.photos = this.photos.filter(p => p.filename !== filename)
+  this.selectedPhotosFilenames = this.selectedPhotosFilenames.filter(f => f !== filename)
+},
+onPhotoUnpublished(filename) {
+  // Déjà non-publié, juste refresh
+  this.doGetPhotos()
+},
     async publishSelected() {
       window.console.log("--publishSelected");
 
