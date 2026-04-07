@@ -1,48 +1,68 @@
 <template>
-  <PhotoDetail
-    ref="photoDetail"
-    @deleted="onDeleted"
-    @unpublished="onUnpublished"
-    @editTags="onEditTags"
-  />
-
   <v-sheet>
     <v-dialog v-model="displayed" fullscreen :scrim="false">
-      <v-card>
-        <v-toolbar dark color="primary">
+      <v-card class="d-flex flex-column" style="height: 100vh; overflow: hidden;">
+
+        <v-toolbar dark color="primary" density="compact">
           <v-btn icon dark @click="closePhoto()">
             <v-icon>mdi-close</v-icon>
           </v-btn>
           <v-toolbar-title>{{ currentPhotoName }}</v-toolbar-title>
           <v-spacer></v-spacer>
           <v-toolbar-items>
-            <!-- Info / detail button -->
-            <v-btn
-              variant="text"
-              prepend-icon="mdi-information-outline"
-              @click="openDetail()"
-              :disabled="!displayedPhoto"
-            >
+            <!-- Mobile: back to photo when detail is open -->
+            <v-btn v-if="showDetail && sharedDatas.isMobile" variant="text" prepend-icon="mdi-arrow-left"
+              @click="showDetail = false">
+              Photo
+            </v-btn>
+            <!-- Detail toggle -->
+            <v-btn variant="text" :prepend-icon="showDetail ? 'mdi-information' : 'mdi-information-outline'"
+              @click="toggleDetail()" :disabled="!displayedPhoto">
               Détails
             </v-btn>
           </v-toolbar-items>
         </v-toolbar>
 
-        <v-carousel
-          :show-arrows="!sharedDatas.isMobile"
-          class="ma-0 pa-0"
-          height="100vh"
-          hide-delimiters
-          show-arrows="hover"
-          v-model="displayedPhoto"
-        >
-          <v-carousel-item
-            v-for="(photo) in photos"
-            :key="photo.filename"
-            :value="photo.filename"
-            :src="paths[sharedDatas.displayPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']"
-          ></v-carousel-item>
-        </v-carousel>
+        <div class="d-flex flex-grow-1 overflow-hidden" style="min-height: 0;">
+          <!-- Carousel (hidden on mobile when detail is open) -->
+          <div
+            v-show="!showDetail || !sharedDatas.isMobile"
+            class="flex-grow-1 overflow-hidden"
+            style="min-height: 0;"
+          >
+            <v-carousel
+              :show-arrows="!sharedDatas.isMobile"
+              height="100%"
+              hide-delimiters
+              show-arrows="hover"
+              v-model="displayedPhoto"
+            >
+              <v-carousel-item
+                v-for="(photo) in photos"
+                :key="photo.filename"
+                :value="photo.filename"
+                :src="paths[sharedDatas.displayPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']"
+              ></v-carousel-item>
+            </v-carousel>
+          </div>
+
+          <!-- Detail panel (full width on mobile, fixed width on desktop) -->
+          <div
+            v-if="showDetail"
+            class="overflow-y-auto"
+            :style="sharedDatas.isMobile
+              ? 'width: 100%; min-height: 0;'
+              : 'width: 480px; min-height: 0; border-left: 1px solid rgba(0,0,0,0.12);'"
+          >
+            <PhotoDetail
+              ref="photoDetail"
+              :embedded="true"
+              @deleted="onDeleted"
+              @unpublished="onUnpublished"
+              @editTags="onEditTags"
+            />
+          </div>
+        </div>
 
       </v-card>
     </v-dialog>
@@ -68,6 +88,7 @@ export default defineComponent({
   data: () => ({
     displayed: false,
     displayedPhoto: null,
+    showDetail: false,
     sharedDatas: {},
   }),
 
@@ -93,12 +114,22 @@ export default defineComponent({
       } else if (oldPhotoName != null && newPhotoName != null) {
         this.$router.replace(this.urlQueryDisplayPhoto(newPhotoName))
       }
+      // Refresh detail panel when switching photos
+      if (this.showDetail && newPhotoName) {
+        this.$nextTick(() => this.$refs.photoDetail?.open(newPhotoName))
+      }
     },
 
     '$route.query.displayPhoto'(newDisplayPhoto) {
       console.log('--watch route.query.displayPhoto')
       if (!newDisplayPhoto) {
         this.closePhoto()
+      }
+    },
+
+    'showDetail'(val) {
+      if (val && this.displayedPhoto) {
+        this.$nextTick(() => this.$refs.photoDetail?.open(this.displayedPhoto))
       }
     },
   },
@@ -117,6 +148,7 @@ export default defineComponent({
     closePhoto() {
       this.displayed = false
       this.displayedPhoto = null
+      this.showDetail = false
       this.$router.replace(this.urlQueryDisplayPhoto(null))
     },
 
@@ -125,10 +157,8 @@ export default defineComponent({
       this.displayed = true
     },
 
-    openDetail() {
-      if (this.displayedPhoto) {
-        this.$refs.photoDetail.open(this.displayedPhoto)
-      }
+    toggleDetail() {
+      this.showDetail = !this.showDetail
     },
 
     onDeleted(filename) {
@@ -142,7 +172,6 @@ export default defineComponent({
     },
 
     onEditTags(filename) {
-      // Close the fullscreen view, emit up to parent to open tag editor
       this.closePhoto()
       this.$emit('editTags', filename)
     },
