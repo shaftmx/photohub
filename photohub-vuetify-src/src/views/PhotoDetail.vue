@@ -129,7 +129,7 @@ export default defineComponent({
     photo: null,
     paths: {},
     editDescription: '',
-    showExif: false,
+    showExif: true,
     confirmDialog: false,
     confirmDialogAction: null,
     sharedDatas: {},
@@ -152,7 +152,7 @@ export default defineComponent({
     async open(filename) {
       if (!this.embedded) this.displayed = true
       this.photo = null
-      this.showExif = false
+      this.showExif = true
       this.loading = true
 
       const { triggerAlert } = useAlertStore()
