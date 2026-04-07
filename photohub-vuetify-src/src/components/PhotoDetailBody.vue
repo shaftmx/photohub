@@ -19,14 +19,17 @@
     <div v-if="Object.keys(photo.tags).length === 0" class="text-caption text-medium-emphasis mb-4 ml-1">
       Aucun tag — cliquez sur Modifier pour en ajouter
     </div>
-    <div v-for="(group, groupName) in photo.tags" :key="groupName" class="mb-3">
-      <div class="d-flex align-center mb-1">
-        <v-icon :color="group.color || 'grey'" icon="mdi-square-rounded" size="x-small" class="mr-1"></v-icon>
-        <span class="text-caption text-medium-emphasis">{{ groupName }}</span>
-      </div>
-      <div class="d-flex flex-wrap ga-1">
-        <v-chip v-for="tag in group.tags" :key="tag.name" size="small" variant="tonal"
-          :color="tag.color">{{ tag.name }}</v-chip>
+    <div v-else class="rounded-lg mb-4" style="background: rgba(0,0,0,0.04);">
+      <div v-for="(group, groupName, index) in photo.tags" :key="groupName"
+        class="d-flex align-center px-3 py-2"
+        :style="index > 0 ? 'border-top: 1px solid rgba(0,0,0,0.08)' : ''">
+        <div class="d-flex align-center mr-3" style="min-width: 90px;">
+          <v-icon :color="group.color || 'grey'" icon="mdi-square-rounded" size="x-small" class="mr-1"></v-icon>
+          <span class="text-caption text-medium-emphasis">{{ groupName }}</span>
+        </div>
+        <div class="d-flex flex-wrap ga-1">
+          <v-chip v-for="tag in group.tags" :key="tag.name" size="small" variant="tonal" :color="tag.color">{{ tag.name }}</v-chip>
+        </div>
       </div>
     </div>
 
