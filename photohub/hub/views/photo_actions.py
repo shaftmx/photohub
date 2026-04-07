@@ -31,8 +31,8 @@ def get_photo(request, filename):
     for t in p.tags.all():
         _group = t.tag_group.name
         if _group not in _p["tags"]:
-            _p["tags"][_group] = []
-        _p["tags"][_group].append(t.name)
+            _p["tags"][_group] = {"color": t.tag_group.color, "tags": []}
+        _p["tags"][_group]["tags"].append({"name": t.name, "color": t.color})
 
     # Exif
     _p["exif"] = {}

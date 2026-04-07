@@ -19,11 +19,15 @@
     <div v-if="Object.keys(photo.tags).length === 0" class="text-caption text-medium-emphasis mb-4 ml-1">
       Aucun tag — cliquez sur Modifier pour en ajouter
     </div>
-    <div class="d-flex flex-wrap ga-1 mb-4">
-      <template v-for="(tagList, groupName) in photo.tags" :key="groupName">
-        <v-chip v-for="tagName in tagList" :key="tagName" size="small" variant="tonal"
-          prepend-icon="mdi-square-rounded">{{ tagName }}</v-chip>
-      </template>
+    <div v-for="(group, groupName) in photo.tags" :key="groupName" class="mb-3">
+      <div class="d-flex align-center mb-1">
+        <v-icon :color="group.color || 'grey'" icon="mdi-square-rounded" size="x-small" class="mr-1"></v-icon>
+        <span class="text-caption text-medium-emphasis">{{ groupName }}</span>
+      </div>
+      <div class="d-flex flex-wrap ga-1">
+        <v-chip v-for="tag in group.tags" :key="tag.name" size="small" variant="tonal"
+          :color="tag.color">{{ tag.name }}</v-chip>
+      </div>
     </div>
 
     <!-- Métadonnées -->
