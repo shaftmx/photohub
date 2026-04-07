@@ -37,7 +37,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-51=qtuhifsb)&!
 DEBUG = strtobool(os.environ.get('DEBUG', "False"))
 
 ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS  = os.environ.get('DJANGO_URL').split(",")
+CSRF_TRUSTED_ORIGINS = os.environ.get('DJANGO_URL', '').split(",")
 
 
 # Application definition
@@ -61,6 +61,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if DEBUG:
+    MIDDLEWARE.remove('django.middleware.csrf.CsrfViewMiddleware')
 
 ROOT_URLCONF = 'photohub.urls'
 

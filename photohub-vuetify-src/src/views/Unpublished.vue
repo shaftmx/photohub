@@ -198,8 +198,8 @@
 
 
 <script setup>
-import TagPhotos from '@/components/tagPhotos.vue'
-import PhotoDetail from '@/components/PhotoDetail.vue'
+import TagPhotos from '@/components/TagPhotos.vue'
+import PhotoDetail from '@/views/PhotoDetail.vue'
 </script>
 
 

@@ -53,7 +53,7 @@
 <script>
 import { defineComponent } from 'vue'
 import { getSharedDatas } from '../sharedDatas.js'
-import PhotoDetail from './PhotoDetail.vue'
+import PhotoDetail from '../views/PhotoDetail.vue'
 
 export default defineComponent({
   components: { PhotoDetail },
