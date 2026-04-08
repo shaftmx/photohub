@@ -13,11 +13,11 @@
       <v-toolbar-title class="text-body-1 font-weight-medium">Photo details</v-toolbar-title>
       <v-spacer></v-spacer>
       <v-btn v-if="photo && photo.published" icon variant="text" color="white"
-        :loading="loadingUnpublish" @click="confirmAction('unpublish')" title="Repasser en non publié">
+        :loading="loadingUnpublish" @click="confirmAction('unpublish')" title="Move back to unpublished">
         <v-icon>mdi-cloud-off-outline</v-icon>
       </v-btn>
       <v-btn icon variant="text" color="error"
-        :loading="loadingDelete" @click="confirmAction('delete')" title="Supprimer définitivement">
+        :loading="loadingDelete" @click="confirmAction('delete')" title="Delete permanently">
         <v-icon>mdi-delete-outline</v-icon>
       </v-btn>
     </v-toolbar>
@@ -42,7 +42,7 @@
       <div class="mb-4 d-flex align-center gap-2">
         <v-chip :color="photo.published ? 'success' : 'warning'" size="small" variant="tonal"
           :prepend-icon="photo.published ? 'mdi-cloud-check' : 'mdi-folder-upload'">
-          {{ photo.published ? 'Publié' : 'Non publié' }}
+          {{ photo.published ? 'Published' : 'Unpublished' }}
         </v-chip>
         <v-chip size="small" variant="outlined" class="ml-1">{{ photo.width }}×{{ photo.height }}</v-chip>
       </div>
@@ -73,16 +73,16 @@
       <div class="mb-4 d-flex align-center flex-wrap ga-1">
         <v-chip :color="photo.published ? 'success' : 'warning'" size="small" variant="tonal"
           :prepend-icon="photo.published ? 'mdi-cloud-check' : 'mdi-folder-upload'">
-          {{ photo.published ? 'Publié' : 'Non publié' }}
+          {{ photo.published ? 'Published' : 'Unpublished' }}
         </v-chip>
         <v-chip size="small" variant="outlined">{{ photo.width }}×{{ photo.height }}</v-chip>
         <v-spacer></v-spacer>
         <v-btn v-if="photo.published" icon size="small" variant="text" :loading="loadingUnpublish"
-          @click="confirmAction('unpublish')" title="Repasser en non publié">
+          @click="confirmAction('unpublish')" title="Move back to unpublished">
           <v-icon>mdi-cloud-off-outline</v-icon>
         </v-btn>
         <v-btn icon size="small" variant="text" color="error" :loading="loadingDelete"
-          @click="confirmAction('delete')" title="Supprimer définitivement">
+          @click="confirmAction('delete')" title="Delete permanently">
           <v-icon>mdi-delete-outline</v-icon>
         </v-btn>
       </div>
@@ -158,7 +158,7 @@ export default defineComponent({
       const { triggerAlert } = useAlertStore()
       const { data, error } = await useAsyncFetch(`/api/photos/${filename}`)
       if (error.value) {
-        triggerAlert('error', 'Erreur de chargement', error.value)
+        triggerAlert('error', 'Loading error', error.value)
       } else if (data.value.ERROR) {
         triggerAlert('error', data.value.message, data.value.details)
       } else {
@@ -183,12 +183,12 @@ export default defineComponent({
         description: this.editDescription
       })
       if (error.value) {
-        triggerAlert('error', 'Erreur de sauvegarde', error.value)
+        triggerAlert('error', 'Save error', error.value)
       } else if (data.value && data.value.ERROR) {
         triggerAlert('error', data.value.message, data.value.details)
       } else {
         this.photo.description = this.editDescription
-        triggerAlert('success', 'Description sauvegardée', '')
+        triggerAlert('success', 'Description saved', '')
       }
     },
 
@@ -211,11 +211,11 @@ export default defineComponent({
       const { triggerAlert } = useAlertStore()
       const { data, error } = await useAsyncPost(`/api/photos/${this.photo.filename}/delete`, {})
       if (error.value) {
-        triggerAlert('error', 'Erreur de suppression', error.value)
+        triggerAlert('error', 'Delete error', error.value)
       } else if (data.value && data.value.ERROR) {
         triggerAlert('error', data.value.message, data.value.details)
       } else {
-        triggerAlert('success', 'Photo supprimée', '')
+        triggerAlert('success', 'Photo deleted', '')
         this.$emit('deleted', this.photo.filename)
         this.close()
       }
@@ -227,11 +227,11 @@ export default defineComponent({
       const { triggerAlert } = useAlertStore()
       const { data, error } = await useAsyncPost(`/api/photos/${this.photo.filename}/unpublish`, {})
       if (error.value) {
-        triggerAlert('error', 'Erreur', error.value)
+        triggerAlert('error', 'Error', error.value)
       } else if (data.value && data.value.ERROR) {
         triggerAlert('error', data.value.message, data.value.details)
       } else {
-        triggerAlert('success', 'Photo dépubliée', '')
+        triggerAlert('success', 'Photo unpublished', '')
         this.$emit('unpublished', this.photo.filename)
         this.close()
       }

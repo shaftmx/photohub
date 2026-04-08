@@ -10,7 +10,7 @@
           <v-toolbar-title>{{ currentPhotoName }}</v-toolbar-title>
           <v-spacer></v-spacer>
           <v-toolbar-items>
-            <!-- Mobile: back to photo when detail is open -->
+            <!-- Mobile: back to photo when detail panel is open -->
             <v-btn v-if="showDetail && sharedDatas.isMobile" variant="text" prepend-icon="mdi-arrow-left"
               @click="showDetail = false">
               Photo
@@ -18,7 +18,7 @@
             <!-- Detail toggle -->
             <v-btn variant="text" :prepend-icon="showDetail ? 'mdi-information' : 'mdi-information-outline'"
               @click="toggleDetail()" :disabled="!displayedPhoto">
-              Détails
+              Details
             </v-btn>
           </v-toolbar-items>
         </v-toolbar>

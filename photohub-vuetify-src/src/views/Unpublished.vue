@@ -234,7 +234,7 @@ onPhotoDeleted(filename) {
   this.selectedPhotosFilenames = this.selectedPhotosFilenames.filter(f => f !== filename)
 },
 onPhotoUnpublished(filename) {
-  // Déjà non-publié, juste refresh
+  // Already unpublished, just refresh
   this.doGetPhotos()
 },
     async publishSelected() {

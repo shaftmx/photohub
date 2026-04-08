@@ -5,7 +5,7 @@
       rows="2" auto-grow class="mb-2" hide-details
       @update:model-value="$emit('update:descriptionModel', $event)"
       @blur="$emit('saveDescription')"></v-textarea>
-    <p class="text-caption text-medium-emphasis mb-4">La description est sauvegardée automatiquement</p>
+    <p class="text-caption text-medium-emphasis mb-4">Description is saved automatically</p>
 
     <!-- Tags -->
     <v-divider class="mb-3"></v-divider>
@@ -14,10 +14,10 @@
       <span class="text-body-2 font-weight-medium">Tags</span>
       <v-spacer></v-spacer>
       <v-btn size="x-small" variant="tonal" color="primary" prepend-icon="mdi-pencil"
-        @click="$emit('editTags', photo.filename)">Modifier</v-btn>
+        @click="$emit('editTags', photo.filename)">Edit</v-btn>
     </div>
     <div v-if="Object.keys(photo.tags).length === 0" class="text-caption text-medium-emphasis mb-4 ml-1">
-      Aucun tag — cliquez sur Modifier pour en ajouter
+      No tags — click Edit to add some
     </div>
     <div v-else class="rounded-lg mb-4" style="background: rgba(0,0,0,0.04);">
       <div v-for="(group, groupName, index) in photo.tags" :key="groupName"
@@ -37,36 +37,36 @@
     <v-divider class="mb-3"></v-divider>
     <div class="d-flex align-center mb-3">
       <v-icon size="small" class="mr-2" color="primary">mdi-information-outline</v-icon>
-      <span class="text-body-2 font-weight-medium">Métadonnées</span>
+      <span class="text-body-2 font-weight-medium">Metadata</span>
     </div>
     <v-list density="compact" class="pa-0 mb-4 rounded-lg" style="background: rgba(0,0,0,0.04);">
       <v-list-item v-if="photo.origin_filename" class="px-3 py-1">
         <template v-slot:prepend><v-icon size="x-small" class="mr-2 text-medium-emphasis">mdi-file-image</v-icon></template>
-        <v-list-item-title class="text-caption text-medium-emphasis">Fichier original</v-list-item-title>
+        <v-list-item-title class="text-caption text-medium-emphasis">Original file</v-list-item-title>
         <v-list-item-subtitle class="text-caption text-truncate">{{ photo.origin_filename }}</v-list-item-subtitle>
       </v-list-item>
       <v-divider v-if="photo.origin_filename"></v-divider>
       <v-list-item class="px-3 py-1">
         <template v-slot:prepend><v-icon size="x-small" class="mr-2 text-medium-emphasis">mdi-calendar</v-icon></template>
-        <v-list-item-title class="text-caption text-medium-emphasis">Date photo</v-list-item-title>
+        <v-list-item-title class="text-caption text-medium-emphasis">Photo date</v-list-item-title>
         <v-list-item-subtitle class="text-caption">{{ formatDate(photo.date) }}</v-list-item-subtitle>
       </v-list-item>
       <v-divider></v-divider>
       <v-list-item class="px-3 py-1">
         <template v-slot:prepend><v-icon size="x-small" class="mr-2 text-medium-emphasis">mdi-upload</v-icon></template>
-        <v-list-item-title class="text-caption text-medium-emphasis">Uploadé le</v-list-item-title>
+        <v-list-item-title class="text-caption text-medium-emphasis">Uploaded on</v-list-item-title>
         <v-list-item-subtitle class="text-caption">{{ formatDate(photo.upload_date) }}</v-list-item-subtitle>
       </v-list-item>
       <v-divider></v-divider>
       <v-list-item class="px-3 py-1">
         <template v-slot:prepend><v-icon size="x-small" class="mr-2 text-medium-emphasis">mdi-account</v-icon></template>
-        <v-list-item-title class="text-caption text-medium-emphasis">Propriétaire</v-list-item-title>
+        <v-list-item-title class="text-caption text-medium-emphasis">Owner</v-list-item-title>
         <v-list-item-subtitle class="text-caption">{{ photo.owner }}</v-list-item-subtitle>
       </v-list-item>
       <v-divider></v-divider>
       <v-list-item class="px-3 py-1">
         <template v-slot:prepend><v-icon size="x-small" class="mr-2 text-medium-emphasis">mdi-fingerprint</v-icon></template>
-        <v-list-item-title class="text-caption text-medium-emphasis">Nom de fichier (md5)</v-list-item-title>
+        <v-list-item-title class="text-caption text-medium-emphasis">Filename (md5)</v-list-item-title>
         <v-list-item-subtitle class="text-caption text-truncate" style="font-family: monospace; font-size: 10px;">{{ photo.filename }}</v-list-item-subtitle>
       </v-list-item>
     </v-list>
@@ -82,7 +82,7 @@
     <v-expand-transition>
       <div v-show="showExif">
         <div v-if="!photo.exif || Object.keys(photo.exif).length === 0" class="text-caption text-medium-emphasis ml-1 mb-4">
-          Aucune donnée EXIF disponible
+          No EXIF data available
         </div>
         <v-list v-else density="compact" class="pa-0 mb-4 rounded-lg" style="background: rgba(0,0,0,0.04);">
           <template v-for="(value, key, index) in photo.exif" :key="key">
