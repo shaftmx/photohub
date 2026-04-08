@@ -1,6 +1,5 @@
 <template>
   <v-sheet v-if="displayed">
-    <!-- bg-surface-variant -->
 
     <!-- ### Page Header -->
     <v-sheet>
@@ -26,7 +25,6 @@
         </v-sheet>
       </v-sheet>
 
-
       <!-- Photo grid size selector -->
       <v-sheet class="d-flex mb-0">
         <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
@@ -45,7 +43,7 @@
     <v-sheet v-if="!singleDisplay">
       <v-container class="grid ma-0 pa-0" :style="'--gridmargin: ' + sharedDatas.gridMargin" fluid>
         <div :style="'--ratio: ' + photo['height'] / photo['width'] + ';  --height: ' + sharedDatas.gridSize" class="item"
-          v-for="(photo) in photos">
+          v-for="(photo) in photos" :key="photo.filename">
           <v-card class="mx-auto">
             <v-img :src="paths[sharedDatas.gridPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']">
             </v-img>
@@ -54,72 +52,23 @@
         <div class="placeholder"></div>
       </v-container>
 
-      <!-- TAGS -->
+      <!-- TAGS — common tags applied to all selected photos -->
       <h1 class="text-h4 mt-6 mb-0">Tags</h1>
-
-      <v-sheet class="d-flex align-content-start flex-wrap">
-        <v-sheet v-for="(group) in tagGroups" class="mr-2 pa-0" style="min-width: 18ch">
-          <h4><v-icon :color="group.color || 'grey'" icon="mdi-square-rounded" size="small" class="mr-1"></v-icon>{{
-            group.name }}</h4>
-
-          <!-- Regular tags -->
-          <v-chip-group class="d-flex flex-column mb-6" v-if="group.type == 'checkbox'" multiple
-            v-model="stagingCommonTags[group.name]" direction="vertical">
-            <v-chip v-for="(tag) in group.tags" size="default" :value="tag.name" rounded="lg" density="compact"
-              variant="outlined" filter :color="tag.color">{{ tag.name }}</v-chip>
-          </v-chip-group>
-
-          <!-- Dynamic tags -->
-          <v-combobox closable-chips v-if="group.type == 'combobox'" v-model="stagingCommonTags[group.name]"
-            :items="group.tags.map(({ name }) => (name))" chips clearable multiple density="compact"
-            direction="horizontal" variant="solo-inverted">
-            <template v-slot:selection="{ attrs, items, select, selected }">
-              <v-chip :color="tags[item].color" v-bind="attrs" :model-value="selected" closable @click="select"
-                @click:close="remove(item)">
-              </v-chip>
-            </template>
-          </v-combobox>
-        </v-sheet>
-      </v-sheet>
-
+      <!-- TagGroupsEditor handles the tag UI, v-model syncs with stagingCommonTags -->
+      <TagGroupsEditor v-model="stagingCommonTags" :tag-groups="tagGroups" />
     </v-sheet>
 
 
-    <!-- #### Single tags mode -->
+    <!-- #### Single tags mode — one row per photo with its own tag editor -->
     <v-sheet v-if="singleDisplay">
+      <v-sheet class="d-flex mb-10" v-for="photo in taggedPhotos" :key="photo.filename">
 
-      <v-sheet class="d-flex mb-10" v-for="(photo) in taggedPhotos">
-        <!-- tags -->
+        <!-- Tags column — TagGroupsEditor bound to this specific photo's tags -->
         <v-sheet class="ma-0 pa-0 me-auto">
-
-          <!-- TAGS -->
-          <v-sheet class="d-flex align-content-start flex-wrap">
-            <v-sheet v-for="(group) in tagGroups" class="mr-2 pa-0" style="min-width: 18ch">
-              <h4><v-icon :color="group.color || 'grey'" icon="mdi-square-rounded" size="small" class="mr-1"></v-icon>{{
-                group.name }}</h4>
-
-              <!-- Regular tags -->
-              <v-chip-group class="d-flex flex-column" v-if="group.type == 'checkbox'" multiple
-                v-model="photo.tags[group.name]" direction="vertical">
-                <v-chip v-for="(tag) in group.tags" size="default" :value="tag.name" rounded="lg" density="compact"
-                  variant="outlined" filter :color="tag.color">{{ tag.name }}</v-chip>
-              </v-chip-group>
-
-              <!-- Dynamic tags -->
-              <v-combobox v-if="group.type == 'combobox'" v-model="photo.tags[group.name]"
-                :items="group.tags.map(({ name }) => (name))" chips clearable multiple density="compact"
-                direction="horizontal" variant="solo-inverted">
-                <template v-slot:selection="{ attrs, items, select, selected }">
-                  <v-chip :color="tags[item].color" v-bind="attrs" :model-value="selected" closable @click="select"
-                    @click:close="remove(item)">
-                  </v-chip>
-                </template>
-              </v-combobox>
-            </v-sheet>
-          </v-sheet>
-
+          <TagGroupsEditor v-model="photo.tags" :tag-groups="tagGroups" />
         </v-sheet>
-        <!-- Picture -->
+
+        <!-- Picture column -->
         <v-sheet class="ma-0 pa-0">
           <div :style="'--ratio: ' + photo['height'] / photo['width'] + ';  --height: ' + sharedDatas.gridSize"
             class="item">
@@ -147,19 +96,23 @@
 </template>
 
 
-<script >
+<script>
 import { defineComponent } from 'vue';
 import { getSharedDatas } from '../sharedDatas.js'
 import '../styles/galleryGrid.css'
 import { useAlertStore } from '../stores/alert'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
+import TagGroupsEditor from './TagGroupsEditor.vue'
 
 export default defineComponent({
+  components: { TagGroupsEditor },
+
   props: {
     allPhotos: Object,
     selectedPhotosFilenames: Array,
     paths: Object,
   },
+
   data: () => ({
     currentCommonTags: {},
     stagingCommonTags: {},
@@ -174,16 +127,13 @@ export default defineComponent({
     singleDisplay: false,
     loading: false,
   }),
+
   mounted() {
     this.sharedDatas = getSharedDatas(this)
-
     // Override default grid size in order to display all as small pictures
     this.sharedDatas.gridSize = this.sharedDatas.gridMin
   },
-  setup(props) {
-  },
-  watch: {
-  },
+
   methods: {
     open() {
       this.displayed = true
@@ -191,16 +141,19 @@ export default defineComponent({
       this.doGetTags()
       this.genSelectedPhotos()
     },
+
     close() {
       this.$emit('closed', true)
       this.displayed = false
       this.stagingCommonTags = {}
       this.taggedPhotos = []
     },
+
     scrollTop() {
       document.body.scrollTop = 0; // For Safari
       document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
     },
+
     async doGetTags() {
       window.console.log("--doGetTags");
       // Get alert store to be able to trigger some alert messages
@@ -215,6 +168,7 @@ export default defineComponent({
         this.tagGroups = data.value.data.tag_groups
       }
     },
+
     genSelectedPhotos() {
       window.console.log("--genSelectedPhotos");
       // Init
@@ -256,8 +210,8 @@ export default defineComponent({
       // Doing deep copy because this object contain nested objects
       // https://medium.com/@navneetskahlon/shallow-and-deep-copy-in-javascript-a-guide-with-lodash-structuredclone-and-json-methods-071ad2da5cfc#:~:text=A%20deep%20copy%20creates%20a,t%20affect%20the%20original%20object.&text=Lodash%20provides%20a%20cloneDeep%20method,deep%20copying%20complex%20data%20structures.
       this.taggedPhotos = JSON.parse(JSON.stringify(this.photos))
-
     },
+
     async doApplyTags() {
       window.console.log("--doApplyTags");
       this.loading = true

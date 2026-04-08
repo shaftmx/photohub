@@ -54,12 +54,15 @@
         @update:descriptionModel="editDescription = $event"
         @update:showExif="showExif = $event"
         @saveDescription="saveDescription"
-        @editTags="$emit('editTags', $event)"
+        @editTags="editTagsDialog = true"
       />
     </div>
 
     <ConfirmDialog v-model="confirmDialog" :action="confirmDialogAction"
       :loading="loadingDelete || loadingUnpublish" @confirm="executeAction" />
+
+    <!-- Edit tags dialog — opens when user clicks "Edit" in the tags section -->
+    <EditTagsDialog v-model="editTagsDialog" :photo="photo" @tagsUpdated="onTagsUpdated" />
   </v-navigation-drawer>
 
   <!-- ── EMBEDDED MODE (inside DisplayPhoto split layout) ── -->
@@ -94,12 +97,15 @@
         @update:descriptionModel="editDescription = $event"
         @update:showExif="showExif = $event"
         @saveDescription="saveDescription"
-        @editTags="$emit('editTags', $event)"
+        @editTags="editTagsDialog = true"
       />
     </div>
 
     <ConfirmDialog v-model="confirmDialog" :action="confirmDialogAction"
       :loading="loadingDelete || loadingUnpublish" @confirm="executeAction" />
+
+    <!-- Edit tags dialog — opens when user clicks "Edit" in the tags section -->
+    <EditTagsDialog v-model="editTagsDialog" :photo="photo" @tagsUpdated="onTagsUpdated" />
   </div>
 </template>
 
@@ -111,15 +117,16 @@ import { useAlertStore } from '../stores/alert'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import PhotoDetailBody from '../components/PhotoDetailBody.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import EditTagsDialog from '../components/EditTagsDialog.vue'
 
 export default defineComponent({
-  components: { PhotoDetailBody, ConfirmDialog },
+  components: { PhotoDetailBody, ConfirmDialog, EditTagsDialog },
 
   props: {
     embedded: { type: Boolean, default: false },
   },
 
-  emits: ['closed', 'deleted', 'unpublished', 'editTags'],
+  emits: ['closed', 'deleted', 'unpublished'],
 
   data: () => ({
     displayed: false,
@@ -132,6 +139,7 @@ export default defineComponent({
     showExif: true,
     confirmDialog: false,
     confirmDialogAction: null,
+    editTagsDialog: false,
     sharedDatas: {},
   }),
 
@@ -190,6 +198,11 @@ export default defineComponent({
         this.photo.description = this.editDescription
         triggerAlert('success', 'Description saved', '')
       }
+    },
+
+    // Called when EditTagsDialog successfully saves — reload photo to reflect new tags
+    onTagsUpdated(filename) {
+      this.open(filename)
     },
 
     confirmAction(action) {

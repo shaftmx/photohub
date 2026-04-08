@@ -59,7 +59,6 @@
               :embedded="true"
               @deleted="onDeleted"
               @unpublished="onUnpublished"
-              @editTags="onEditTags"
             />
           </div>
         </div>
@@ -83,7 +82,7 @@ export default defineComponent({
     paths: Object,
   },
 
-  emits: ['photoDeleted', 'photoUnpublished', 'editTags'],
+  emits: ['photoDeleted', 'photoUnpublished'],
 
   data: () => ({
     displayed: false,
@@ -171,10 +170,6 @@ export default defineComponent({
       this.closePhoto()
     },
 
-    onEditTags(filename) {
-      this.closePhoto()
-      this.$emit('editTags', filename)
-    },
   },
 })
 </script>
