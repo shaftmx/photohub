@@ -89,7 +89,14 @@
             <v-divider v-if="index > 0"></v-divider>
             <v-list-item class="px-3 py-1">
               <v-list-item-title class="text-caption text-medium-emphasis">{{ formatExifKey(key) }}</v-list-item-title>
-              <v-list-item-subtitle class="text-caption">{{ value }}</v-list-item-subtitle>
+              <!-- GPSDDFormat: show coordinates + Google Maps link -->
+              <v-list-item-subtitle v-if="key === 'GPSDDFormat'" class="text-caption d-flex align-center flex-wrap ga-2">
+                <span>{{ value }}</span>
+                <a :href="googleMapsUrl(value)" target="_blank" rel="noopener" class="text-caption text-primary d-flex align-center">
+                  <v-icon size="x-small" class="mr-1">mdi-map-marker</v-icon>Open in Google Maps
+                </a>
+              </v-list-item-subtitle>
+              <v-list-item-subtitle v-else class="text-caption">{{ value }}</v-list-item-subtitle>
             </v-list-item>
           </template>
         </v-list>
@@ -123,6 +130,12 @@ export default {
 
     formatExifKey(key) {
       return key.replace(/([A-Z])/g, ' $1').replace(/^GPS /, 'GPS ').trim()
+    },
+
+    // Build a Google Maps URL from a GPSDDFormat value ("lat lon")
+    googleMapsUrl(value) {
+      const [lat, lon] = value.trim().split(' ')
+      return `https://www.google.com/maps?q=${lat},${lon}`
     },
   },
 }
