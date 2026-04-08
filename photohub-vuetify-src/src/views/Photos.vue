@@ -135,7 +135,7 @@
     <!-- Filters -->
     <!-- Quick filters -->
     <v-autocomplete v-if="displayQuickFilters" prepend-icon="mdi-text-search-variant" return-object closable-chips
-      v-model="filterQuick" item-title="name" :items="tags" chips clearable multiple density="compact"
+      v-model="filterQuick" item-title="name" :items="availableTagsFlat" chips clearable multiple density="compact"
       direction="horizontal" variant="solo-inverted">
       <template v-slot:selection="{ attrs, items, select, selected }">
         <v-chip :color="tags[item].color" v-bind="attrs" :model-value="selected" closable @click="select"
@@ -144,32 +144,13 @@
       </template>
     </v-autocomplete>
 
-    <!-- Filter detailled -->
-    <v-sheet v-if="!displayQuickFilters" class="d-flex align-content-start flex-wrap">
-      <v-sheet v-for="(group) in tagGroups" class="mr-2 pa-0" style="min-width: 18ch">
-        <h4><v-icon :color="group.color || 'grey'" icon="mdi-square-rounded" size="small" class="mr-1"></v-icon>{{
-          group.name }}</h4>
-
-        <!-- Regular tags -->
-        <v-chip-group return-object class="d-flex flex-column mb-6" v-if="group.type == 'checkbox'" multiple
-          v-model="filterDetail[group.name]" direction="vertical">
-          <v-chip v-for="(tag) in group.tags" size="default" :value="tag" rounded="lg" density="compact"
-            variant="outlined" filter :color="tag.color">{{ tag.name }}</v-chip>
-        </v-chip-group>
-
-        <!-- Dynamic tags -->
-        <v-autocomplete return-object closable-chips v-if="group.type == 'combobox'" v-model="filterDetail[group.name]"
-          item-title="name" :items="group.tags" chips clearable multiple density="compact" direction="horizontal"
-          variant="solo-inverted">
-          <template v-slot:selection="{ attrs, items, select, selected }">
-            <v-chip :color="tags[item].color" v-bind="attrs" :model-value="selected" closable @click="select"
-              @click:close="remove(item)">
-            </v-chip>
-          </template>
-        </v-autocomplete>
-      </v-sheet>
-    </v-sheet>
-    <!-- end filters -->
+    <!-- Detailed filter — only shows tags present on at least one photo (from allPhotos) -->
+    <TagFilter
+      v-if="!displayQuickFilters"
+      v-model="filterDetail"
+      :tag-groups="tagGroups"
+      :photos="allPhotos"
+    />
 
 
 
@@ -193,6 +174,7 @@
 
 <script setup>
 import DisplayPhoto from '@/components/DisplayPhoto.vue'
+import TagFilter from '@/components/TagFilter.vue'
 </script>
 
 
@@ -207,7 +189,8 @@ export default {
   data: () => ({
     title: "Photos",
     subtitle: "All photos that have been published",
-    photos: [],
+    photos: [],    // Filtered photo list — updated on each filter change
+    allPhotos: [], // Full photo list loaded once — used to compute available tags
     paths: {},
     sharedDatas: {},
     tags: [],
@@ -220,6 +203,20 @@ export default {
     filterDetail: {}, // This is used by filter display with tags
     filterMode: "basic", // Autofilled parameter based on this.displayQuickFilters
   }),
+  computed: {
+    // Flat list of tag objects present on at least one photo in allPhotos.
+    // Used by the quick filter autocomplete to avoid suggesting impossible tags.
+    availableTagsFlat() {
+      const names = new Set()
+      this.allPhotos.forEach(photo => {
+        Object.values(photo.tags || {}).forEach(tagList => {
+          tagList.forEach(tagName => names.add(tagName))
+        })
+      })
+      return this.tags.filter(tag => names.has(tag.name))
+    },
+  },
+
   mounted() {
     requireAuth(this)
     this.sharedDatas = getSharedDatas(this)
@@ -299,7 +296,11 @@ export default {
       if (this.$route.query.filter_mode) {
         if (this.$route.query.filter_mode == "basic") { this.displayQuickFilters = true } else { this.displayQuickFilters = false }
       }
-      this.doGetPhotos()
+      await this.doGetPhotos()
+      // Store the full unfiltered photo list once — used by TagFilter to compute available tags
+      if (this.allPhotos.length === 0) {
+        this.allPhotos = [...this.photos]
+      }
     },
 
     urlQueryTags(tags, filter_mode) {
