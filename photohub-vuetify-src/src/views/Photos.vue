@@ -164,8 +164,14 @@
     <v-container class="grid ma-0 pa-0" :style="'--gridmargin: ' + sharedDatas.gridMargin" fluid>
       <div :style="'--ratio: ' + photo['height'] / photo['width'] + ';  --height: ' + sharedDatas.gridSize" class="item"
         v-for="(photo) in photos">
-        <img @click="$refs.displayPhoto.displayPhoto(photo.filename)"
-          :src="paths[sharedDatas.gridPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']" />
+        <div class="item-inner">
+          <img @click="$refs.displayPhoto.displayPhoto(photo.filename)"
+            :src="paths[sharedDatas.gridPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']" />
+          <!-- Favorite shortcut — always visible but subtle; red when active -->
+          <button class="favorite-btn" :class="{ active: photo.favorite }" @click.stop="toggleFavorite(photo)" :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
+            <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
+          </button>
+        </div>
       </div>
       <div class="placeholder"></div>
     </v-container>
@@ -180,7 +186,7 @@ import TagFilter from '@/components/TagFilter.vue'
 
 <script>
 import '../styles/galleryGrid.css'
-import { useAsyncFetch } from '../reactivefetch.js'
+import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { requireAuth } from '../authrequired.js'
 import { useAlertStore } from '../stores/alert'
 import { getSharedDatas } from '../sharedDatas.js'
@@ -263,6 +269,19 @@ export default {
     },
   },
   methods: {
+    async toggleFavorite(photo) {
+      const newValue = !photo.favorite
+      const { triggerAlert } = useAlertStore()
+      const { data, error } = await useAsyncPost(`/api/photos/${photo.filename}/update`, { favorite: newValue })
+      if (error.value) {
+        triggerAlert('error', 'Save error', error.value)
+      } else if (data.value && data.value.ERROR) {
+        triggerAlert('error', data.value.message, data.value.details)
+      } else {
+        photo.favorite = newValue
+      }
+    },
+
     // Quand une photo est supprimée depuis le drawer de détail
     onPhotoDeleted(filename) {
       this.photos = this.photos.filter(p => p.filename !== filename)
