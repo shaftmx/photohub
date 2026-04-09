@@ -7,8 +7,16 @@
   @photoUnpublished="onPhotoUnpublished"
 ></DisplayPhoto>
 
+<TagPhotos
+  ref="tagPhotos"
+  :paths="paths"
+  :allPhotos="photos"
+  :selectedPhotosFilenames="selectedFilenames"
+  @closed="displayed = true; selectionMode = false"
+></TagPhotos>
+
   <!-- Header -->
-  <v-sheet>
+  <v-sheet v-if="displayed">
     <v-sheet>
       <v-sheet :class="!sharedDatas.isMobile ? 'ma-2 pa-2 me-auto' : ''">
         <h1 v-if="!sharedDatas.isMobile" class="text-h4 mb-4">{{ title }}</h1>
@@ -18,23 +26,93 @@
         <h1 v-if="sharedDatas.isMobile" class="text-body-2 mb-4">{{ subtitle }}</h1>
       </v-sheet>
 
-      <!-- Buttons: Tag, Publish, grid size slider -->
+      <!-- Row 1: action buttons -->
       <v-sheet class="d-flex mb-2 align-center">
         <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
+        <!-- Right: count + all/none + actions menu + select toggle -->
         <v-sheet class="d-flex ma-0 pa-0 align-center ga-2">
-          <v-btn @click="displayed = false; $refs.tagPhotos.open()" color="primary" variant="tonal"
-            :size="sharedDatas.isMobile ? 'small' : 'default'" density="compact" prepend-icon="mdi-tag-arrow-right"
-            :disabled="false">Tag</v-btn>
-          <v-btn @click="confirmPublishDialog = true; loading = true" color="primary" variant="flat"
-            :size="sharedDatas.isMobile ? 'small' : 'default'" density="compact" prepend-icon="mdi-cloud-check"
-            :loading="loading" :disabled="false">Publish</v-btn>
-          <v-slider v-model="sharedDatas.gridSize" :style="sharedDatas.isMobile ? 'width: 120px' : 'width: 300px'" :max="sharedDatas.gridMax"
-            :min="sharedDatas.gridMin" hide-details color="primary" append-icon="mdi-image-size-select-actual"
-            density="compact" track-size="3" thumb-size="20">
+          <template v-if="selectionMode">
+            <span class="text-body-2 text-medium-emphasis">{{ selectedFilenames.length }} selected</span>
+            <v-btn
+              @click="selectedFilenames.length === photos.length ? deselectAll() : selectAll()"
+              :size="sharedDatas.isMobile ? 'small' : 'default'"
+              color="secondary" variant="tonal" density="compact"
+              :prepend-icon="selectedFilenames.length === photos.length ? 'mdi-select-off' : 'mdi-select-all'"
+            >{{ selectedFilenames.length === photos.length ? 'Deselect all' : 'Select all' }}</v-btn>
+            <!-- Bulk actions menu -->
+            <v-menu>
+              <template v-slot:activator="{ props }">
+                <v-btn v-bind="props" :size="sharedDatas.isMobile ? 'small' : 'default'" color="primary" variant="tonal"
+                  density="compact" append-icon="mdi-chevron-down" :disabled="selectedFilenames.length < 1">Actions</v-btn>
+              </template>
+              <v-list density="compact">
+                <v-list-item prepend-icon="mdi-tag-arrow-right" @click="displayed = false; $refs.tagPhotos.open()">
+                  <v-list-item-title>Tag</v-list-item-title>
+                </v-list-item>
+                <v-list-item prepend-icon="mdi-heart" @click="bulkSetFavorite(true)">
+                  <v-list-item-title>Add to favorites</v-list-item-title>
+                </v-list-item>
+                <v-list-item prepend-icon="mdi-heart-off-outline" @click="bulkSetFavorite(false)">
+                  <v-list-item-title>Remove from favorites</v-list-item-title>
+                </v-list-item>
+                <v-list-item prepend-icon="mdi-cloud-off-outline" @click="confirmBulkUnpublishDialog = true">
+                  <v-list-item-title>Unpublish</v-list-item-title>
+                </v-list-item>
+                <v-divider></v-divider>
+                <v-list-item prepend-icon="mdi-delete" @click="confirmBulkDeleteDialog = true" class="text-error">
+                  <v-list-item-title>Delete</v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-menu>
+          </template>
+          <v-btn
+            :color="selectionMode ? 'primary' : 'default'"
+            :variant="selectionMode ? 'tonal' : 'outlined'"
+            :size="sharedDatas.isMobile ? 'small' : 'default'"
+            density="compact"
+            :prepend-icon="selectionMode ? 'mdi-close' : 'mdi-checkbox-multiple-marked-outline'"
+            @click="toggleSelectionMode()"
+          >{{ selectionMode ? 'Cancel' : 'Select' }}</v-btn>
+        </v-sheet>
+      </v-sheet>
+
+      <!-- Row 2: grid size slider -->
+      <v-sheet class="d-flex mb-0">
+        <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
+        <v-sheet class="d-flex ma-0 pa-0 align-end justify-end w-50">
+          <v-slider v-model="sharedDatas.gridSize" style="max-width: 300px; width: 100%"
+            :max="sharedDatas.gridMax" :min="sharedDatas.gridMin" hide-details color="primary"
+            append-icon="mdi-image-size-select-actual" density="compact" track-size="2" thumb-size="15">
           </v-slider>
         </v-sheet>
       </v-sheet>
     </v-sheet>
+
+    <!-- CONFIRM BULK UNPUBLISH -->
+    <v-dialog v-model="confirmBulkUnpublishDialog" persistent width="auto">
+      <v-card>
+        <v-card-title class="text-h5">Unpublish {{ selectedFilenames.length }} photo{{ selectedFilenames.length > 1 ? 's' : '' }}?</v-card-title>
+        <v-card-text>Selected photos will be moved back to unpublished and removed from the gallery.</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="secondary" density="compact" variant="text" @click="confirmBulkUnpublishDialog = false">Cancel</v-btn>
+          <v-btn color="warning" density="compact" variant="tonal" @click="confirmBulkUnpublishDialog = false; bulkUnpublish()">Unpublish</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- CONFIRM BULK DELETE -->
+    <v-dialog v-model="confirmBulkDeleteDialog" persistent width="auto">
+      <v-card>
+        <v-card-title class="text-h5">Delete {{ selectedFilenames.length }} photo{{ selectedFilenames.length > 1 ? 's' : '' }}?</v-card-title>
+        <v-card-text>This will <strong>permanently delete</strong> the selected photos and their files. This cannot be undone.</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="secondary" density="compact" variant="text" @click="confirmBulkDeleteDialog = false">Cancel</v-btn>
+          <v-btn color="error" density="compact" variant="tonal" @click="confirmBulkDeleteDialog = false; bulkDelete()">Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Filter bar: toggle + collapsible filter panel -->
     <v-sheet class="mb-2">
@@ -140,16 +218,21 @@
       </v-expand-transition>
     </v-sheet>
 
-    <!-- TODO check behavior when 0 pictures -->
-    <!-- v-if="photos.length > 0" -->
     <v-container class="grid ma-0 pa-0" :style="'--gridmargin: ' + sharedDatas.gridMargin" fluid>
       <div :style="'--ratio: ' + photo['height'] / photo['width'] + ';  --height: ' + sharedDatas.gridSize" class="item"
         v-for="(photo) in photos">
         <div class="item-inner">
-          <img @click="$refs.displayPhoto.displayPhoto(photo.filename)"
-            :src="paths[sharedDatas.gridPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']" />
-          <!-- Favorite shortcut — visible on hover (desktop only) -->
-          <button class="favorite-btn" :class="{ active: photo.favorite }" @click.stop="toggleFavorite(photo)" :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
+          <img
+            @click="selectionMode ? selectDeselect(photo) : $refs.displayPhoto.displayPhoto(photo.filename)"
+            :src="paths[sharedDatas.gridPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']"
+            :style="selectionMode ? 'cursor: pointer' : ''"
+          />
+          <!-- Selection overlay — visible when in selection mode -->
+          <div v-if="selectionMode" class="selection-overlay" :class="{ selected: selectedFilenames.includes(photo.filename) }" @click="selectDeselect(photo)">
+            <v-icon v-if="selectedFilenames.includes(photo.filename)" color="white" size="28">mdi-check-circle</v-icon>
+          </div>
+          <!-- Favorite shortcut — visible on hover (desktop only), hidden in selection mode -->
+          <button v-if="!selectionMode" class="favorite-btn" :class="{ active: photo.favorite }" @click.stop="toggleFavorite(photo)" :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
             <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
           </button>
         </div>
@@ -162,6 +245,7 @@
 <script setup>
 import DisplayPhoto from '@/components/DisplayPhoto.vue'
 import TagFilter from '@/components/TagFilter.vue'
+import TagPhotos from '@/components/TagPhotos.vue'
 </script>
 
 
@@ -174,6 +258,7 @@ import { getSharedDatas } from '../sharedDatas.js'
 
 export default {
   data: () => ({
+    displayed: true,
     title: "Photos",
     subtitle: "All photos that have been published",
     photos: [],         // Filtered photo list — updated on each filter change
@@ -183,10 +268,15 @@ export default {
     tags: [],
     tagGroups: [],
     loading: false,
+    // Selection mode
+    selectionMode: false,
+    selectedFilenames: [],
+    confirmBulkDeleteDialog: false,
+    confirmBulkUnpublishDialog: false,
+    // Filters
     filterTagMode: 'quick', // 'quick' | 'detail' | 'notags'
     filterPanelOpen: true,  // Detailed filter panel open/closed
     showAllTags: true,      // true = all published-photo tags / false = only tags in current selection
-    // Filters will be synced using watch
     filter: [], // This is the actual computed filters used and displayed as query parameter
     filterQuick: [], // This is used by quick filter
     filterDetail: {}, // This is used by filter display with tags
@@ -196,16 +286,12 @@ export default {
   }),
 
   computed: {
-    // Derives the API filter_mode param from filterTagMode
     filterMode() {
       if (this.filterTagMode === 'quick') return 'basic'
       if (this.filterTagMode === 'detail') return 'smart'
       return 'notags'
     },
 
-    // Tags shown in the quick filter autocomplete.
-    // showAllTags=true: all tags used on published photos (from API).
-    // showAllTags=false: only tags present in the current filtered selection.
     availableTagsFlat() {
       if (this.showAllTags) return this.availableTags
       const names = new Set()
@@ -217,8 +303,6 @@ export default {
       return this.availableTags.filter(tag => names.has(tag.name))
     },
 
-    // tagGroups filtered to only include tags present in availableTags (used on published photos).
-    // This is the base for TagFilter — avoids showing DB tags never assigned to any photo.
     tagGroupsFiltered() {
       const availableNames = new Set(this.availableTags.map(t => t.name))
       return this.tagGroups
@@ -261,7 +345,6 @@ export default {
 
     "filter"(newfilter, oldfilter) {
       console.log("--watch filter")
-      // Put filter in the url in order to be able to share it
       this.$router.push(this.urlQueryTags(newfilter, this.filterMode))
       this.doGetPhotos()
     },
@@ -280,14 +363,81 @@ export default {
 
     "filterTagMode"(newMode, oldMode) {
       console.log("--watch filterTagMode")
-      // Put filter in the url in order to be able to share it
       this.$router.push(this.urlQueryTags(this.filter, this.filterMode))
       this.doGetPhotos()
     },
   },
 
   methods: {
-    // Remove a single tag from the detailed filter (used by summary chips when panel is closed)
+    toggleSelectionMode() {
+      this.selectionMode = !this.selectionMode
+      if (!this.selectionMode) this.selectedFilenames = []
+    },
+
+    selectDeselect(photo) {
+      const idx = this.selectedFilenames.indexOf(photo.filename)
+      if (idx === -1) this.selectedFilenames.push(photo.filename)
+      else this.selectedFilenames.splice(idx, 1)
+    },
+
+    selectAll() {
+      this.selectedFilenames = this.photos.map(p => p.filename)
+    },
+
+    deselectAll() {
+      this.selectedFilenames = []
+    },
+
+    async bulkDelete() {
+      const { triggerAlert } = useAlertStore()
+      const toDelete = [...this.selectedFilenames]
+      for (const filename of toDelete) {
+        const { data, error } = await useAsyncPost(`/api/photos/${filename}/delete`, {})
+        if (error.value) {
+          triggerAlert('error', 'Delete error', error.value)
+        } else if (data.value && data.value.ERROR) {
+          triggerAlert('error', data.value.message, data.value.details)
+        } else {
+          this.photos = this.photos.filter(p => p.filename !== filename)
+          this.selectedFilenames = this.selectedFilenames.filter(f => f !== filename)
+        }
+      }
+      this.toggleSelectionMode()
+    },
+
+    async bulkUnpublish() {
+      const { triggerAlert } = useAlertStore()
+      const toUnpublish = [...this.selectedFilenames]
+      for (const filename of toUnpublish) {
+        const { data, error } = await useAsyncPost(`/api/photos/${filename}/unpublish`, {})
+        if (error.value) {
+          triggerAlert('error', 'Unpublish error', error.value)
+        } else if (data.value && data.value.ERROR) {
+          triggerAlert('error', data.value.message, data.value.details)
+        } else {
+          this.photos = this.photos.filter(p => p.filename !== filename)
+          this.selectedFilenames = this.selectedFilenames.filter(f => f !== filename)
+        }
+      }
+      this.toggleSelectionMode()
+    },
+
+    async bulkSetFavorite(newValue) {
+      const { triggerAlert } = useAlertStore()
+      for (const filename of this.selectedFilenames) {
+        const { data, error } = await useAsyncPost(`/api/photos/${filename}/update`, { favorite: newValue })
+        if (error.value) {
+          triggerAlert('error', 'Save error', error.value)
+        } else if (data.value && data.value.ERROR) {
+          triggerAlert('error', data.value.message, data.value.details)
+        } else {
+          const photo = this.photos.find(p => p.filename === filename)
+          if (photo) photo.favorite = newValue
+        }
+      }
+      this.toggleSelectionMode()
+    },
+
     removeDetailFilter(tagName) {
       const updated = {}
       for (const [group, tags] of Object.entries(this.filterDetail)) {
@@ -297,13 +447,11 @@ export default {
       this.filterDetail = updated
     },
 
-    // Called when the filter mode toggle changes (quick / detailed / notags)
     onFilterModeChange(value) {
-      if (value === null) return // prevent deselecting all buttons
+      if (value === null) return
       if (value === this.filterTagMode) return
 
       if (value === 'notags') {
-        // Clear tag filters when switching to notags
         this.filterQuick = []
         this.filterDetail = {}
         this.filter = []
@@ -311,10 +459,7 @@ export default {
       } else {
         const wasNotags = this.filterTagMode === 'notags'
         this.filterTagMode = value
-        if (!wasNotags) {
-          // Sync filters between quick and detail only when switching between them
-          this.syncFilters()
-        }
+        if (!wasNotags) this.syncFilters()
       }
     },
 
@@ -331,25 +476,20 @@ export default {
       }
     },
 
-    // Quand une photo est supprimée depuis le drawer de détail
     onPhotoDeleted(filename) {
       this.photos = this.photos.filter(p => p.filename !== filename)
     },
 
-    // Quand une photo est dépubliée depuis le drawer de détail
     onPhotoUnpublished(filename) {
       this.photos = this.photos.filter(p => p.filename !== filename)
     },
 
     async init() {
       console.log("--init")
-      // using init methode because some function require await of requests
       await this.doGetTags()
 
       if (this.$route.query.tags) {
-        // get tags filter from the url query
         const queryTags = this.$route.query.tags.split(",")
-
         this.tags.forEach((tag) => {
           if (queryTags.includes(tag.name)) {
             this.filterQuick.push(tag);
@@ -373,7 +513,6 @@ export default {
 
     urlQueryTags(tags, filter_mode) {
       console.log("--urlQueryFilter")
-      // ... mean deep copy
       let q = { ...this.$route.query }
       if (tags != null) {
         q.tags = [tags]
@@ -392,7 +531,6 @@ export default {
       window.console.log("--syncFilters");
 
       if (this.filterTagMode === 'quick') {
-        // Switch to quick filter, so sync detailled -> quick
         let filterQuick = []
         for (const [group, tags] of Object.entries(this.filterDetail)) {
           tags.forEach((tag) => {
@@ -401,7 +539,6 @@ export default {
         }
         this.filterQuick = filterQuick
       } else {
-        // Switch to detailled, so sync quick -> detailled
         let filterDetail = {}
         this.filterQuick.forEach((tag) => {
           if (!Object.keys(filterDetail).includes(tag.group_name)) {
@@ -451,7 +588,6 @@ export default {
 
     async doGetTags() {
       window.console.log("--doGetTags");
-      // Get alert store to be able to trigger some alert messages
       const { triggerAlert } = useAlertStore()
       const { data, error } = await useAsyncFetch('/api/tags')
       if (error.value) {
@@ -480,5 +616,20 @@ export default {
 
 .rating-mode-toggle:hover {
   opacity: 0.7;
+}
+
+.selection-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.selection-overlay.selected {
+  background: rgba(var(--v-theme-primary), 0.45);
 }
 </style>
