@@ -31,6 +31,8 @@ class Photo(models.Model):
     width = models.IntegerField()
     height = models.IntegerField()
     published = models.BooleanField(default=False)
+    favorite = models.BooleanField(default=False)
+    rating = models.IntegerField(default=0)  # 0 = not rated, 1-5 stars
     filename = models.CharField(max_length=250, unique=True)
     origin_filename = models.TextField(blank=True)
     date = models.DateTimeField(default=datetime.now) # By default same as upload. Buf if we got a date in exif, we put the more specific one

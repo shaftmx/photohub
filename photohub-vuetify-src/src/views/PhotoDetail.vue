@@ -55,6 +55,8 @@
         @update:showExif="showExif = $event"
         @saveDescription="saveDescription"
         @editTags="editTagsDialog = true"
+        @toggleFavorite="doToggleFavorite"
+        @setRating="doSetRating"
       />
     </div>
 
@@ -98,6 +100,8 @@
         @update:showExif="showExif = $event"
         @saveDescription="saveDescription"
         @editTags="editTagsDialog = true"
+        @toggleFavorite="doToggleFavorite"
+        @setRating="doSetRating"
       />
     </div>
 
@@ -180,6 +184,33 @@ export default defineComponent({
     close() {
       if (!this.embedded) this.displayed = false
       this.$emit('closed')
+    },
+
+    async doToggleFavorite() {
+      if (!this.photo) return
+      const newValue = !this.photo.favorite
+      const { triggerAlert } = useAlertStore()
+      const { data, error } = await useAsyncPost(`/api/photos/${this.photo.filename}/update`, { favorite: newValue })
+      if (error.value) {
+        triggerAlert('error', 'Save error', error.value)
+      } else if (data.value && data.value.ERROR) {
+        triggerAlert('error', data.value.message, data.value.details)
+      } else {
+        this.photo.favorite = newValue
+      }
+    },
+
+    async doSetRating(rating) {
+      if (!this.photo) return
+      const { triggerAlert } = useAlertStore()
+      const { data, error } = await useAsyncPost(`/api/photos/${this.photo.filename}/update`, { rating })
+      if (error.value) {
+        triggerAlert('error', 'Save error', error.value)
+      } else if (data.value && data.value.ERROR) {
+        triggerAlert('error', data.value.message, data.value.details)
+      } else {
+        this.photo.rating = rating
+      }
     },
 
     async saveDescription() {

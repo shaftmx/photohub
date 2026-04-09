@@ -7,6 +7,35 @@
       @blur="$emit('saveDescription')"></v-textarea>
     <p class="text-caption text-medium-emphasis mb-4">Description is saved automatically</p>
 
+    <!-- Favorite & Rating -->
+    <v-divider class="mb-3"></v-divider>
+    <div class="d-flex align-center mb-4 ga-4">
+      <!-- Favorite toggle -->
+      <v-btn
+        :icon="photo.favorite ? 'mdi-heart' : 'mdi-heart-outline'"
+        :color="photo.favorite ? 'red' : 'default'"
+        variant="text"
+        density="compact"
+        @click="$emit('toggleFavorite')"
+        title="Favorite"
+      ></v-btn>
+
+      <!-- Rating: 5 stars -->
+      <div class="d-flex align-center">
+        <v-btn
+          v-for="star in 5"
+          :key="star"
+          :icon="star <= photo.rating ? 'mdi-star' : 'mdi-star-outline'"
+          :color="star <= photo.rating ? 'amber' : 'default'"
+          variant="text"
+          density="compact"
+          size="small"
+          @click="$emit('setRating', star === photo.rating ? 0 : star)"
+          :title="star + ' star' + (star > 1 ? 's' : '')"
+        ></v-btn>
+      </div>
+    </div>
+
     <!-- Tags -->
     <v-divider class="mb-3"></v-divider>
     <div class="d-flex align-center mb-3">
@@ -115,7 +144,7 @@ export default {
     showExif: { type: Boolean, default: false },
   },
 
-  emits: ['update:descriptionModel', 'update:showExif', 'saveDescription', 'editTags'],
+  emits: ['update:descriptionModel', 'update:showExif', 'saveDescription', 'editTags', 'toggleFavorite', 'setRating'],
 
   methods: {
     formatDate(iso) {

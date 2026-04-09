@@ -20,7 +20,7 @@ def get_photo(request, filename):
     except models.Photo.DoesNotExist:
         return ErrorResponse("NotFound", 404, "Photo not found")
 
-    fields = ["filename", "date", "owner", "height", "width", "description", "published", "origin_filename"]
+    fields = ["filename", "date", "owner", "height", "width", "description", "published", "origin_filename", "favorite", "rating"]
     _p = model_to_dict(p, fields=fields)
     _p["upload_date"] = p.upload_date.isoformat() if p.upload_date else ""
     _p["date"] = p.date.isoformat() if p.date else ""
@@ -108,6 +108,12 @@ def update_photo(request, filename):
 
     if "description" in post:
         photo.description = post["description"]
+    if "favorite" in post:
+        photo.favorite = bool(post["favorite"])
+    if "rating" in post:
+        rating = int(post["rating"])
+        if 0 <= rating <= 5:
+            photo.rating = rating
 
     photo.save()
     return Response(200, "success")
