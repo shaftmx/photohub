@@ -27,54 +27,94 @@
       </v-sheet>
 
       <!-- Row 1: action buttons -->
-      <v-sheet class="d-flex mb-2 align-center">
-        <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
-        <!-- Right: count + all/none + actions menu + select toggle -->
-        <v-sheet class="d-flex ma-0 pa-0 align-center ga-2">
-          <template v-if="selectionMode">
-            <span class="text-body-2 text-medium-emphasis">{{ selectedFilenames.length }} selected</span>
-            <v-btn
-              @click="selectedFilenames.length === photos.length ? deselectAll() : selectAll()"
-              :size="sharedDatas.isMobile ? 'small' : 'default'"
-              color="secondary" variant="tonal" density="compact"
-              :prepend-icon="selectedFilenames.length === photos.length ? 'mdi-select-off' : 'mdi-select-all'"
-            >{{ selectedFilenames.length === photos.length ? 'Deselect all' : 'Select all' }}</v-btn>
-            <!-- Bulk actions menu -->
-            <v-menu>
-              <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" :size="sharedDatas.isMobile ? 'small' : 'default'" color="primary" variant="tonal"
-                  density="compact" append-icon="mdi-chevron-down" :disabled="selectedFilenames.length < 1">Actions</v-btn>
-              </template>
-              <v-list density="compact">
-                <v-list-item prepend-icon="mdi-tag-arrow-right" @click="displayed = false; $refs.tagPhotos.open()">
-                  <v-list-item-title>Tag</v-list-item-title>
-                </v-list-item>
-                <v-list-item prepend-icon="mdi-heart" @click="bulkSetFavorite(true)">
-                  <v-list-item-title>Add to favorites</v-list-item-title>
-                </v-list-item>
-                <v-list-item prepend-icon="mdi-heart-off-outline" @click="bulkSetFavorite(false)">
-                  <v-list-item-title>Remove from favorites</v-list-item-title>
-                </v-list-item>
-                <v-list-item prepend-icon="mdi-cloud-off-outline" @click="confirmBulkUnpublishDialog = true">
-                  <v-list-item-title>Unpublish</v-list-item-title>
-                </v-list-item>
-                <v-divider></v-divider>
-                <v-list-item prepend-icon="mdi-delete" @click="confirmBulkDeleteDialog = true" class="text-error">
-                  <v-list-item-title>Delete</v-list-item-title>
-                </v-list-item>
-              </v-list>
-            </v-menu>
-          </template>
-          <v-btn
-            :color="selectionMode ? 'primary' : 'default'"
-            :variant="selectionMode ? 'tonal' : 'outlined'"
-            :size="sharedDatas.isMobile ? 'small' : 'default'"
-            density="compact"
-            :prepend-icon="selectionMode ? 'mdi-close' : 'mdi-checkbox-multiple-marked-outline'"
-            @click="toggleSelectionMode()"
-          >{{ selectionMode ? 'Cancel' : 'Select' }}</v-btn>
+      <template v-if="selectionMode && sharedDatas.isMobile">
+        <!-- Mobile selection mode: 2 rows -->
+        <v-sheet class="d-flex align-center mb-1 ma-0 pa-0">
+          <span class="text-body-2 text-medium-emphasis">{{ selectedFilenames.length }} selected</span>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" variant="tonal" size="small" density="compact"
+            prepend-icon="mdi-close" @click="toggleSelectionMode()">Cancel</v-btn>
         </v-sheet>
-      </v-sheet>
+        <v-sheet class="d-flex align-center justify-end ga-2 mb-2 ma-0 pa-0">
+          <v-btn
+            @click="selectedFilenames.length === photos.length ? deselectAll() : selectAll()"
+            size="small" color="secondary" variant="tonal" density="compact"
+            :prepend-icon="selectedFilenames.length === photos.length ? 'mdi-select-off' : 'mdi-select-all'"
+          >{{ selectedFilenames.length === photos.length ? 'Deselect all' : 'Select all' }}</v-btn>
+          <v-menu>
+            <template v-slot:activator="{ props }">
+              <v-btn v-bind="props" size="small" color="primary" variant="tonal"
+                density="compact" append-icon="mdi-chevron-down" :disabled="selectedFilenames.length < 1">Actions</v-btn>
+            </template>
+            <v-list density="compact">
+              <v-list-item prepend-icon="mdi-tag-arrow-right" @click="displayed = false; $refs.tagPhotos.open()">
+                <v-list-item-title>Tag</v-list-item-title>
+              </v-list-item>
+              <v-list-item prepend-icon="mdi-heart" @click="bulkSetFavorite(true)">
+                <v-list-item-title>Add to favorites</v-list-item-title>
+              </v-list-item>
+              <v-list-item prepend-icon="mdi-heart-off-outline" @click="bulkSetFavorite(false)">
+                <v-list-item-title>Remove from favorites</v-list-item-title>
+              </v-list-item>
+              <v-list-item prepend-icon="mdi-cloud-off-outline" @click="confirmBulkUnpublishDialog = true">
+                <v-list-item-title>Unpublish</v-list-item-title>
+              </v-list-item>
+              <v-divider></v-divider>
+              <v-list-item prepend-icon="mdi-delete" @click="confirmBulkDeleteDialog = true" class="text-error">
+                <v-list-item-title>Delete</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </v-sheet>
+      </template>
+      <template v-else>
+        <!-- Desktop / non-selection: single row -->
+        <v-sheet class="d-flex mb-2 align-center">
+          <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
+          <v-sheet class="d-flex ma-0 pa-0 align-center ga-2">
+            <template v-if="selectionMode">
+              <span class="text-body-2 text-medium-emphasis">{{ selectedFilenames.length }} selected</span>
+              <v-btn
+                @click="selectedFilenames.length === photos.length ? deselectAll() : selectAll()"
+                color="secondary" variant="tonal" density="compact"
+                :prepend-icon="selectedFilenames.length === photos.length ? 'mdi-select-off' : 'mdi-select-all'"
+              >{{ selectedFilenames.length === photos.length ? 'Deselect all' : 'Select all' }}</v-btn>
+              <v-menu>
+                <template v-slot:activator="{ props }">
+                  <v-btn v-bind="props" color="primary" variant="tonal"
+                    density="compact" append-icon="mdi-chevron-down" :disabled="selectedFilenames.length < 1">Actions</v-btn>
+                </template>
+                <v-list density="compact">
+                  <v-list-item prepend-icon="mdi-tag-arrow-right" @click="displayed = false; $refs.tagPhotos.open()">
+                    <v-list-item-title>Tag</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item prepend-icon="mdi-heart" @click="bulkSetFavorite(true)">
+                    <v-list-item-title>Add to favorites</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item prepend-icon="mdi-heart-off-outline" @click="bulkSetFavorite(false)">
+                    <v-list-item-title>Remove from favorites</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item prepend-icon="mdi-cloud-off-outline" @click="confirmBulkUnpublishDialog = true">
+                    <v-list-item-title>Unpublish</v-list-item-title>
+                  </v-list-item>
+                  <v-divider></v-divider>
+                  <v-list-item prepend-icon="mdi-delete" @click="confirmBulkDeleteDialog = true" class="text-error">
+                    <v-list-item-title>Delete</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+            </template>
+            <v-btn
+              :color="selectionMode ? 'primary' : 'default'"
+              :variant="selectionMode ? 'tonal' : 'outlined'"
+              density="compact"
+              :size="sharedDatas.isMobile ? 'small' : 'default'"
+              :prepend-icon="selectionMode ? 'mdi-close' : 'mdi-checkbox-multiple-marked-outline'"
+              @click="toggleSelectionMode()"
+            >{{ selectionMode ? 'Cancel' : 'Select' }}</v-btn>
+          </v-sheet>
+        </v-sheet>
+      </template>
 
       <!-- Row 2: grid size slider -->
       <v-sheet class="d-flex mb-0">
