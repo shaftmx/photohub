@@ -7,7 +7,7 @@
 ## Photos (main gallery view)
 
 - ✅ Filter by tags (TagFilter component)
-- ⬜ Tag filter: AND by default, optional OR mode
+- ✅ Tag filter: AND by default, optional OR mode (filter_mode=basic/smart)
 - ✅ Display all pictures
 - ⬜ Pagination or infinite scroll — TBD based on performance and UX
 - ⬜ Show photos without tags (filter option)
@@ -19,17 +19,17 @@
 
 - ✅ Description (editable from detail panel)
 - ✅ Tags (editable from detail panel)
-- ⬜ **Favorite** — heart button (boolean), quick toggle on photo and in grid, usable as filter to build views
-- ⬜ **Rating** — 0 to 5 stars per photo, usable as filter to build views
+- 🚧 **Favorite** — heart button (boolean), quick toggle on photo and in grid, usable as filter to build views (detail panel + grid shortcut done, filter pending)
+- 🚧 **Rating** — 0 to 5 stars per photo, usable as filter to build views (detail panel done, filter pending)
 
 ## Photo display (detail panel)
 
 - ✅ Description field (editable)
 - ✅ Edit tags
 - ✅ EXIF display
-- ⬜ GPS: if EXIF contains GPS data, show an "Open in Google Maps" link next to the coordinates
-- ⬜ Favorite (heart) button
-- ⬜ Rating (stars) widget
+- ✅ GPS: if EXIF contains GPS data, show an "Open in Google Maps" link next to the coordinates
+- ✅ Favorite (heart) button
+- ✅ Rating (stars) widget
 - ⬜ Define as cover — only shown when viewing from within a view context (not from global All photos); if too complex to pass context down, fallback: allow selecting cover photo directly from the view edit UI
 
 ## Views

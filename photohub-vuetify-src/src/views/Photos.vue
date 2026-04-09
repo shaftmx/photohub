@@ -18,77 +18,78 @@
         <h1 v-if="sharedDatas.isMobile" class="text-body-2 mb-4">{{ subtitle }}</h1>
       </v-sheet>
 
-      <!-- Buttons -->
-      <v-sheet class="d-flex mb-2">
-        <v-sheet class="ma-0 pa-0 me-auto">
-          <!-- Filters and buttons -->
-
-
-
-
-
-
-
-          <v-switch @change="syncFilters()" hide-details v-model="displayQuickFilters" density="compact" color="secondary" false-icon="mdi-text-search-variant" true-icon="mdi-tag-search"
-            label="Quick search filter" inset></v-switch>
-
-        </v-sheet>
-        <v-sheet class="d-flex ma-0 pa-0 align-end justify-end w-50">
-          <!-- BUTTON -->
-          <v-btn @click="displayed = false; $refs.tagPhotos.open()" color="primary" variant="tonal" 
+      <!-- Buttons: Tag, Publish, grid size slider -->
+      <v-sheet class="d-flex mb-2 align-center">
+        <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
+        <v-sheet class="d-flex ma-0 pa-0 align-center ga-2">
+          <v-btn @click="displayed = false; $refs.tagPhotos.open()" color="primary" variant="tonal"
             :size="sharedDatas.isMobile ? 'small' : 'default'" density="compact" prepend-icon="mdi-tag-arrow-right"
             :disabled="false">Tag</v-btn>
-          <!-- PUBLISH BUTTON -->
-          <v-btn @click="confirmPublishDialog = true; loading = true" class="ml-2" color="primary" variant="flat"
+          <v-btn @click="confirmPublishDialog = true; loading = true" color="primary" variant="flat"
             :size="sharedDatas.isMobile ? 'small' : 'default'" density="compact" prepend-icon="mdi-cloud-check"
             :loading="loading" :disabled="false">Publish</v-btn>
-        </v-sheet>
-      </v-sheet>
-
-
-
-      <!-- Photo grid size selector -->
-      <v-sheet class="d-flex mb-0">
-        <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
-        <v-sheet class="d-flex ma-0 pa-0 align-end justify-end w-50">
-          <v-slider v-model="sharedDatas.gridSize" style="max-width: 300px; width: 100%" :max="sharedDatas.gridMax"
+          <v-slider v-model="sharedDatas.gridSize" :style="sharedDatas.isMobile ? 'width: 120px' : 'width: 300px'" :max="sharedDatas.gridMax"
             :min="sharedDatas.gridMin" hide-details color="primary" append-icon="mdi-image-size-select-actual"
-            density="compact" track-size="2" thumb-size="15">
+            density="compact" track-size="3" thumb-size="20">
           </v-slider>
         </v-sheet>
       </v-sheet>
     </v-sheet>
 
+    <!-- Filter bar: toggle + collapsible filter panel -->
+    <v-sheet class="mb-2">
+      <!-- Row: toggle buttons + collapse toggle + chips summary -->
+      <div class="d-flex flex-wrap align-center ga-2 mb-1">
+        <v-btn-toggle
+          :model-value="displayQuickFilters ? 'quick' : 'detail'"
+          @update:model-value="onFilterModeChange"
+          density="compact"
+          variant="outlined"
+          color="primary"
+        >
+          <v-btn value="quick" prepend-icon="mdi-text-search-variant" size="small">Quick</v-btn>
+          <v-btn value="detail" prepend-icon="mdi-tag-search" size="small">Detailed</v-btn>
+        </v-btn-toggle>
 
+        <!-- Collapse toggle — only for detailed mode -->
+        <v-btn
+          v-if="!displayQuickFilters"
+          :append-icon="filterPanelOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+          variant="text"
+          density="compact"
+          size="small"
+          @click="filterPanelOpen = !filterPanelOpen"
+        >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
 
+        <!-- Active filter chips summary (detailed mode, panel closed) -->
+        <div v-if="!displayQuickFilters && !filterPanelOpen && filter.length > 0" class="d-flex flex-wrap ga-1">
+          <v-chip v-for="tag in filter" :key="tag" size="x-small" color="primary" closable
+            @click:close="removeDetailFilter(tag)">{{ tag }}</v-chip>
+        </div>
+      </div>
 
+      <!-- Quick filter: tag autocomplete -->
+      <v-autocomplete v-if="displayQuickFilters" prepend-icon="mdi-text-search-variant" return-object closable-chips
+        v-model="filterQuick" item-title="name" :items="availableTagsFlat" chips clearable multiple density="compact"
+        direction="horizontal" variant="solo-inverted">
+        <template v-slot:selection="{ attrs, items, select, selected }">
+          <v-chip :color="tags[item].color" v-bind="attrs" :model-value="selected" closable @click="select"
+            @click:close="remove(item)">
+          </v-chip>
+        </template>
+      </v-autocomplete>
 
-    <!-- Filters -->
-    <!-- Quick filters -->
-    <v-autocomplete v-if="displayQuickFilters" prepend-icon="mdi-text-search-variant" return-object closable-chips
-      v-model="filterQuick" item-title="name" :items="availableTagsFlat" chips clearable multiple density="compact"
-      direction="horizontal" variant="solo-inverted">
-      <template v-slot:selection="{ attrs, items, select, selected }">
-        <v-chip :color="tags[item].color" v-bind="attrs" :model-value="selected" closable @click="select"
-          @click:close="remove(item)">
-        </v-chip>
-      </template>
-    </v-autocomplete>
-
-    <!-- Detailed filter — only shows tags present on at least one photo (from allPhotos) -->
-    <TagFilter
-      v-if="!displayQuickFilters"
-      v-model="filterDetail"
-      :tag-groups="tagGroups"
-      :photos="allPhotos"
-    />
-
-
-
-
-
-
-
+      <!-- Detailed filter — collapsible -->
+      <v-expand-transition>
+        <div v-if="!displayQuickFilters && filterPanelOpen">
+          <TagFilter
+            v-model="filterDetail"
+            :tag-groups="tagGroups"
+            :photos="allPhotos"
+          />
+        </div>
+      </v-expand-transition>
+    </v-sheet>
 
     <!-- TODO check behavior when 0 pictures -->
     <!-- v-if="photos.length > 0" -->
@@ -98,7 +99,7 @@
         <div class="item-inner">
           <img @click="$refs.displayPhoto.displayPhoto(photo.filename)"
             :src="paths[sharedDatas.gridPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']" />
-          <!-- Favorite shortcut — always visible but subtle; red when active -->
+          <!-- Favorite shortcut — visible on hover (desktop only) -->
           <button class="favorite-btn" :class="{ active: photo.favorite }" @click.stop="toggleFavorite(photo)" :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
             <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
           </button>
@@ -134,12 +135,14 @@ export default {
     tagGroups: [],
     loading: false,
     displayQuickFilters: true, // Quick = search / detailed = categories
+    filterPanelOpen: true,    // Detailed filter panel open/closed
     // Filters will be synced using watch
-    filter: [], // This is the actual computed filters used abd displayed as query parameter
+    filter: [], // This is the actual computed filters used and displayed as query parameter
     filterQuick: [], // This is used by quick filter
     filterDetail: {}, // This is used by filter display with tags
     filterMode: "basic", // Autofilled parameter based on this.displayQuickFilters
   }),
+
   computed: {
     // Flat list of tag objects present on at least one photo in allPhotos.
     // Used by the quick filter autocomplete to avoid suggesting impossible tags.
@@ -158,8 +161,8 @@ export default {
     requireAuth(this)
     this.sharedDatas = getSharedDatas(this)
     this.init()
-
   },
+
   watch: {
     "filterDetail": {
       handler: function (newfilter, oldfilter) {
@@ -199,7 +202,28 @@ export default {
       this.doGetPhotos()
     },
   },
+
   methods: {
+    // Remove a single tag from the detailed filter (used by summary chips when panel is closed)
+    removeDetailFilter(tagName) {
+      const updated = {}
+      for (const [group, tags] of Object.entries(this.filterDetail)) {
+        const filtered = tags.filter(t => t.name !== tagName)
+        if (filtered.length > 0) updated[group] = filtered
+      }
+      this.filterDetail = updated
+    },
+
+    // Called when the filter mode toggle changes (quick <-> detailed)
+    onFilterModeChange(value) {
+      if (value === null) return // prevent deselecting both buttons
+      const newQuick = value === 'quick'
+      if (newQuick !== this.displayQuickFilters) {
+        this.displayQuickFilters = newQuick
+        this.syncFilters()
+      }
+    },
+
     async toggleFavorite(photo) {
       const newValue = !photo.favorite
       const { triggerAlert } = useAlertStore()
@@ -222,6 +246,7 @@ export default {
     onPhotoUnpublished(filename) {
       this.photos = this.photos.filter(p => p.filename !== filename)
     },
+
     async init() {
       console.log("--init")
       // using init methode because some function require await of requests
@@ -337,4 +362,3 @@ export default {
   },
 }
 </script>
-
