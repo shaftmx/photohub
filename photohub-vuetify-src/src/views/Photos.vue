@@ -38,7 +38,7 @@
 
     <!-- Filter bar: toggle + collapsible filter panel -->
     <v-sheet class="mb-2">
-      <!-- Row: toggle buttons + collapse toggle + chips summary -->
+      <!-- Row 1: mode toggle + tag toggle + heart + rating + show filters -->
       <div class="d-flex flex-wrap align-center ga-2 mb-1">
         <v-btn-toggle
           :model-value="displayQuickFilters ? 'quick' : 'detail'"
@@ -51,16 +51,6 @@
           <v-btn value="detail" prepend-icon="mdi-tag-search" size="small">Detailed</v-btn>
         </v-btn-toggle>
 
-        <!-- Collapse toggle — only for detailed mode -->
-        <v-btn
-          v-if="!displayQuickFilters"
-          :append-icon="filterPanelOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-          variant="text"
-          density="compact"
-          size="small"
-          @click="filterPanelOpen = !filterPanelOpen"
-        >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
-
         <!-- Toggle: all published tags vs tags in current selection -->
         <v-btn
           :icon="showAllTags ? 'mdi-tag-multiple' : 'mdi-tag-search'"
@@ -72,11 +62,55 @@
           @click="showAllTags = !showAllTags"
         ></v-btn>
 
-        <!-- Active filter chips summary (detailed mode, panel closed) -->
-        <div v-if="!displayQuickFilters && !filterPanelOpen && filter.length > 0" class="d-flex flex-wrap ga-1">
-          <v-chip v-for="tag in filter" :key="tag" size="x-small" color="primary" closable
-            @click:close="removeDetailFilter(tag)">{{ tag }}</v-chip>
+        <v-divider vertical class="mx-1" style="height: 24px; align-self: center;"></v-divider>
+
+        <!-- Favorite filter toggle -->
+        <v-btn
+          :icon="filterFavorite ? 'mdi-heart' : 'mdi-heart-outline'"
+          :color="filterFavorite ? 'red' : 'default'"
+          :variant="filterFavorite ? 'tonal' : 'text'"
+          density="compact"
+          size="small"
+          :title="filterFavorite ? 'Favorites only — click to remove' : 'Filter by favorites'"
+          @click="filterFavorite = !filterFavorite"
+        ></v-btn>
+
+        <!-- Rating filter: stars + operator toggle -->
+        <div class="d-flex align-center">
+          <v-btn
+            v-for="star in 5"
+            :key="star"
+            :icon="star <= filterRating ? 'mdi-star' : 'mdi-star-outline'"
+            :color="star <= filterRating ? 'amber' : 'default'"
+            variant="text"
+            density="compact"
+            size="x-small"
+            @click="filterRating = star === filterRating ? 0 : star"
+            :title="star + ' star' + (star > 1 ? 's' : '')"
+          ></v-btn>
+          <span
+            v-if="filterRating > 0"
+            class="rating-mode-toggle text-primary font-weight-bold"
+            title="Toggle: <= rating or exactly equal"
+            @click="filterRatingMode = filterRatingMode === 'lte' ? 'eq' : 'lte'"
+          >{{ filterRatingMode === 'lte' ? '≤' : '=' }}</span>
         </div>
+
+        <!-- Collapse toggle — only for detailed mode, at the end -->
+        <v-btn
+          v-if="!displayQuickFilters"
+          :append-icon="filterPanelOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+          variant="text"
+          density="compact"
+          size="small"
+          @click="filterPanelOpen = !filterPanelOpen"
+        >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
+      </div>
+
+      <!-- Row 2: active tag chips summary (detailed mode, panel closed) -->
+      <div v-if="!displayQuickFilters && !filterPanelOpen && filter.length > 0" class="d-flex flex-wrap ga-1 mb-1">
+        <v-chip v-for="tag in filter" :key="tag" size="x-small" color="primary" closable
+          @click:close="removeDetailFilter(tag)">{{ tag }}</v-chip>
       </div>
 
       <!-- Quick filter: tag autocomplete -->
@@ -154,6 +188,9 @@ export default {
     filterQuick: [], // This is used by quick filter
     filterDetail: {}, // This is used by filter display with tags
     filterMode: "basic", // Autofilled parameter based on this.displayQuickFilters
+    filterFavorite: false, // If true, only show favorite photos
+    filterRating: 0,       // 0 = no filter, 1-5 = filter by rating
+    filterRatingMode: "lte", // lte = <= rating, eq = strictly equal
   }),
 
   computed: {
@@ -218,6 +255,18 @@ export default {
       // Put filter in the url in order to be able to share it
       this.$router.push(this.urlQueryTags(newfilter, this.filterMode))
       this.doGetPhotos()
+    },
+
+    "filterFavorite"() {
+      this.doGetPhotos()
+    },
+
+    "filterRating"() {
+      this.doGetPhotos()
+    },
+
+    "filterRatingMode"() {
+      if (this.filterRating > 0) this.doGetPhotos()
     },
 
     "displayQuickFilters"(newS, oldS) {
@@ -347,14 +396,20 @@ export default {
     async doGetPhotos() {
       window.console.log("--doGetPhotos");
 
-      let queryFilter = ""
-
+      const params = {}
       if (this.filter.length > 0) {
-        queryFilter = "?" + new URLSearchParams({
-          tags: [this.filter],
-          filter_mode: this.filterMode,
-        })
+        params.tags = [this.filter]
+        params.filter_mode = this.filterMode
       }
+      if (this.filterFavorite) {
+        params.favorite = 'true'
+      }
+      if (this.filterRating > 0) {
+        params.rating = this.filterRating
+        params.rating_mode = this.filterRatingMode
+      }
+
+      const queryFilter = Object.keys(params).length > 0 ? "?" + new URLSearchParams(params) : ""
 
       const { triggerAlert } = useAlertStore()
       const { data, error } = await useAsyncFetch('/api/photos' + queryFilter)
@@ -386,3 +441,19 @@ export default {
   },
 }
 </script>
+
+
+<style scoped>
+
+.rating-mode-toggle {
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  line-height: 1;
+  user-select: none;
+}
+
+.rating-mode-toggle:hover {
+  opacity: 0.7;
+}
+</style>

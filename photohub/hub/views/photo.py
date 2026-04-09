@@ -40,6 +40,28 @@ def get_photos(request):
             filter_tags[_tag.tag_group.name] = []
         filter_tags[_tag.tag_group.name].append(_tag)
 
+    # Favorite filter
+    filter_favorite = request.GET.get('favorite')
+    if filter_favorite == 'true':
+        photos_query = photos_query.filter(favorite=True)
+
+    # Rating filter
+    filter_rating = request.GET.get('rating')
+    filter_rating_mode = request.GET.get('rating_mode', 'lte')  # lte, gte or eq
+    if filter_rating is not None:
+        try:
+            rating_value = int(filter_rating)
+            if rating_value > 0:
+                if filter_rating_mode == 'eq':
+                    photos_query = photos_query.filter(rating=rating_value)
+                elif filter_rating_mode == 'gte':
+                    photos_query = photos_query.filter(rating__gte=rating_value, rating__gt=0)
+                else:
+                    # lte: exclude unrated photos (rating=0)
+                    photos_query = photos_query.filter(rating__lte=rating_value, rating__gt=0)
+        except ValueError:
+            pass
+
     # Generate filters
     # Smart: (OR on same groups, AND on other groups) Create a filter per group map
     if filter_tags != {} and filter_mode != "basic":
