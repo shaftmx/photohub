@@ -10,7 +10,7 @@
 - ✅ Tag filter: AND by default, optional OR mode (filter_mode=basic/smart)
 - ✅ Display all pictures
 - ⬜ Pagination or infinite scroll — TBD based on performance and UX
-- ⬜ Show photos without tags (filter option)
+- ✅ Show photos without tags (filter option — "No tags" mode in filter toggle)
 - ⬜ One-click: create a view from current active tag filters
 - ⬜ Future: create a view from a manual selection of specific photos
 - ⬜ Selection mode: select multiple photos → bulk action: delete, unpublish, tag editing (reuse post-upload Tag pictures component)

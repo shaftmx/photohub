@@ -39,11 +39,15 @@
           <!-- TAG BUTTON -->
           <v-btn @click="displayed = false; $refs.tagPhotos.open()" color="primary" variant="tonal"
             :size="sharedDatas.isMobile ? 'small' : 'default'" density="compact" prepend-icon="mdi-tag-arrow-right"
-            :disabled="selectedPhotosFilenames.length < 1 ? true : false">Tag</v-btn>
+            :disabled="selectedPhotosFilenames.length < 1">Tag</v-btn>
           <!-- PUBLISH BUTTON -->
           <v-btn @click="confirmPublishDialog = true; loading = true" class="ml-2" color="primary" variant="flat"
             :size="sharedDatas.isMobile ? 'small' : 'default'" density="compact" prepend-icon="mdi-cloud-check" :loading="loading"
-            :disabled="selectedPhotosFilenames.length < 1 ? true : false">Publish</v-btn>
+            :disabled="selectedPhotosFilenames.length < 1">Publish</v-btn>
+          <!-- DELETE BUTTON -->
+          <v-btn @click="confirmDeleteDialog = true" class="ml-2" color="error" variant="tonal"
+            :size="sharedDatas.isMobile ? 'small' : 'default'" density="compact" prepend-icon="mdi-delete"
+            :disabled="selectedPhotosFilenames.length < 1">Delete</v-btn>
         </v-sheet>
       </v-sheet>
 
@@ -81,6 +85,25 @@
     </v-dialog>
 
 
+
+    <!-- CONFIRM DELETE -->
+    <v-dialog v-model="confirmDeleteDialog" persistent width="auto">
+      <v-card>
+        <v-card-title class="text-h5">
+          Delete {{ selectedPhotosFilenames.length }} photo{{ selectedPhotosFilenames.length > 1 ? 's' : '' }}?
+        </v-card-title>
+        <v-card-text>This will permanently delete the selected photos and their files. This cannot be undone.</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="secondary" density="compact" variant="text" @click="confirmDeleteDialog = false">
+            Cancel
+          </v-btn>
+          <v-btn color="error" density="compact" variant="tonal" @click="confirmDeleteDialog = false; deleteSelected()">
+            Delete
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Card hover with transition -->
     <!-- <div>
@@ -213,6 +236,7 @@ import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 export default {
   data: () => ({
     confirmPublishDialog: false,
+    confirmDeleteDialog: false,
     displayed: true,
     title: "Unpublished",
     subtitle: "All recently uploaded photos that have not been published",
@@ -237,6 +261,22 @@ onPhotoUnpublished(filename) {
   // Already unpublished, just refresh
   this.doGetPhotos()
 },
+    async deleteSelected() {
+      const { triggerAlert } = useAlertStore()
+      const toDelete = [...this.selectedPhotosFilenames]
+      for (const filename of toDelete) {
+        const { data, error } = await useAsyncPost(`/api/photos/${filename}/delete`, {})
+        if (error.value) {
+          triggerAlert('error', 'Delete error', error.value)
+        } else if (data.value && data.value.ERROR) {
+          triggerAlert('error', data.value.message, data.value.details)
+        } else {
+          this.photos = this.photos.filter(p => p.filename !== filename)
+          this.selectedPhotosFilenames = this.selectedPhotosFilenames.filter(f => f !== filename)
+        }
+      }
+    },
+
     async publishSelected() {
       window.console.log("--publishSelected");
 
