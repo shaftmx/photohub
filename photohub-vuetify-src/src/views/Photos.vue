@@ -41,18 +41,21 @@
       <!-- Row 1: mode toggle + tag toggle + heart + rating + show filters -->
       <div class="d-flex flex-wrap align-center ga-2 mb-1">
         <v-btn-toggle
-          :model-value="displayQuickFilters ? 'quick' : 'detail'"
+          :model-value="filterTagMode"
           @update:model-value="onFilterModeChange"
           density="compact"
           variant="outlined"
           color="primary"
+          mandatory
         >
           <v-btn value="quick" prepend-icon="mdi-text-search-variant" size="small">Quick</v-btn>
           <v-btn value="detail" prepend-icon="mdi-tag-search" size="small">Detailed</v-btn>
+          <v-btn value="notags" prepend-icon="mdi-tag-off-outline" size="small">No tags</v-btn>
         </v-btn-toggle>
 
-        <!-- Toggle: all published tags vs tags in current selection -->
+        <!-- Toggle: all published tags vs tags in current selection (hidden in notags mode) -->
         <v-btn
+          v-if="filterTagMode !== 'notags'"
           :icon="showAllTags ? 'mdi-tag-multiple' : 'mdi-tag-search'"
           :color="showAllTags ? 'primary' : 'default'"
           :variant="showAllTags ? 'tonal' : 'text'"
@@ -98,7 +101,7 @@
 
         <!-- Collapse toggle — only for detailed mode, at the end -->
         <v-btn
-          v-if="!displayQuickFilters"
+          v-if="filterTagMode === 'detail'"
           :append-icon="filterPanelOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
           variant="text"
           density="compact"
@@ -108,13 +111,13 @@
       </div>
 
       <!-- Row 2: active tag chips summary (detailed mode, panel closed) -->
-      <div v-if="!displayQuickFilters && !filterPanelOpen && filter.length > 0" class="d-flex flex-wrap ga-1 mb-1">
+      <div v-if="filterTagMode === 'detail' && !filterPanelOpen && filter.length > 0" class="d-flex flex-wrap ga-1 mb-1">
         <v-chip v-for="tag in filter" :key="tag" size="x-small" color="primary" closable
           @click:close="removeDetailFilter(tag)">{{ tag }}</v-chip>
       </div>
 
       <!-- Quick filter: tag autocomplete -->
-      <v-autocomplete v-if="displayQuickFilters" prepend-icon="mdi-text-search-variant" return-object closable-chips
+      <v-autocomplete v-if="filterTagMode === 'quick'" prepend-icon="mdi-text-search-variant" return-object closable-chips
         v-model="filterQuick" item-title="name" :items="availableTagsFlat" chips clearable multiple density="compact"
         direction="horizontal" variant="solo-inverted">
         <template v-slot:selection="{ attrs, items, select, selected }">
@@ -126,7 +129,7 @@
 
       <!-- Detailed filter — collapsible -->
       <v-expand-transition>
-        <div v-if="!displayQuickFilters && filterPanelOpen">
+        <div v-if="filterTagMode === 'detail' && filterPanelOpen">
           <TagFilter
             v-model="filterDetail"
             :tag-groups="tagGroupsFiltered"
@@ -180,20 +183,26 @@ export default {
     tags: [],
     tagGroups: [],
     loading: false,
-    displayQuickFilters: true, // Quick = search / detailed = categories
-    filterPanelOpen: true,     // Detailed filter panel open/closed
-    showAllTags: true,         // true = all published-photo tags / false = only tags in current selection
+    filterTagMode: 'quick', // 'quick' | 'detail' | 'notags'
+    filterPanelOpen: true,  // Detailed filter panel open/closed
+    showAllTags: true,      // true = all published-photo tags / false = only tags in current selection
     // Filters will be synced using watch
     filter: [], // This is the actual computed filters used and displayed as query parameter
     filterQuick: [], // This is used by quick filter
     filterDetail: {}, // This is used by filter display with tags
-    filterMode: "basic", // Autofilled parameter based on this.displayQuickFilters
     filterFavorite: false, // If true, only show favorite photos
     filterRating: 0,       // 0 = no filter, 1-5 = filter by rating
     filterRatingMode: "lte", // lte = <= rating, eq = strictly equal
   }),
 
   computed: {
+    // Derives the API filter_mode param from filterTagMode
+    filterMode() {
+      if (this.filterTagMode === 'quick') return 'basic'
+      if (this.filterTagMode === 'detail') return 'smart'
+      return 'notags'
+    },
+
     // Tags shown in the quick filter autocomplete.
     // showAllTags=true: all tags used on published photos (from API).
     // showAllTags=false: only tags present in the current filtered selection.
@@ -269,10 +278,8 @@ export default {
       if (this.filterRating > 0) this.doGetPhotos()
     },
 
-    "displayQuickFilters"(newS, oldS) {
-      console.log("--watch displayQuickFilters")
-      // If true basic if false smart
-      if (newS) {this.filterMode = "basic"} else {this.filterMode = "smart"}
+    "filterTagMode"(newMode, oldMode) {
+      console.log("--watch filterTagMode")
       // Put filter in the url in order to be able to share it
       this.$router.push(this.urlQueryTags(this.filter, this.filterMode))
       this.doGetPhotos()
@@ -290,13 +297,24 @@ export default {
       this.filterDetail = updated
     },
 
-    // Called when the filter mode toggle changes (quick <-> detailed)
+    // Called when the filter mode toggle changes (quick / detailed / notags)
     onFilterModeChange(value) {
-      if (value === null) return // prevent deselecting both buttons
-      const newQuick = value === 'quick'
-      if (newQuick !== this.displayQuickFilters) {
-        this.displayQuickFilters = newQuick
-        this.syncFilters()
+      if (value === null) return // prevent deselecting all buttons
+      if (value === this.filterTagMode) return
+
+      if (value === 'notags') {
+        // Clear tag filters when switching to notags
+        this.filterQuick = []
+        this.filterDetail = {}
+        this.filter = []
+        this.filterTagMode = 'notags'
+      } else {
+        const wasNotags = this.filterTagMode === 'notags'
+        this.filterTagMode = value
+        if (!wasNotags) {
+          // Sync filters between quick and detail only when switching between them
+          this.syncFilters()
+        }
       }
     },
 
@@ -345,7 +363,10 @@ export default {
         })
       }
       if (this.$route.query.filter_mode) {
-        if (this.$route.query.filter_mode == "basic") { this.displayQuickFilters = true } else { this.displayQuickFilters = false }
+        const mode = this.$route.query.filter_mode
+        if (mode === 'basic') this.filterTagMode = 'quick'
+        else if (mode === 'notags') this.filterTagMode = 'notags'
+        else this.filterTagMode = 'detail'
       }
       await this.doGetPhotos()
     },
@@ -370,7 +391,7 @@ export default {
     syncFilters() {
       window.console.log("--syncFilters");
 
-      if (this.displayQuickFilters) {
+      if (this.filterTagMode === 'quick') {
         // Switch to quick filter, so sync detailled -> quick
         let filterQuick = []
         for (const [group, tags] of Object.entries(this.filterDetail)) {
@@ -397,10 +418,14 @@ export default {
       window.console.log("--doGetPhotos");
 
       const params = {}
-      if (this.filter.length > 0) {
+
+      if (this.filterTagMode === 'notags') {
+        params.no_tags = 'true'
+      } else if (this.filter.length > 0) {
         params.tags = [this.filter]
         params.filter_mode = this.filterMode
       }
+
       if (this.filterFavorite) {
         params.favorite = 'true'
       }

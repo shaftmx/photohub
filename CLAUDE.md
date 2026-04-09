@@ -4,6 +4,12 @@ Self-hosted photo management app. Django 5.2 backend + Vue 3 / Vuetify 3 fronten
 
 ---
 
+## Git
+
+- Do **not** add `Co-Authored-By: Claude` lines in commit messages.
+
+---
+
 ## Language
 
 All code comments, view/component names, UI labels, section headers, and placeholders must be written in **English**.

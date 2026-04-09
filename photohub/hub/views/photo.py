@@ -40,6 +40,11 @@ def get_photos(request):
             filter_tags[_tag.tag_group.name] = []
         filter_tags[_tag.tag_group.name].append(_tag)
 
+    # No tags filter — only photos with zero tags assigned
+    filter_no_tags = request.GET.get('no_tags')
+    if filter_no_tags == 'true':
+        photos_query = photos_query.filter(tags__isnull=True)
+
     # Favorite filter
     filter_favorite = request.GET.get('favorite')
     if filter_favorite == 'true':

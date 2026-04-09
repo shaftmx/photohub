@@ -13,14 +13,14 @@
 - ⬜ Show photos without tags (filter option)
 - ⬜ One-click: create a view from current active tag filters
 - ⬜ Future: create a view from a manual selection of specific photos
-- ⬜ Selection mode: select multiple photos → bulk tag editing (reuse post-upload Tag pictures component)
+- ⬜ Selection mode: select multiple photos → bulk action: delete, unpublish, tag editing (reuse post-upload Tag pictures component)
 
 ## Photo properties
 
 - ✅ Description (editable from detail panel)
 - ✅ Tags (editable from detail panel)
-- 🚧 **Favorite** — heart button (boolean), quick toggle on photo and in grid, usable as filter to build views (detail panel + grid shortcut done, filter pending)
-- 🚧 **Rating** — 0 to 5 stars per photo, usable as filter to build views (detail panel done, filter pending)
+- ✅ **Favorite** — heart button, toggle in detail panel and grid hover, filter in photos view
+- ✅ **Rating** — 0 to 5 stars, editable in detail panel, filter with ≤/=/≥ operator in photos view
 
 ## Photo display (detail panel)
 
