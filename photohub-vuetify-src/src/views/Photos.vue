@@ -61,6 +61,17 @@
           @click="filterPanelOpen = !filterPanelOpen"
         >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
 
+        <!-- Toggle: all published tags vs tags in current selection -->
+        <v-btn
+          :icon="showAllTags ? 'mdi-tag-multiple' : 'mdi-tag-search'"
+          :color="showAllTags ? 'primary' : 'default'"
+          :variant="showAllTags ? 'tonal' : 'text'"
+          density="compact"
+          size="small"
+          :title="showAllTags ? 'Showing all tags — click to show selection only' : 'Showing selection tags — click to show all'"
+          @click="showAllTags = !showAllTags"
+        ></v-btn>
+
         <!-- Active filter chips summary (detailed mode, panel closed) -->
         <div v-if="!displayQuickFilters && !filterPanelOpen && filter.length > 0" class="d-flex flex-wrap ga-1">
           <v-chip v-for="tag in filter" :key="tag" size="x-small" color="primary" closable
@@ -84,8 +95,9 @@
         <div v-if="!displayQuickFilters && filterPanelOpen">
           <TagFilter
             v-model="filterDetail"
-            :tag-groups="tagGroups"
-            :photos="allPhotos"
+            :tag-groups="tagGroupsFiltered"
+            :photos="showAllTags ? [] : photos"
+            :show-all="showAllTags"
           />
         </div>
       </v-expand-transition>
@@ -127,15 +139,16 @@ export default {
   data: () => ({
     title: "Photos",
     subtitle: "All photos that have been published",
-    photos: [],    // Filtered photo list — updated on each filter change
-    allPhotos: [], // Full photo list loaded once — used to compute available tags
+    photos: [],         // Filtered photo list — updated on each filter change
+    availableTags: [],  // All tags used on at least one published photo (from API, filter-independent)
     paths: {},
     sharedDatas: {},
     tags: [],
     tagGroups: [],
     loading: false,
     displayQuickFilters: true, // Quick = search / detailed = categories
-    filterPanelOpen: true,    // Detailed filter panel open/closed
+    filterPanelOpen: true,     // Detailed filter panel open/closed
+    showAllTags: true,         // true = all published-photo tags / false = only tags in current selection
     // Filters will be synced using watch
     filter: [], // This is the actual computed filters used and displayed as query parameter
     filterQuick: [], // This is used by quick filter
@@ -144,16 +157,30 @@ export default {
   }),
 
   computed: {
-    // Flat list of tag objects present on at least one photo in allPhotos.
-    // Used by the quick filter autocomplete to avoid suggesting impossible tags.
+    // Tags shown in the quick filter autocomplete.
+    // showAllTags=true: all tags used on published photos (from API).
+    // showAllTags=false: only tags present in the current filtered selection.
     availableTagsFlat() {
+      if (this.showAllTags) return this.availableTags
       const names = new Set()
-      this.allPhotos.forEach(photo => {
+      this.photos.forEach(photo => {
         Object.values(photo.tags || {}).forEach(tagList => {
           tagList.forEach(tagName => names.add(tagName))
         })
       })
-      return this.tags.filter(tag => names.has(tag.name))
+      return this.availableTags.filter(tag => names.has(tag.name))
+    },
+
+    // tagGroups filtered to only include tags present in availableTags (used on published photos).
+    // This is the base for TagFilter — avoids showing DB tags never assigned to any photo.
+    tagGroupsFiltered() {
+      const availableNames = new Set(this.availableTags.map(t => t.name))
+      return this.tagGroups
+        .map(group => ({
+          ...group,
+          tags: group.tags.filter(tag => availableNames.has(tag.name)),
+        }))
+        .filter(group => group.tags.length > 0)
     },
   },
 
@@ -272,10 +299,6 @@ export default {
         if (this.$route.query.filter_mode == "basic") { this.displayQuickFilters = true } else { this.displayQuickFilters = false }
       }
       await this.doGetPhotos()
-      // Store the full unfiltered photo list once — used by TagFilter to compute available tags
-      if (this.allPhotos.length === 0) {
-        this.allPhotos = [...this.photos]
-      }
     },
 
     urlQueryTags(tags, filter_mode) {
@@ -342,6 +365,7 @@ export default {
       } else {
         this.paths = data.value.data.paths
         this.photos = data.value.data.photos
+        this.availableTags = data.value.data.available_tags
       }
     },
 

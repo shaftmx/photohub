@@ -79,8 +79,26 @@ def get_photos(request):
         _p["hash_path"] = genHasingPath(_p["filename"])
 
         data_photos.append(_p)
-    data = { "photos": data_photos,
-             "paths": get_photo_root_paths() }
+    # All tags used on at least one published photo — independent of the active filter.
+    # Used by the frontend to offer a "show all tags" toggle in the filter panel.
+    used_tag_ids = set(
+        models.Photo.objects.filter(published=True)
+        .values_list('tags', flat=True)
+        .distinct()
+    ) - {None}
+    all_used_tags = []
+    for t in models.Tag.objects.filter(id__in=used_tag_ids):
+        all_used_tags.append({
+            "name": t.name,
+            "color": t.color,
+            "group_name": t.tag_group.name,
+        })
+
+    data = {
+        "photos": data_photos,
+        "paths": get_photo_root_paths(),
+        "available_tags": all_used_tags,
+    }
     return Response(200, data=data)
 
 
