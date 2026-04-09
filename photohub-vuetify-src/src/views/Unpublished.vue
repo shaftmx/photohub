@@ -102,10 +102,9 @@
           </div>
 
           <!-- Detail button -->
-          <v-btn icon size="x-small" class="ma-1" style="position: absolute; top: 0; right: 0; z-index: 10;"
-            color="primary" variant="tonal" @click.stop="$refs.photoDetail.open(photo.filename)">
-            <v-icon size="small">mdi-information-outline</v-icon>
-          </v-btn>
+          <button class="detail-btn ma-1" @click.stop="$refs.photoDetail.open(photo.filename)" title="Details">
+            <v-icon size="16" color="white" style="opacity: 0.7;">mdi-information-outline</v-icon>
+          </button>
         </div>
       </div>
       <div class="placeholder"></div>
@@ -228,6 +227,34 @@ export default {
   right: 0;
   height: 3px;
   background: rgb(var(--v-theme-error));
+}
+
+.detail-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 10;
+  background: rgba(var(--v-theme-primary), 0.35);
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .item-inner:hover .detail-btn {
+    opacity: 1;
+  }
+  .detail-btn:hover {
+    background: rgba(var(--v-theme-primary), 0.75);
+  }
 }
 
 .selection-overlay {
