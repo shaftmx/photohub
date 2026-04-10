@@ -57,6 +57,15 @@ def genHasingPath(filename):
     "Generate consistent hashing path for a filename eg for 01234.jpg 0/1"
     return p_join(filename[0], filename[1])
 
+VALID_SORT_FIELDS = ('date', 'upload_date', 'rating', 'filename')
+
+def apply_sort(queryset, sort_by, sort_dir):
+    "Apply sort_by / sort_dir to a Photo queryset."
+    if sort_by not in VALID_SORT_FIELDS:
+        sort_by = 'date'
+    sort_field = sort_by if sort_dir == 'asc' else '-' + sort_by
+    return queryset.order_by(sort_field)
+
 def get_photo_root_paths():
     # from MEDIA_ROOT /data/statics + RAW_PHOTOS_PATH (raw) it will generate something for HTTP urls like
     # "raw": "/static/raw",

@@ -13,7 +13,7 @@
 - ✅ Show photos without tags (filter option — "No tags" mode in filter toggle)
 - ⬜ One-click: create a view from current active tag filters
 - ⬜ Future: create a view from a manual selection of specific photos
-- ⬜ Selection mode: select multiple photos → bulk action: delete, unpublish, tag editing (reuse post-upload Tag pictures component)
+- ✅ Selection mode: select multiple photos → bulk action: delete, unpublish, tag editing (reuse post-upload Tag pictures component)
 
 ## Photo properties
 
@@ -83,7 +83,7 @@
 
 - ⬜ Show tags in grid thumbnail — TBD: colors only, tag names, hover tooltip?
 - ⬜ Map view — display all photos with GPS data on a global map
-- ⬜ Smart search
+
 
 ## Infra / Dev
 

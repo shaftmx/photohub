@@ -22,6 +22,21 @@ const routes = [
         component: () => import('@/views/Views.vue'),
       },
       {
+        path: '/views/create',
+        name: 'view-create',
+        component: () => import('@/views/ViewCreate.vue'),
+      },
+      {
+        path: '/views/:id/edit',
+        name: 'view-edit',
+        component: () => import('@/views/ViewCreate.vue'),
+      },
+      {
+        path: '/views/:id',
+        name: 'view-detail',
+        component: () => import('@/views/ViewDetail.vue'),
+      },
+      {
         path: '/upload',
         name: 'Upload',
         component: () => import('@/views/Upload.vue'),

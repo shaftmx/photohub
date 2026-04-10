@@ -64,16 +64,23 @@ class View(models.Model):
     owner = models.CharField(max_length=250)
     description = models.TextField(blank=True)
     public = models.BooleanField(default=False)
-    share_link = models.CharField(max_length=512)
-    tags_filter = models.ManyToManyField(Tag)
-    # models.ManyToManyField(Tag)
+    share_link = models.CharField(max_length=512, blank=True)
+    cover = models.ForeignKey(Photo, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    sort_by = models.CharField(max_length=50, default='date')    # date / upload_date / rating / filename
+    sort_dir = models.CharField(max_length=4, default='desc')    # asc / desc
+    # Filter state
+    filter_mode = models.CharField(max_length=10, default='basic')  # basic / smart / notags
+    filter_tags = models.ManyToManyField(Tag, blank=True)
+    filter_favorite = models.BooleanField(null=True, blank=True)    # null=all, True=fav only
+    filter_rating_value = models.IntegerField(default=0)
+    filter_rating_mode = models.CharField(max_length=4, default='gte')  # lte / gte / eq
 
 
 class ViewPhotoOrder(models.Model):
-    name = models.CharField(max_length=250)
-    owner = models.CharField(max_length=250)
-    description = models.TextField(blank=True)
-    value = models.TextField(max_length=250)
     order = models.IntegerField()
     view = models.ForeignKey(View, on_delete=models.CASCADE)
-    photo = models.OneToOneField(Photo, on_delete=models.CASCADE)
+    photo = models.ForeignKey(Photo, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = [('view', 'photo')]
+        ordering = ['order']

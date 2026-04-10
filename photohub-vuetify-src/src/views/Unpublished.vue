@@ -47,8 +47,9 @@
         </v-sheet>
       </v-sheet>
 
-      <!-- Row 2: grid size slider -->
-      <v-sheet class="d-flex mb-0">
+      <!-- Row 2: sort + grid size slider -->
+      <v-sheet class="d-flex mb-0 align-center">
+        <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="doGetPhotos()" @update:sortDir="doGetPhotos()"></SortControls>
         <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
         <v-sheet class="d-flex ma-0 pa-0 align-end justify-end w-50">
           <v-slider v-model="sharedDatas.gridSize" style="max-width: 300px; width: 100%" :max="sharedDatas.gridMax"
@@ -116,6 +117,7 @@
 <script setup>
 import TagPhotos from '@/components/TagPhotos.vue'
 import PhotoDetail from '@/views/PhotoDetail.vue'
+import SortControls from '@/components/SortControls.vue'
 </script>
 
 
@@ -138,6 +140,8 @@ export default {
     paths: {},
     sharedDatas: {},
     loading: false,
+    sortBy: 'date',
+    sortDir: 'desc',
   }),
 
   mounted() {
@@ -204,7 +208,7 @@ export default {
 
     async doGetPhotos() {
       const { triggerAlert } = useAlertStore()
-      const { data, error } = await useAsyncFetch('/api/unpublished')
+      const { data, error } = await useAsyncFetch(`/api/unpublished?sort_by=${this.sortBy}&sort_dir=${this.sortDir}`)
       if (error.value) {
         triggerAlert('error', 'Request failure', error.value)
       } else if (data.value.ERROR) {

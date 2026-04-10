@@ -7,6 +7,7 @@ from .views import photo_actions
 from .views import tags
 from .views import unpublished
 from .views import admin
+from .views import view as views_api
 
 
 urlpatterns = [
@@ -38,6 +39,14 @@ urlpatterns = [
     # Troubleshooting
     path("prv", troubleshooting.index, name="index"),
     path("", troubleshooting.public_index, name="public_index"),
+
+    # Views
+    path("views", views_api.list_views, name="list_views"),
+    path("views/create", views_api.create_view, name="create_view"),
+    path("views/<int:view_id>", views_api.get_view, name="get_view"),
+    path("views/<int:view_id>/update", views_api.update_view, name="update_view"),
+    path("views/<int:view_id>/delete", views_api.delete_view, name="delete_view"),
+    path("views/<int:view_id>/photos", views_api.get_view_photos, name="get_view_photos"),
 
     # Admin
     path("bootstrap", admin.bootstrap, name="bootstrap"),

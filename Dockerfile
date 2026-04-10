@@ -1,6 +1,6 @@
 FROM node:lts-alpine3.21 AS build
 COPY photohub-vuetify-src /photohub-vuetify-src
-RUN cd /photohub-vuetify-src/ && yarn build --outDir /photohub-vuetify --emptyOutDir
+RUN cd /photohub-vuetify-src/ && yarn install --frozen-lockfile && yarn build --outDir /photohub-vuetify --emptyOutDir
 
 FROM python:3
 

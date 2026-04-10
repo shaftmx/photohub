@@ -116,8 +116,9 @@
         </v-sheet>
       </template>
 
-      <!-- Row 2: grid size slider -->
-      <v-sheet class="d-flex mb-0">
+      <!-- Row 2: sort + grid size slider -->
+      <v-sheet class="d-flex mb-2 align-center">
+        <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="doGetPhotos()" @update:sortDir="doGetPhotos()"></SortControls>
         <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
         <v-sheet class="d-flex ma-0 pa-0 align-end justify-end w-50">
           <v-slider v-model="sharedDatas.gridSize" style="max-width: 300px; width: 100%"
@@ -226,6 +227,18 @@
           size="small"
           @click="filterPanelOpen = !filterPanelOpen"
         >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
+
+        <v-spacer></v-spacer>
+
+        <!-- Save as view -->
+        <v-btn
+          prepend-icon="mdi-plus-box-outline"
+          variant="tonal"
+          color="primary"
+          density="compact"
+          size="small"
+          @click="goToCreateView"
+        >Save as view</v-btn>
       </div>
 
       <!-- Row 2: active tag chips summary (detailed mode, panel closed) -->
@@ -286,6 +299,7 @@
 import DisplayPhoto from '@/components/DisplayPhoto.vue'
 import TagFilter from '@/components/TagFilter.vue'
 import TagPhotos from '@/components/TagPhotos.vue'
+import SortControls from '@/components/SortControls.vue'
 </script>
 
 
@@ -313,6 +327,9 @@ export default {
     selectedFilenames: [],
     confirmBulkDeleteDialog: false,
     confirmBulkUnpublishDialog: false,
+    // Sort
+    sortBy: 'date',
+    sortDir: 'desc',
     // Filters
     filterTagMode: 'quick', // 'quick' | 'detail' | 'notags'
     filterPanelOpen: true,  // Detailed filter panel open/closed
@@ -409,6 +426,23 @@ export default {
   },
 
   methods: {
+    goToCreateView() {
+      // Collect all selected tag names (from quick or detail mode)
+      const tagNames = this.filter.slice()
+      this.$router.push({
+        name: 'view-create',
+        state: {
+          filterConfig: {
+            filter_mode: this.filterMode,       // basic / smart / notags
+            filter_tag_names: tagNames,
+            filter_favorite: this.filterFavorite ? true : null,
+            filter_rating_value: this.filterRating,
+            filter_rating_mode: this.filterRatingMode,
+          },
+        },
+      })
+    },
+
     toggleSelectionMode() {
       this.selectionMode = !this.selectionMode
       if (!this.selectionMode) this.selectedFilenames = []
@@ -610,6 +644,9 @@ export default {
         params.rating = this.filterRating
         params.rating_mode = this.filterRatingMode
       }
+
+      params.sort_by = this.sortBy
+      params.sort_dir = this.sortDir
 
       const queryFilter = Object.keys(params).length > 0 ? "?" + new URLSearchParams(params) : ""
 

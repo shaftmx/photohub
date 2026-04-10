@@ -19,7 +19,11 @@ from django.forms.models import model_to_dict
 @login_required
 @require_http_methods(["GET"])
 def get_unpublished(request):
-    photos = models.Photo.objects.filter(published=False).order_by("-date").all()
+    photos = apply_sort(
+        models.Photo.objects.filter(published=False),
+        request.GET.get('sort_by', 'date'),
+        request.GET.get('sort_dir', 'desc'),
+    ).all()
     
     # excludes = ["id", "description", "published"]
     # data = [ model_to_dict(i, exclude=excludes) for i in photos ]
