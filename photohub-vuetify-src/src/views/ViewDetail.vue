@@ -1,4 +1,12 @@
 <template>
+  <DisplayPhoto
+    ref="displayPhoto"
+    :paths="paths"
+    :photos="photos"
+    @photoDeleted="onPhotoDeleted"
+    @photoUnpublished="onPhotoUnpublished"
+  ></DisplayPhoto>
+
   <v-sheet class="pa-4" v-if="!loading">
 
     <!-- Header row -->
@@ -73,7 +81,15 @@
         class="item"
       >
         <div class="item-inner">
-          <img :src="paths[sharedDatas.gridPhotoSize] + '/' + photo.hash_path + '/' + photo.filename" />
+          <img
+            :src="paths[sharedDatas.gridPhotoSize] + '/' + photo.hash_path + '/' + photo.filename"
+            @click="$refs.displayPhoto.displayPhoto(photo.filename)"
+          />
+          <button class="favorite-btn" :class="{ active: photo.favorite }"
+            @click.stop="toggleFavorite(photo)"
+            :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
+            <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
+          </button>
         </div>
       </div>
       <div class="placeholder"></div>
@@ -101,6 +117,7 @@
 
 <script setup>
 import SortControls from '@/components/SortControls.vue'
+import DisplayPhoto from '@/components/DisplayPhoto.vue'
 </script>
 
 <script>
@@ -108,6 +125,7 @@ import '../styles/galleryGrid.css'
 import { marked } from 'marked'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { requireAuth } from '../authrequired.js'
+import { useAlertStore } from '../stores/alert'
 import { getSharedDatas } from '../sharedDatas.js'
 
 export default {
@@ -158,6 +176,27 @@ export default {
         if (a[field] > b[field]) return 1 * dir
         return 0
       })
+    },
+
+    async toggleFavorite(photo) {
+      const newValue = !photo.favorite
+      const { triggerAlert } = useAlertStore()
+      const { data, error } = await useAsyncPost(`/api/photos/${photo.filename}/update`, { favorite: newValue })
+      if (error.value) {
+        triggerAlert('error', 'Save error', error.value)
+      } else if (data.value && data.value.ERROR) {
+        triggerAlert('error', data.value.message, data.value.details)
+      } else {
+        photo.favorite = newValue
+      }
+    },
+
+    onPhotoDeleted(filename) {
+      this.photos = this.photos.filter(p => p.filename !== filename)
+    },
+
+    onPhotoUnpublished(filename) {
+      this.photos = this.photos.filter(p => p.filename !== filename)
     },
 
     async deleteView() {

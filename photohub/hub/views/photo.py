@@ -148,7 +148,7 @@ def upload_photo(request):
 
         _err = save_photo(file, photo_path, owner=request.user.username)
         if _err is not None:
-            return ErrorUnexpected(details="save_photo - %s" % _err, trace=_err)
+            return ErrorUnexpected(details="save_photo '%s' - %s" % (file.name, _err), trace=_err)
 
         _err = generate_photo_samples(photo_filename)
         if _err is not None:

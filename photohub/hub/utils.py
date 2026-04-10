@@ -252,11 +252,10 @@ def create_photo_in_db(file, filename, owner):
 
         exifs = get_exif(file)
 
-        photoKwargs = {
+        defaults = {
             "owner": owner,
             "published": False,
             "type": "photo",
-            "filename": filename,
             "origin_filename": file.name,
             "width": exifs["Width"],
             "height": exifs["Height"],
@@ -267,10 +266,11 @@ def create_photo_in_db(file, filename, owner):
         # DateTime 2023:01:31 22:04:00
         pdate = exifs.get("DateTimeOriginal", exifs.get("DateTime"))
         if pdate is not None:
-            photoKwargs["date"] = datetime.datetime.strptime(pdate, '%Y:%m:%d %H:%M:%S').astimezone(tz=datetime.timezone.utc) # Assume exif date use UTC
-        LOG.info(photoKwargs)
-        # p, _ = models.Photo.objects.get_or_create(**photoKwargs)
-        p, _ = models.Photo.objects.update_or_create(**photoKwargs)
+            defaults["date"] = datetime.datetime.strptime(pdate, '%Y:%m:%d %H:%M:%S').astimezone(tz=datetime.timezone.utc) # Assume exif date use UTC
+        LOG.info(defaults)
+        # defaults: if the photo already exists in DB, only the fields listed in defaults are overwritten.
+        # Fields not in defaults (tags, favorite, rating, description) are preserved.
+        p, _ = models.Photo.objects.update_or_create(filename=filename, defaults=defaults)
         es = []
         for k, v in exifs.items():
           es.append(models.Exif(name=k, value=v, photo=p))

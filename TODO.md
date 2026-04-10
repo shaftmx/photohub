@@ -11,7 +11,7 @@
 - ✅ Display all pictures
 - ⬜ Pagination or infinite scroll — TBD based on performance and UX
 - ✅ Show photos without tags (filter option — "No tags" mode in filter toggle)
-- ⬜ One-click: create a view from current active tag filters
+- ✅ One-click: create a view from current active tag filters ("Save as view" button)
 - ⬜ Future: create a view from a manual selection of specific photos
 - ✅ Selection mode: select multiple photos → bulk action: delete, unpublish, tag editing (reuse post-upload Tag pictures component)
 
@@ -34,15 +34,23 @@
 
 ## Views
 
-- ⬜ View has a name and a description/notes (text)
-- ⬜ Cover photo: selectable from view config, or via "Define as cover" shortcut in photo detail (only when inside a view); fallback to first photo
-- ⬜ Dynamic: view = tag filters → auto-includes new matching photos
-- ⬜ **Visibility: public or private**
-  - Public: accessible in read-only to any non-authenticated visitor via the normal view URL
-  - Private: accessible only to logged-in users; can generate a share link
-- ⬜ **Share link** (private views only): random token URL `/shared_view/<token>`, read-only access without login; regenerating invalidates the previous token
-- ⬜ **Sort / display order** — predefined criteria switchable at any time: photo date, upload date, rating, file size, with/without tags
-- ⬜ **Custom order** — edit mode with drag & drop or manual position entry; first manual reorder creates a custom order inherited from global order
+- ✅ View has a name and a description/notes (text, markdown)
+- ✅ Dynamic: view = tag filters → auto-includes new matching photos
+- ✅ Filter config: tags, favorite, rating, filter mode (quick/detailed/notags)
+- ✅ Visibility: public or private flag
+- ✅ Sort / display order — configurable default, switchable in detail view
+- ✅ Cover photo: auto-fallback to first matching photo
+- ✅ Create / Edit / Delete / List / Detail UI
+- 🚧 Cover photo: selectable from view edit UI (backend supports it, UI missing)
+- ⬜ "Define as cover" shortcut in photo detail panel when viewing from within a view
+- ⬜ Public views accessible without authentication (field exists, no unauthenticated route yet)
+- ⬜ **Share link** (private views): random token URL `/shared_view/<token>`, read-only access without login; regenerating invalidates previous token
+- ⬜ **Custom order** — drag & drop or manual position entry; uses ViewPhotoOrder model
+
+### Bug fixes needed
+
+- ⬜ ViewDetail: add favorite toggle on photo hover (like Photos page)
+- ⬜ ViewDetail: click on photo should open detail panel (DisplayPhoto component) with zoom + EXIF + edit
 
 ## Home page
 
@@ -69,6 +77,7 @@
 - ⬜ Export/import photos and tags (endpoint exists)
 - ⬜ Update to include all photo properties: favorites, rating, description, tags
 - ⬜ Update to include view definitions (name, description, visibility, share links, cover, order)
+- ⬜ **ZIP download** — generate and download a zip of photos; scope TBD: current filter/selection in Photos, a full view, or a manual selection; photo size selectable (raw, medium, small sample)
 
 ## Backend / API
 
