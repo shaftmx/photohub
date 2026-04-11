@@ -4,10 +4,7 @@
       <v-card class="d-flex flex-column" style="height: 100vh; overflow: hidden;">
 
         <div class="photo-toolbar">
-          <v-btn icon dark size="x-small" variant="text" @click="closePhoto()">
-            <v-icon size="16">mdi-close</v-icon>
-          </v-btn>
-          <span class="photo-toolbar-title">{{ currentPhotoName }}</span>
+          <span class="photo-toolbar-title ml-2">{{ currentPhotoName }}</span>
           <v-spacer></v-spacer>
           <!-- Mobile: back to photo when detail panel is open -->
           <v-btn v-if="showDetail && sharedDatas.isMobile" variant="text" size="x-small"
@@ -16,6 +13,9 @@
           <v-btn variant="text" size="x-small"
             :icon="showDetail ? 'mdi-information' : 'mdi-information-outline'"
             @click="toggleDetail()" :disabled="!displayedPhoto">
+          </v-btn>
+          <v-btn icon dark size="x-small" variant="text" @click="closePhoto()">
+            <v-icon size="16">mdi-close</v-icon>
           </v-btn>
         </div>
 
