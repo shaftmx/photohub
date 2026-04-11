@@ -10,8 +10,8 @@
         :disabled="!name.trim() || saving" :loading="saving" @click="save">Save</v-btn>
     </v-sheet>
 
-    <!-- View metadata -->
-    <v-sheet class="d-flex flex-wrap ga-4 mb-4 align-start">
+    <!-- Row 1: name + public + cover -->
+    <v-sheet class="d-flex flex-wrap ga-3 align-center mb-3">
       <v-text-field
         v-model="name"
         label="Name"
@@ -21,6 +21,28 @@
         style="min-width: 220px; max-width: 360px"
         autofocus
       ></v-text-field>
+      <v-switch
+        v-model="isPublic"
+        label="Public"
+        color="primary"
+        density="compact"
+        hide-details
+      ></v-switch>
+      <div v-if="isEditMode && coverFilename" class="d-inline-flex align-center ga-2 pa-1 rounded border" style="width: fit-content">
+        <v-img
+          v-if="paths[sharedDatas.gridPhotoSize]"
+          :src="paths[sharedDatas.gridPhotoSize] + '/' + coverHashPath + '/' + coverFilename"
+          width="40" height="40" cover class="rounded flex-shrink-0"
+        ></v-img>
+        <span class="text-caption text-medium-emphasis">Cover</span>
+        <v-btn icon size="x-small" variant="text" color="error" @click="coverFilename = null" title="Remove cover">
+          <v-icon size="16">mdi-close</v-icon>
+        </v-btn>
+      </div>
+    </v-sheet>
+
+    <!-- Row 2: description -->
+    <v-sheet class="mb-3">
       <v-textarea
         v-model="description"
         label="Description"
@@ -28,17 +50,13 @@
         variant="outlined"
         density="compact"
         hide-details
-        rows="4"
-        style="min-width: 280px; max-width: 560px"
+        rows="3"
+        style="max-width: 560px"
       ></v-textarea>
-      <v-switch
-        v-model="isPublic"
-        label="Public"
-        color="primary"
-        density="compact"
-        hide-details
-        class="mt-1"
-      ></v-switch>
+    </v-sheet>
+
+    <!-- Row 3: sort -->
+    <v-sheet class="mb-3">
       <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="fetchPreview()" @update:sortDir="fetchPreview()"></SortControls>
     </v-sheet>
 
@@ -200,6 +218,9 @@ export default {
     // Preview
     photos: [],
     loading: false,
+    // Cover (edit mode)
+    coverFilename: null,
+    coverHashPath: null,
   }),
 
   computed: {
@@ -280,6 +301,8 @@ export default {
       this.isPublic = v.public
       this.sortBy = v.sort_by
       this.sortDir = v.sort_dir
+      this.coverFilename = v.cover_filename || null
+      this.coverHashPath = v.cover_hash_path || null
       this._applyFilterState({
         filter_mode: v.filter_mode,
         filter_tag_names: v.filter_tags.map(t => t.name),
@@ -349,6 +372,9 @@ export default {
         filter_rating_mode: this.filterRatingMode,
         sort_by: this.sortBy,
         sort_dir: this.sortDir,
+      }
+      if (this.isEditMode) {
+        payload.cover_filename = this.coverFilename
       }
 
       const id = this.$route.params.id
