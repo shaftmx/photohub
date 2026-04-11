@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: false, // Tests share state (DB) — run sequentially
   retries: 0,
-  reporter: 'html',
+  reporter: [['html', { open: 'never' }], ['list']],
 
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:8080',

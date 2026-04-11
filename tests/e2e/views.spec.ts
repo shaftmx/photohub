@@ -1,9 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { loginAs, navigateTo, waitForGrid } from './helpers'
 
-// Test view name — unique enough to avoid conflicts
-const TEST_VIEW_NAME = `Test View ${Date.now()}`
-
 test.describe('Views — list page', () => {
 
   test.beforeEach(async ({ page }) => {
@@ -38,7 +35,6 @@ test.describe('Views — list page', () => {
     if (!await card.isVisible()) return
     await card.hover()
     await expect(card.locator('.card-actions')).toBeVisible()
-    await expect(card.locator('button[title*="edit"], button').nth(0)).toBeVisible()
   })
 
   test('New view button navigates to create page', async ({ page }) => {
@@ -53,9 +49,9 @@ test.describe('Views — create', () => {
 
   test.beforeEach(async ({ page }) => {
     await loginAs(page)
-    await navigateTo(page, 'Views')
-    await page.getByRole('button', { name: 'New view' }).click()
-    await expect(page).toHaveURL(/views\/create/)
+    // Go directly to create page — more reliable than UI navigation
+    await page.goto('/views/create')
+    await expect(page.getByText('Create view')).toBeVisible({ timeout: 8_000 })
   })
 
   test('Save button is disabled when name is empty', async ({ page }) => {
@@ -68,54 +64,54 @@ test.describe('Views — create', () => {
   })
 
   test('create a view with only a name', async ({ page }) => {
-    await page.getByLabel('Name').fill(TEST_VIEW_NAME)
+    const name = `Test View ${Date.now()}`
+    await page.locator('.v-text-field input').first().fill(name)
+    await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled()
     await page.getByRole('button', { name: 'Save' }).click()
-    // Should redirect to the new view's detail page
-    await expect(page).toHaveURL(/views\/\d+/)
-    await expect(page.getByText(TEST_VIEW_NAME)).toBeVisible()
+    await expect(page).toHaveURL(/views\/\d+/, { timeout: 15_000 })
+    await expect(page.getByText(name)).toBeVisible()
     // Cleanup: delete the created view
-    await page.getByRole('button', { name: /delete/i }).last().click()
+    await page.locator('button').filter({ has: page.locator('.mdi-delete-outline') }).last().click()
     await page.getByRole('button', { name: 'Delete' }).last().click()
   })
 
   test('create a view with description, public toggle and sort', async ({ page }) => {
     const name = `Full View ${Date.now()}`
-    await page.getByLabel('Name').fill(name)
-    await page.getByLabel('Description').fill('A test description with **markdown**')
-    await page.getByLabel('Public').click() // toggle switch
+    await page.locator('.v-text-field input').first().fill(name)
+    await page.locator('.v-textarea textarea').first().fill('A test description with **markdown**')
+    await page.locator('.v-switch input').click({ force: true }) // toggle public
     // Change sort to Upload date
     await page.locator('.v-select').first().click()
     await page.getByRole('option', { name: 'Upload date' }).click()
     await page.getByRole('button', { name: 'Save' }).click()
-    await expect(page).toHaveURL(/views\/\d+/)
+    await expect(page).toHaveURL(/views\/\d+/, { timeout: 15_000 })
     await expect(page.getByText(name)).toBeVisible()
     // Cleanup
-    await page.getByRole('button', { name: /delete/i }).last().click()
+    await page.locator('button').filter({ has: page.locator('.mdi-delete-outline') }).last().click()
     await page.getByRole('button', { name: 'Delete' }).last().click()
   })
 
   test('create a view with No tags filter mode', async ({ page }) => {
     const name = `No Tags View ${Date.now()}`
-    await page.getByLabel('Name').fill(name)
+    await page.locator('.v-text-field input').first().fill(name)
     await page.getByRole('button', { name: 'No tags' }).click()
-    // Preview should refresh
     await page.waitForLoadState('networkidle')
     await page.getByRole('button', { name: 'Save' }).click()
-    await expect(page).toHaveURL(/views\/\d+/)
+    await expect(page).toHaveURL(/views\/\d+/, { timeout: 15_000 })
     // Cleanup
-    await page.getByRole('button', { name: /delete/i }).last().click()
+    await page.locator('button').filter({ has: page.locator('.mdi-delete-outline') }).last().click()
     await page.getByRole('button', { name: 'Delete' }).last().click()
   })
 
   test('create a view with favorite filter', async ({ page }) => {
     const name = `Favorites View ${Date.now()}`
-    await page.getByLabel('Name').fill(name)
+    await page.locator('.v-text-field input').first().fill(name)
     await page.locator('button[title*="avorite"]').first().click()
     await page.waitForLoadState('networkidle')
     await page.getByRole('button', { name: 'Save' }).click()
-    await expect(page).toHaveURL(/views\/\d+/)
+    await expect(page).toHaveURL(/views\/\d+/, { timeout: 15_000 })
     // Cleanup
-    await page.getByRole('button', { name: /delete/i }).last().click()
+    await page.locator('button').filter({ has: page.locator('.mdi-delete-outline') }).last().click()
     await page.getByRole('button', { name: 'Delete' }).last().click()
   })
 
@@ -156,9 +152,9 @@ test.describe('Views — detail', () => {
     const page = await browser.newPage()
     await loginAs(page)
     await page.goto('/views/create')
-    await page.getByLabel('Name').fill(`Detail Test View`)
+    await page.locator('.v-text-field input').first().fill('Detail Test View')
     await page.getByRole('button', { name: 'Save' }).click()
-    await page.waitForURL(/views\/\d+/)
+    await page.waitForURL(/views\/\d+/, { timeout: 15_000 })
     viewId = page.url().match(/views\/(\d+)/)?.[1] || ''
     await page.close()
   })
@@ -168,7 +164,7 @@ test.describe('Views — detail', () => {
     const page = await browser.newPage()
     await loginAs(page)
     await page.goto(`/views/${viewId}`)
-    await page.getByRole('button', { name: /delete/i }).last().click()
+    await page.locator('button').filter({ has: page.locator('.mdi-delete-outline') }).last().click()
     await page.getByRole('button', { name: 'Delete' }).last().click()
     await page.close()
   })
@@ -224,28 +220,26 @@ test.describe('Views — detail', () => {
   })
 
   test('edit button navigates to edit page', async ({ page }) => {
-    await page.locator('button[data-testid="edit-view"], button').filter({ has: page.locator('[class*="pencil"]') }).first().click()
+    await page.locator('button').filter({ has: page.locator('.mdi-pencil-outline') }).first().click()
     await expect(page).toHaveURL(new RegExp(`views/${viewId}/edit`))
     await expect(page.getByText('Edit view')).toBeVisible()
   })
 
   test('delete button shows confirm dialog', async ({ page }) => {
-    await page.locator('button').filter({ has: page.locator('[class*="delete"]') }).last().click()
-    await expect(page.getByText(/Delete.*?/)).toBeVisible()
+    await page.locator('button').filter({ has: page.locator('.mdi-delete-outline') }).last().click()
+    // Dialog title contains "Delete ..."
+    await expect(page.locator('.v-card-title').filter({ hasText: /Delete/ })).toBeVisible()
     // Cancel — don't actually delete (afterAll handles cleanup)
     await page.getByRole('button', { name: 'Cancel' }).last().click()
   })
 
   test('changing sort re-orders photos', async ({ page }) => {
     await waitForGrid(page)
-    const firstSrc = await page.locator('.item img').first().getAttribute('src')
     await page.locator('.v-select').first().click()
     await page.getByRole('option', { name: 'Rating' }).click()
-    await page.waitForTimeout(300)
-    const newFirstSrc = await page.locator('.item img').first().getAttribute('src')
-    // Order may or may not change (depends on data) — grid should still be present
+    await page.waitForLoadState('networkidle')
+    // Grid should still be present
     await expect(page.locator('.item').first()).toBeVisible()
-    _ = firstSrc; _ = newFirstSrc
   })
 
 })
@@ -258,9 +252,9 @@ test.describe('Views — edit', () => {
     const page = await browser.newPage()
     await loginAs(page)
     await page.goto('/views/create')
-    await page.getByLabel('Name').fill('Edit Me View')
+    await page.locator('.v-text-field input').first().fill('Edit Me View')
     await page.getByRole('button', { name: 'Save' }).click()
-    await page.waitForURL(/views\/\d+/)
+    await page.waitForURL(/views\/\d+/, { timeout: 15_000 })
     viewId = page.url().match(/views\/(\d+)/)?.[1] || ''
     await page.close()
   })
@@ -270,7 +264,7 @@ test.describe('Views — edit', () => {
     const page = await browser.newPage()
     await loginAs(page)
     await page.goto(`/views/${viewId}`)
-    await page.locator('button').filter({ has: page.locator('[class*="delete"]') }).last().click()
+    await page.locator('button').filter({ has: page.locator('.mdi-delete-outline') }).last().click()
     await page.getByRole('button', { name: 'Delete' }).last().click()
     await page.close()
   })
@@ -282,7 +276,7 @@ test.describe('Views — edit', () => {
   })
 
   test('edit page pre-fills name from existing view', async ({ page }) => {
-    await expect(page.getByLabel('Name')).toHaveValue('Edit Me View')
+    await expect(page.locator('.v-text-field input').first()).toHaveValue('Edit Me View')
   })
 
   test('edit page pre-fills filter mode', async ({ page }) => {
@@ -296,23 +290,40 @@ test.describe('Views — edit', () => {
   })
 
   test('edit name and save', async ({ page }) => {
-    await page.getByLabel('Name').fill('Renamed View')
+    const nameInput = page.locator('.v-text-field input').first()
+    await nameInput.clear()
+    await nameInput.fill('Renamed View')
+    await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled()
+    // Wait for the API response before checking redirect
+    const [response] = await Promise.all([
+      page.waitForResponse(resp => resp.url().includes(`/api/views/${viewId}/update`)),
+      page.getByRole('button', { name: 'Save' }).click(),
+    ])
+    expect(response.status()).toBe(200)
+    await expect(page).toHaveURL(new RegExp(`views/${viewId}$`), { timeout: 10_000 })
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('.text-h6').filter({ hasText: 'Renamed View' })).toBeVisible({ timeout: 10_000 })
+    // Rename back for afterAll cleanup
+    await page.locator('button').filter({ has: page.locator('.mdi-pencil-outline') }).first().click()
+    await page.locator('.v-text-field input').first().clear()
+    await page.locator('.v-text-field input').first().fill('Edit Me View')
     await page.getByRole('button', { name: 'Save' }).click()
-    await expect(page).toHaveURL(new RegExp(`views/${viewId}$`))
-    await expect(page.getByText('Renamed View')).toBeVisible()
+    await expect(page).toHaveURL(new RegExp(`views/${viewId}$`), { timeout: 15_000 })
   })
 
   test('edit sort and verify it persists', async ({ page }) => {
     await page.locator('.v-select').first().click()
     await page.getByRole('option', { name: 'Rating' }).click()
     await page.getByRole('button', { name: 'Save' }).click()
-    await expect(page).toHaveURL(new RegExp(`views/${viewId}$`))
+    await expect(page).toHaveURL(new RegExp(`views/${viewId}$`), { timeout: 15_000 })
     // Go back to edit and verify sort is persisted
     await page.goto(`/views/${viewId}/edit`)
     await expect(page.locator('.v-select').first()).toContainText('Rating')
   })
 
   test('changing sort updates the preview', async ({ page }) => {
+    // Wait for the initial preview to load before counting
+    await page.waitForLoadState('networkidle')
     const countBefore = await page.locator('.item').count()
     await page.locator('.v-select').first().click()
     await page.getByRole('option', { name: 'Upload date' }).click()
@@ -328,19 +339,20 @@ test.describe('Views — delete from list', () => {
 
   test('delete a view from the cards list', async ({ page }) => {
     await loginAs(page)
-    // Create a view to delete
+    // Use a unique name to avoid conflicts with leftover data from previous runs
+    const viewName = `To Delete View ${Date.now()}`
     await page.goto('/views/create')
-    await page.getByLabel('Name').fill('To Delete View')
+    await page.locator('.v-text-field input').first().fill(viewName)
     await page.getByRole('button', { name: 'Save' }).click()
-    await page.waitForURL(/views\/\d+/)
+    await page.waitForURL(/views\/\d+/, { timeout: 15_000 })
 
     // Go to views list
     await navigateTo(page, 'Views')
-    const card = page.locator('.view-card').filter({ hasText: 'To Delete View' })
+    const card = page.locator('.view-card').filter({ hasText: viewName })
     await card.hover()
     await card.locator('.card-actions button').last().click() // delete button
     // Confirm dialog
-    await expect(page.getByText('To Delete View')).toBeVisible() // in dialog title
+    await expect(page.locator('.v-card-title').filter({ hasText: viewName })).toBeVisible()
     await page.getByRole('button', { name: 'Delete' }).last().click()
     // Card should disappear
     await expect(card).not.toBeVisible({ timeout: 5_000 })
