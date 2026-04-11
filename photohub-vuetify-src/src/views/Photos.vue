@@ -275,17 +275,13 @@
       </v-expand-transition>
     </v-sheet>
 
-    <PhotoGrid :photos="photos" :paths="paths"
-      @item-click="photo => selectionMode ? selectDeselect(photo) : $refs.displayPhoto.displayPhoto(photo.filename)">
+    <PhotoGrid :photos="photos" :paths="paths" :show-favorite="!selectionMode"
+      @item-click="photo => selectionMode ? selectDeselect(photo) : $refs.displayPhoto.displayPhoto(photo.filename)"
+      @toggle-favorite="toggleFavorite">
       <template #overlay="{ photo }">
-        <!-- Selection overlay — visible when in selection mode -->
         <div v-if="selectionMode" class="selection-overlay" :class="{ selected: selectedFilenames.includes(photo.filename) }" @click.stop="selectDeselect(photo)">
           <v-icon v-if="selectedFilenames.includes(photo.filename)" color="white" size="28">mdi-check-circle</v-icon>
         </div>
-        <!-- Favorite shortcut — visible on hover (desktop only), hidden in selection mode -->
-        <button v-if="!selectionMode" class="favorite-btn" :class="{ active: photo.favorite }" @click.stop="toggleFavorite(photo)" :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
-          <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
-        </button>
       </template>
     </PhotoGrid>
   </v-sheet>

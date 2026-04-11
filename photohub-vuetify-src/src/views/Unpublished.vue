@@ -99,23 +99,16 @@
     </v-dialog>
 
     <!-- Photo grid -->
-    <PhotoGrid :photos="photos" :paths="paths" @item-click="selectDeselect">
+    <PhotoGrid :photos="photos" :paths="paths" show-favorite
+      @item-click="selectDeselect"
+      @toggle-favorite="toggleFavorite">
       <template #overlay="{ photo }">
-        <!-- No-tags indicator -->
         <v-chip v-if="Object.keys(photo.tags).length === 0" class="no-tags-chip"
           color="error" size="x-small" variant="flat">no tags</v-chip>
-        <!-- Selection overlay -->
         <div class="selection-overlay" :class="{ selected: selectedPhotosFilenames.includes(photo.filename) }"
           @click.stop="selectDeselect(photo)">
           <v-icon v-if="selectedPhotosFilenames.includes(photo.filename)" color="white" size="28">mdi-check-circle</v-icon>
         </div>
-        <!-- Favorite button -->
-        <button class="favorite-btn" :class="{ active: photo.favorite }"
-          @click.stop="toggleFavorite(photo)"
-          :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
-          <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
-        </button>
-        <!-- Detail button -->
         <button class="detail-btn" @click.stop="$refs.photoDetail.open(photo.filename)" title="Details">
           <v-icon size="16" color="white" style="opacity: 0.7;">mdi-information-outline</v-icon>
         </button>

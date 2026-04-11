@@ -75,14 +75,9 @@
     </v-sheet>
 
     <!-- Photo grid -->
-    <PhotoGrid :photos="photos" :paths="paths" @item-click="photo => $refs.displayPhoto.displayPhoto(photo.filename)">
-      <template #overlay="{ photo }">
-        <button class="favorite-btn" :class="{ active: photo.favorite }"
-          @click.stop="toggleFavorite(photo)"
-          :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
-          <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
-        </button>
-      </template>
+    <PhotoGrid :photos="photos" :paths="paths" show-favorite
+      @item-click="photo => $refs.displayPhoto.displayPhoto(photo.filename)"
+      @toggle-favorite="toggleFavorite">
     </PhotoGrid>
 
     <!-- Delete confirm dialog -->

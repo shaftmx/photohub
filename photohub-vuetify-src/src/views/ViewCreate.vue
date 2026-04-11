@@ -174,19 +174,10 @@
     </v-sheet>
 
     <!-- Preview grid -->
-    <PhotoGrid :photos="photos" :paths="paths" @item-click="onGridItemClick">
-      <template #overlay="{ photo }">
-        <button class="cover-btn" :class="{ active: coverFilename === photo.filename }"
-          @click.stop="setCover(photo)"
-          :title="coverFilename === photo.filename ? 'Remove cover' : 'Set as cover'">
-          <v-icon size="16">{{ coverFilename === photo.filename ? 'mdi-book-open-page-variant' : 'mdi-book-open-page-variant-outline' }}</v-icon>
-        </button>
-        <button class="favorite-btn" :class="{ active: photo.favorite }"
-          @click.stop="toggleFavorite(photo)"
-          :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
-          <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
-        </button>
-      </template>
+    <PhotoGrid :photos="photos" :paths="paths" show-favorite show-cover :cover-filename="coverFilename"
+      @item-click="onGridItemClick"
+      @toggle-favorite="toggleFavorite"
+      @set-cover="setCover">
     </PhotoGrid>
 
   </v-sheet>
