@@ -19,10 +19,15 @@
   <v-sheet v-if="displayed">
     <v-sheet>
       <v-sheet :class="!sharedDatas.isMobile ? 'ma-2 pa-2 me-auto' : ''">
-        <h1 v-if="!sharedDatas.isMobile" class="text-h4 mb-4">{{ title }}</h1>
+        <div v-if="!sharedDatas.isMobile" class="d-flex align-center ga-2 mb-1">
+          <h1 class="text-h4">{{ title }}</h1>
+          <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
+        </div>
         <h1 v-if="!sharedDatas.isMobile" class="text-subtitle-1 mb-4">{{ subtitle }}</h1>
-
-        <h1 v-if="sharedDatas.isMobile" class="text-h6 mb-1">{{ title }}</h1>
+        <div v-if="sharedDatas.isMobile" class="d-flex align-center ga-2 mb-1">
+          <h1 class="text-h6">{{ title }}</h1>
+          <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
+        </div>
         <h1 v-if="sharedDatas.isMobile" class="text-body-2 mb-4">{{ subtitle }}</h1>
       </v-sheet>
 
