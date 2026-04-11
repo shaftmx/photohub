@@ -3,25 +3,21 @@
     <v-dialog v-model="displayed" fullscreen :scrim="false">
       <v-card class="d-flex flex-column" style="height: 100vh; overflow: hidden;">
 
-        <v-toolbar dark color="primary" density="compact">
-          <v-btn icon dark @click="closePhoto()">
-            <v-icon>mdi-close</v-icon>
+        <div class="photo-toolbar">
+          <v-btn icon dark size="x-small" variant="text" @click="closePhoto()">
+            <v-icon size="16">mdi-close</v-icon>
           </v-btn>
-          <v-toolbar-title>{{ currentPhotoName }}</v-toolbar-title>
+          <span class="photo-toolbar-title">{{ currentPhotoName }}</span>
           <v-spacer></v-spacer>
-          <v-toolbar-items>
-            <!-- Mobile: back to photo when detail panel is open -->
-            <v-btn v-if="showDetail && sharedDatas.isMobile" variant="text" prepend-icon="mdi-arrow-left"
-              @click="showDetail = false">
-              Photo
-            </v-btn>
-            <!-- Detail toggle -->
-            <v-btn variant="text" :prepend-icon="showDetail ? 'mdi-information' : 'mdi-information-outline'"
-              @click="toggleDetail()" :disabled="!displayedPhoto">
-              Details
-            </v-btn>
-          </v-toolbar-items>
-        </v-toolbar>
+          <!-- Mobile: back to photo when detail panel is open -->
+          <v-btn v-if="showDetail && sharedDatas.isMobile" variant="text" size="x-small"
+            prepend-icon="mdi-arrow-left" @click="showDetail = false">Photo</v-btn>
+          <!-- Detail toggle -->
+          <v-btn variant="text" size="x-small"
+            :icon="showDetail ? 'mdi-information' : 'mdi-information-outline'"
+            @click="toggleDetail()" :disabled="!displayedPhoto">
+          </v-btn>
+        </div>
 
         <div class="d-flex flex-grow-1 overflow-hidden" style="min-height: 0;">
           <!-- Carousel (hidden on mobile when detail is open) -->
@@ -78,7 +74,7 @@ export default defineComponent({
   components: { PhotoDetail },
 
   props: {
-    photos: Object,
+    photos: Array,
     paths: Object,
   },
 
@@ -93,7 +89,8 @@ export default defineComponent({
 
   computed: {
     currentPhotoName() {
-      return this.displayedPhoto || 'Photo'
+      const photo = (this.photos || []).find(p => p.filename === this.displayedPhoto)
+      return (photo && photo.origin_filename) || this.displayedPhoto || 'Photo'
     },
   },
 
@@ -103,6 +100,11 @@ export default defineComponent({
       this.displayedPhoto = this.$route.query.displayPhoto
       this.displayed = true
     }
+    window.addEventListener('keydown', this.onKeyDown)
+  },
+
+  beforeUnmount() {
+    window.removeEventListener('keydown', this.onKeyDown)
   },
 
   watch: {
@@ -170,6 +172,43 @@ export default defineComponent({
       this.closePhoto()
     },
 
+    onKeyDown(e) {
+      if (!this.displayed) return
+      if (e.key === 'ArrowRight') this.navigate(1)
+      else if (e.key === 'ArrowLeft') this.navigate(-1)
+      else if (e.key === 'Escape') this.closePhoto()
+    },
+
+    navigate(dir) {
+      const idx = this.photos.findIndex(p => p.filename === this.displayedPhoto)
+      if (idx === -1) return
+      const next = this.photos[idx + dir]
+      if (next) this.displayedPhoto = next.filename
+    },
+
   },
 })
 </script>
+
+<style scoped>
+.photo-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  height: 36px;
+  flex-shrink: 0;
+  background: rgb(var(--v-theme-primary));
+  color: white;
+}
+
+.photo-toolbar-title {
+  font-size: 0.75rem;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 0;
+  min-width: 0;
+}
+</style>
