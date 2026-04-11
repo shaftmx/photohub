@@ -172,9 +172,9 @@
           color="primary"
           mandatory
         >
-          <v-btn value="quick" prepend-icon="mdi-text-search-variant" size="small">Quick</v-btn>
-          <v-btn value="detail" prepend-icon="mdi-tag-search" size="small">Detailed</v-btn>
-          <v-btn value="notags" prepend-icon="mdi-tag-off-outline" size="small">No tags</v-btn>
+          <v-btn value="quick" size="small"><v-icon size="18">mdi-text-search-variant</v-icon><v-tooltip activator="parent" location="top">Quick filter</v-tooltip></v-btn>
+          <v-btn value="detail" size="small"><v-icon size="18">mdi-tag-search</v-icon><v-tooltip activator="parent" location="top">Detailed filter</v-tooltip></v-btn>
+          <v-btn value="notags" size="small"><v-icon size="18">mdi-tag-off-outline</v-icon><v-tooltip activator="parent" location="top">No tags</v-tooltip></v-btn>
         </v-btn-toggle>
 
         <!-- Toggle: all published tags vs tags in current selection (hidden in notags mode) -->
@@ -233,10 +233,9 @@
           @click="filterPanelOpen = !filterPanelOpen"
         >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
 
-        <v-spacer></v-spacer>
-
         <!-- Save as view -->
         <v-btn
+          class="ml-auto"
           prepend-icon="mdi-plus-box-outline"
           variant="tonal"
           color="primary"
