@@ -275,27 +275,19 @@
       </v-expand-transition>
     </v-sheet>
 
-    <v-container class="grid ma-0 pa-0" :style="'--gridmargin: ' + sharedDatas.gridMargin" fluid>
-      <div :style="'--ratio: ' + photo['height'] / photo['width'] + ';  --height: ' + sharedDatas.gridSize" class="item"
-        v-for="(photo) in photos">
-        <div class="item-inner">
-          <img
-            @click="selectionMode ? selectDeselect(photo) : $refs.displayPhoto.displayPhoto(photo.filename)"
-            :src="paths[sharedDatas.gridPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']"
-            :style="selectionMode ? 'cursor: pointer' : ''"
-          />
-          <!-- Selection overlay — visible when in selection mode -->
-          <div v-if="selectionMode" class="selection-overlay" :class="{ selected: selectedFilenames.includes(photo.filename) }" @click="selectDeselect(photo)">
-            <v-icon v-if="selectedFilenames.includes(photo.filename)" color="white" size="28">mdi-check-circle</v-icon>
-          </div>
-          <!-- Favorite shortcut — visible on hover (desktop only), hidden in selection mode -->
-          <button v-if="!selectionMode" class="favorite-btn" :class="{ active: photo.favorite }" @click.stop="toggleFavorite(photo)" :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
-            <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
-          </button>
+    <PhotoGrid :photos="photos" :paths="paths"
+      @item-click="photo => selectionMode ? selectDeselect(photo) : $refs.displayPhoto.displayPhoto(photo.filename)">
+      <template #overlay="{ photo }">
+        <!-- Selection overlay — visible when in selection mode -->
+        <div v-if="selectionMode" class="selection-overlay" :class="{ selected: selectedFilenames.includes(photo.filename) }" @click.stop="selectDeselect(photo)">
+          <v-icon v-if="selectedFilenames.includes(photo.filename)" color="white" size="28">mdi-check-circle</v-icon>
         </div>
-      </div>
-      <div class="placeholder"></div>
-    </v-container>
+        <!-- Favorite shortcut — visible on hover (desktop only), hidden in selection mode -->
+        <button v-if="!selectionMode" class="favorite-btn" :class="{ active: photo.favorite }" @click.stop="toggleFavorite(photo)" :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
+          <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
+        </button>
+      </template>
+    </PhotoGrid>
   </v-sheet>
 </template>
 
@@ -304,11 +296,11 @@ import DisplayPhoto from '@/components/DisplayPhoto.vue'
 import TagFilter from '@/components/TagFilter.vue'
 import TagPhotos from '@/components/TagPhotos.vue'
 import SortControls from '@/components/SortControls.vue'
+import PhotoGrid from '@/components/PhotoGrid.vue'
 </script>
 
 
 <script>
-import '../styles/galleryGrid.css'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { requireAuth } from '../authrequired.js'
 import { useAlertStore } from '../stores/alert'

@@ -1,4 +1,15 @@
 <template>
+  <DisplayPhoto
+    v-if="isEditMode"
+    ref="displayPhoto"
+    :photos="photos"
+    :paths="paths"
+    :view-id="$route.params.id"
+    :cover-filename="coverFilename"
+    @photoDeleted="onPhotoDeleted"
+    @photoUnpublished="onPhotoUnpublished"
+  />
+
   <v-sheet class="pa-4">
 
     <!-- Header -->
@@ -164,19 +175,20 @@
     </v-sheet>
 
     <!-- Preview grid -->
-    <v-container class="grid ma-0 pa-0" :style="'--gridmargin: ' + sharedDatas.gridMargin" fluid>
-      <div
-        v-for="photo in photos"
-        :key="photo.filename"
-        :style="'--ratio: ' + photo.height / photo.width + '; --height: ' + sharedDatas.gridSize"
-        class="item"
-      >
-        <div class="item-inner">
-          <img :src="paths[sharedDatas.gridPhotoSize] + '/' + photo.hash_path + '/' + photo.filename" />
-        </div>
-      </div>
-      <div class="placeholder"></div>
-    </v-container>
+    <PhotoGrid :photos="photos" :paths="paths" @item-click="onGridItemClick">
+      <template v-if="isEditMode" #overlay="{ photo }">
+        <button class="cover-btn" :class="{ active: coverFilename === photo.filename }"
+          @click.stop="setCover(photo)"
+          :title="coverFilename === photo.filename ? 'Remove cover' : 'Set as cover'">
+          <v-icon size="16">{{ coverFilename === photo.filename ? 'mdi-book-open-page-variant' : 'mdi-book-open-page-variant-outline' }}</v-icon>
+        </button>
+        <button class="favorite-btn" :class="{ active: photo.favorite }"
+          @click.stop="toggleFavorite(photo)"
+          :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
+          <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
+        </button>
+      </template>
+    </PhotoGrid>
 
   </v-sheet>
 </template>
@@ -184,10 +196,11 @@
 <script setup>
 import TagFilter from '@/components/TagFilter.vue'
 import SortControls from '@/components/SortControls.vue'
+import DisplayPhoto from '@/components/DisplayPhoto.vue'
+import PhotoGrid from '@/components/PhotoGrid.vue'
 </script>
 
 <script>
-import '../styles/galleryGrid.css'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { requireAuth } from '../authrequired.js'
 import { useAlertStore } from '../stores/alert'
@@ -350,6 +363,37 @@ export default {
       if (error.value) return
       this.photos = data.value.data.photos
       this.paths = data.value.data.paths
+    },
+
+    onGridItemClick(photo) {
+      if (this.isEditMode) this.$refs.displayPhoto.displayPhoto(photo.filename)
+    },
+
+    onPhotoDeleted(filename) {
+      this.photos = this.photos.filter(p => p.filename !== filename)
+    },
+
+    onPhotoUnpublished(filename) {
+      this.photos = this.photos.filter(p => p.filename !== filename)
+    },
+
+    async toggleFavorite(photo) {
+      const newValue = !photo.favorite
+      const { triggerAlert } = useAlertStore()
+      const { data, error } = await useAsyncPost(`/api/photos/${photo.filename}/update`, { favorite: newValue })
+      if (error.value) {
+        triggerAlert('error', 'Save error', error.value)
+      } else if (data.value && data.value.ERROR) {
+        triggerAlert('error', data.value.message, data.value.details)
+      } else {
+        photo.favorite = newValue
+      }
+    },
+
+    setCover(photo) {
+      const isCurrent = this.coverFilename === photo.filename
+      this.coverFilename = isCurrent ? null : photo.filename
+      this.coverHashPath = isCurrent ? null : photo.hash_path
     },
 
     onFilterModeChange(newMode) {

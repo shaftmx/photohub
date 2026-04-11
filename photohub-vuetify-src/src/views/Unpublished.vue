@@ -93,30 +93,22 @@
     </v-dialog>
 
     <!-- Photo grid -->
-    <v-container class="grid ma-0 pa-0" :style="'--gridmargin: ' + sharedDatas.gridMargin" fluid>
-      <div :style="'--ratio: ' + photo['height'] / photo['width'] + '; --height: ' + sharedDatas.gridSize" class="item"
-        v-for="(photo) in photos">
-        <div class="item-inner">
-          <img :src="paths[sharedDatas.gridPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']" />
-
-          <!-- No-tags indicator -->
-          <v-chip v-if="Object.keys(photo['tags']).length === 0" class="no-tags-chip"
-            color="error" size="x-small" variant="flat">no tags</v-chip>
-
-          <!-- Selection overlay -->
-          <div class="selection-overlay" :class="{ selected: selectedPhotosFilenames.includes(photo.filename) }"
-            @click="selectDeselect(photo)">
-            <v-icon v-if="selectedPhotosFilenames.includes(photo.filename)" color="white" size="28">mdi-check-circle</v-icon>
-          </div>
-
-          <!-- Detail button -->
-          <button class="detail-btn ma-1" @click.stop="$refs.photoDetail.open(photo.filename)" title="Details">
-            <v-icon size="16" color="white" style="opacity: 0.7;">mdi-information-outline</v-icon>
-          </button>
+    <PhotoGrid :photos="photos" :paths="paths" @item-click="selectDeselect">
+      <template #overlay="{ photo }">
+        <!-- No-tags indicator -->
+        <v-chip v-if="Object.keys(photo.tags).length === 0" class="no-tags-chip"
+          color="error" size="x-small" variant="flat">no tags</v-chip>
+        <!-- Selection overlay -->
+        <div class="selection-overlay" :class="{ selected: selectedPhotosFilenames.includes(photo.filename) }"
+          @click.stop="selectDeselect(photo)">
+          <v-icon v-if="selectedPhotosFilenames.includes(photo.filename)" color="white" size="28">mdi-check-circle</v-icon>
         </div>
-      </div>
-      <div class="placeholder"></div>
-    </v-container>
+        <!-- Detail button -->
+        <button class="detail-btn" @click.stop="$refs.photoDetail.open(photo.filename)" title="Details">
+          <v-icon size="16" color="white" style="opacity: 0.7;">mdi-information-outline</v-icon>
+        </button>
+      </template>
+    </PhotoGrid>
   </v-sheet>
 </template>
 
@@ -125,11 +117,11 @@
 import TagPhotos from '@/components/TagPhotos.vue'
 import PhotoDetail from '@/views/PhotoDetail.vue'
 import SortControls from '@/components/SortControls.vue'
+import PhotoGrid from '@/components/PhotoGrid.vue'
 </script>
 
 
 <script>
-import '../styles/galleryGrid.css'
 import { requireAuth } from '../authrequired.js'
 import { useAlertStore } from '../stores/alert'
 import { getSharedDatas } from '../sharedDatas.js'
@@ -238,34 +230,6 @@ export default {
   z-index: 10;
   pointer-events: none;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-}
-
-.detail-btn {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  z-index: 10;
-  background: rgba(var(--v-theme-primary), 0.35);
-  border: none;
-  border-radius: 50%;
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .item-inner:hover .detail-btn {
-    opacity: 1;
-  }
-  .detail-btn:hover {
-    background: rgba(var(--v-theme-primary), 0.75);
-  }
 }
 
 .selection-overlay {

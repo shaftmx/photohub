@@ -75,27 +75,20 @@
     </v-sheet>
 
     <!-- Photo grid -->
-    <div class="grid ma-0 pa-0" :style="'--gridmargin: ' + sharedDatas.gridMargin">
-      <div
-        v-for="photo in photos"
-        :key="photo.filename"
-        :style="'--ratio: ' + photo.height / photo.width + '; --height: ' + sharedDatas.gridSize"
-        class="item"
-      >
-        <div class="item-inner">
-          <img
-            :src="paths[sharedDatas.gridPhotoSize] + '/' + photo.hash_path + '/' + photo.filename"
-            @click="$refs.displayPhoto.displayPhoto(photo.filename)"
-          />
-          <button class="favorite-btn" :class="{ active: photo.favorite }"
-            @click.stop="toggleFavorite(photo)"
-            :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
-            <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
-          </button>
-        </div>
-      </div>
-      <div class="placeholder"></div>
-    </div>
+    <PhotoGrid :photos="photos" :paths="paths" @item-click="photo => $refs.displayPhoto.displayPhoto(photo.filename)">
+      <template #overlay="{ photo }">
+        <button class="cover-btn" :class="{ active: view.cover_filename === photo.filename }"
+          @click.stop="setCover(photo)"
+          :title="view.cover_filename === photo.filename ? 'Remove cover' : 'Set as cover'">
+          <v-icon size="16">{{ view.cover_filename === photo.filename ? 'mdi-book-open-page-variant' : 'mdi-book-open-page-variant-outline' }}</v-icon>
+        </button>
+        <button class="favorite-btn" :class="{ active: photo.favorite }"
+          @click.stop="toggleFavorite(photo)"
+          :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
+          <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
+        </button>
+      </template>
+    </PhotoGrid>
 
     <!-- Delete confirm dialog -->
     <v-dialog v-model="confirmDeleteDialog" max-width="400" persistent>
@@ -120,10 +113,10 @@
 <script setup>
 import SortControls from '@/components/SortControls.vue'
 import DisplayPhoto from '@/components/DisplayPhoto.vue'
+import PhotoGrid from '@/components/PhotoGrid.vue'
 </script>
 
 <script>
-import '../styles/galleryGrid.css'
 import { marked } from 'marked'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { requireAuth } from '../authrequired.js'
@@ -227,36 +220,6 @@ export default {
 </script>
 
 <style scoped>
-.cover-btn {
-  position: absolute;
-  bottom: 4px;
-  left: 4px;
-  z-index: 10;
-  background: rgba(0, 0, 0, 0.35);
-  border: none;
-  border-radius: 50%;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s;
-  color: white;
-}
-
-.cover-btn.active {
-  opacity: 1;
-  background: rgba(var(--v-theme-primary), 0.75);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .item-inner:hover .cover-btn {
-    opacity: 1;
-  }
-}
-
 .markdown-body :deep(p) { margin: 0 0 6px; }
 .markdown-body :deep(p:last-child) { margin-bottom: 0; }
 .markdown-body :deep(h1),
