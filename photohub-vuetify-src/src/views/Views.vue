@@ -41,11 +41,9 @@
           <div v-else class="cover-placeholder">
             <v-icon size="48" color="grey-lighten-1">mdi-image-album</v-icon>
           </div>
-          <!-- Badges -->
-          <div class="cover-badges">
-            <v-chip size="x-small" :color="view.public ? 'success' : 'default'" variant="tonal">
-              {{ view.public ? 'Public' : 'Private' }}
-            </v-chip>
+          <!-- Private lock -->
+          <div v-if="!view.public" class="cover-badges">
+            <v-icon size="14" color="white" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));">mdi-lock</v-icon>
           </div>
         </div>
 
@@ -115,7 +113,7 @@ export default {
       const { data, error } = await useAsyncFetch('/api/views')
       this.loading = false
       if (error.value) return
-      this.views = data.value.data.views
+      this.views = (data.value.data.views || []).slice().sort((a, b) => a.name.localeCompare(b.name))
       this.paths = data.value.data.paths
     },
 
