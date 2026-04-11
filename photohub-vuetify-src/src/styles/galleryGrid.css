@@ -68,11 +68,11 @@
   opacity: 1;
 }
 
-/* Detail button (Unpublished page) */
+/* Detail button (Unpublished page) — to the left of favorite button */
 .detail-btn {
   position: absolute;
   top: 4px;
-  right: 4px;
+  right: 28px;
   z-index: 10;
   background: rgba(var(--v-theme-primary), 0.35);
   border: none;

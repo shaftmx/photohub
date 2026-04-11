@@ -44,6 +44,12 @@
               <v-list-item prepend-icon="mdi-cloud-check" @click="confirmPublishDialog = true; loading = true">
                 <v-list-item-title>Publish</v-list-item-title>
               </v-list-item>
+              <v-list-item prepend-icon="mdi-heart" @click="bulkSetFavorite(true)">
+                <v-list-item-title>Add to favorites</v-list-item-title>
+              </v-list-item>
+              <v-list-item prepend-icon="mdi-heart-off-outline" @click="bulkSetFavorite(false)">
+                <v-list-item-title>Remove from favorites</v-list-item-title>
+              </v-list-item>
               <v-divider></v-divider>
               <v-list-item prepend-icon="mdi-delete" @click="confirmDeleteDialog = true" class="text-error">
                 <v-list-item-title>Delete</v-list-item-title>
@@ -103,6 +109,12 @@
           @click.stop="selectDeselect(photo)">
           <v-icon v-if="selectedPhotosFilenames.includes(photo.filename)" color="white" size="28">mdi-check-circle</v-icon>
         </div>
+        <!-- Favorite button -->
+        <button class="favorite-btn" :class="{ active: photo.favorite }"
+          @click.stop="toggleFavorite(photo)"
+          :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
+          <v-icon size="18">{{ photo.favorite ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
+        </button>
         <!-- Detail button -->
         <button class="detail-btn" @click.stop="$refs.photoDetail.open(photo.filename)" title="Details">
           <v-icon size="16" color="white" style="opacity: 0.7;">mdi-information-outline</v-icon>
@@ -157,7 +169,7 @@ export default {
       this.selectedPhotosFilenames = this.selectedPhotosFilenames.filter(f => f !== filename)
     },
 
-    onPhotoUnpublished(filename) {
+    onPhotoUnpublished() {
       this.doGetPhotos()
     },
 
@@ -173,6 +185,35 @@ export default {
 
     selectAll() {
       this.selectedPhotosFilenames = this.photos.map(p => p.filename)
+    },
+
+    async toggleFavorite(photo) {
+      const newValue = !photo.favorite
+      const { triggerAlert } = useAlertStore()
+      const { data, error } = await useAsyncPost(`/api/photos/${photo.filename}/update`, { favorite: newValue })
+      if (error.value) {
+        triggerAlert('error', 'Save error', error.value)
+      } else if (data.value && data.value.ERROR) {
+        triggerAlert('error', data.value.message, data.value.details)
+      } else {
+        photo.favorite = newValue
+      }
+    },
+
+    async bulkSetFavorite(newValue) {
+      const { triggerAlert } = useAlertStore()
+      for (const filename of this.selectedPhotosFilenames) {
+        const { data, error } = await useAsyncPost(`/api/photos/${filename}/update`, { favorite: newValue })
+        if (error.value) {
+          triggerAlert('error', 'Save error', error.value)
+        } else if (data.value && data.value.ERROR) {
+          triggerAlert('error', data.value.message, data.value.details)
+        } else {
+          const photo = this.photos.find(p => p.filename === filename)
+          if (photo) photo.favorite = newValue
+        }
+      }
+      this.selectedPhotosFilenames = []
     },
 
     async deleteSelected() {
