@@ -116,7 +116,7 @@ export default {
         const { data, error } = await useAsyncUploadFile('/api/upload', formData)
         if (error.value) {
           this.loading = false
-          triggerAlert("error", "Upload failure", error.value)
+          triggerAlert("error", `Upload failure: ${file.name}`, error.value)
           return
         } else if (data.value.ERROR) {
           this.loading = false
