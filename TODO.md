@@ -28,9 +28,10 @@
 - ✅ Edit tags
 - ✅ EXIF display
 - ✅ GPS: if EXIF contains GPS data, show an "Open in Google Maps" link next to the coordinates
+- ⬜ GPS shortcut in photo detail header — when GPS data is available, show a map-pin icon button at the top of the detail panel (alongside unpublish/delete) that opens Google Maps directly
 - ✅ Favorite (heart) button
 - ✅ Rating (stars) widget
-- ⬜ Define as cover — only shown when viewing from within a view context (not from global All photos); if too complex to pass context down, fallback: allow selecting cover photo directly from the view edit UI
+- ✅ Define as cover — button in photo detail panel (embedded mode), visible only when viewing from within a view context
 
 ## Views
 
@@ -41,16 +42,16 @@
 - ✅ Sort / display order — configurable default, switchable in detail view
 - ✅ Cover photo: auto-fallback to first matching photo
 - ✅ Create / Edit / Delete / List / Detail UI
-- 🚧 Cover photo: selectable from view edit UI (backend supports it, UI missing)
-- ⬜ "Define as cover" shortcut in photo detail panel when viewing from within a view
+- ✅ Cover photo: selectable from view edit UI (grid hover button + mini-card with remove in edit form)
+- ✅ "Define as cover" shortcut in photo detail panel when viewing from within a view
 - ⬜ Public views accessible without authentication (field exists, no unauthenticated route yet)
 - ⬜ **Share link** (private views): random token URL `/shared_view/<token>`, read-only access without login; regenerating invalidates previous token
 - ⬜ **Custom order** — drag & drop or manual position entry; uses ViewPhotoOrder model
 
 ### Bug fixes needed
 
-- ⬜ ViewDetail: add favorite toggle on photo hover (like Photos page)
-- ⬜ ViewDetail: click on photo should open detail panel (DisplayPhoto component) with zoom + EXIF + edit
+- ✅ ViewDetail: add favorite toggle on photo hover (like Photos page)
+- ✅ ViewDetail: click on photo should open detail panel (DisplayPhoto component) with zoom + EXIF + edit
 
 ## Home page
 
@@ -71,6 +72,11 @@
 - ⬜ Admin page accessible at any time (not only when empty)
 - ⬜ Configure compression rates and other settings hard to change via env vars
 - ⬜ Inject default tags via YAML or a custom UI
+- ⬜ **Full admin panel** — tabbed UI covering:
+  - Backup / export (photos + metadata)
+  - User management (create / delete users)
+  - Tag management (add / rename / delete tags and groups)
+  - Photo quality settings (compression rates, resize dimensions) — or read-only config summary if too complex to edit live (TBD)
 
 ## Export / Import
 
@@ -92,6 +98,7 @@
 
 - ⬜ Show tags in grid thumbnail — TBD: colors only, tag names, hover tooltip?
 - ⬜ Map view — display all photos with GPS data on a global map
+- ⬜ **View map** — Google Maps page for a specific view: show all photos that have GPS data as markers on a map, clicking a marker opens the photo detail
 
 
 ## Infra / Dev
