@@ -132,6 +132,15 @@ def create_view(request):
     )
     v.save()
 
+    # Cover photo
+    cover_filename = post.get("cover_filename")
+    if cover_filename:
+        try:
+            v.cover = models.Photo.objects.get(filename=cover_filename)
+            v.save()
+        except models.Photo.DoesNotExist:
+            pass
+
     # Attach filter tags (list of tag names)
     tag_names = post.get("filter_tag_names", [])
     if tag_names:

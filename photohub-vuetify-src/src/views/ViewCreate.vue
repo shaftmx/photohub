@@ -1,10 +1,9 @@
 <template>
   <DisplayPhoto
-    v-if="isEditMode"
     ref="displayPhoto"
     :photos="photos"
     :paths="paths"
-    :view-id="$route.params.id"
+    :view-id="isEditMode ? $route.params.id : null"
     :cover-filename="coverFilename"
     @photoDeleted="onPhotoDeleted"
     @photoUnpublished="onPhotoUnpublished"
@@ -176,7 +175,7 @@
 
     <!-- Preview grid -->
     <PhotoGrid :photos="photos" :paths="paths" @item-click="onGridItemClick">
-      <template v-if="isEditMode" #overlay="{ photo }">
+      <template #overlay="{ photo }">
         <button class="cover-btn" :class="{ active: coverFilename === photo.filename }"
           @click.stop="setCover(photo)"
           :title="coverFilename === photo.filename ? 'Remove cover' : 'Set as cover'">
@@ -366,7 +365,7 @@ export default {
     },
 
     onGridItemClick(photo) {
-      if (this.isEditMode) this.$refs.displayPhoto.displayPhoto(photo.filename)
+      this.$refs.displayPhoto.displayPhoto(photo.filename)
     },
 
     onPhotoDeleted(filename) {
@@ -417,9 +416,7 @@ export default {
         sort_by: this.sortBy,
         sort_dir: this.sortDir,
       }
-      if (this.isEditMode) {
-        payload.cover_filename = this.coverFilename
-      }
+      payload.cover_filename = this.coverFilename
 
       const id = this.$route.params.id
       const url = this.isEditMode ? `/api/views/${id}/update` : '/api/views/create'

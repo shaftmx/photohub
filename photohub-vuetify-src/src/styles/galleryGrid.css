@@ -64,8 +64,10 @@
 }
 
 .cover-btn.active {
-  color: rgb(var(--v-theme-primary));
+  color: white;
   opacity: 1;
+  background: rgba(var(--v-theme-primary), 0.75);
+  border-radius: 50%;
 }
 
 /* Detail button (Unpublished page) — to the left of favorite button */

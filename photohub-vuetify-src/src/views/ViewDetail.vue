@@ -77,11 +77,6 @@
     <!-- Photo grid -->
     <PhotoGrid :photos="photos" :paths="paths" @item-click="photo => $refs.displayPhoto.displayPhoto(photo.filename)">
       <template #overlay="{ photo }">
-        <button class="cover-btn" :class="{ active: view.cover_filename === photo.filename }"
-          @click.stop="setCover(photo)"
-          :title="view.cover_filename === photo.filename ? 'Remove cover' : 'Set as cover'">
-          <v-icon size="16">{{ view.cover_filename === photo.filename ? 'mdi-book-open-page-variant' : 'mdi-book-open-page-variant-outline' }}</v-icon>
-        </button>
         <button class="favorite-btn" :class="{ active: photo.favorite }"
           @click.stop="toggleFavorite(photo)"
           :title="photo.favorite ? 'Remove from favorites' : 'Add to favorites'">
@@ -192,20 +187,6 @@ export default {
 
     onPhotoUnpublished(filename) {
       this.photos = this.photos.filter(p => p.filename !== filename)
-    },
-
-    async setCover(photo) {
-      const id = this.$route.params.id
-      const { triggerAlert } = useAlertStore()
-      const newCover = this.view.cover_filename === photo.filename ? null : photo.filename
-      const { data, error } = await useAsyncPost(`/api/views/${id}/update`, { cover_filename: newCover })
-      if (error.value) {
-        triggerAlert('error', 'Save error', error.value)
-      } else if (data.value && data.value.ERROR) {
-        triggerAlert('error', data.value.message, data.value.details)
-      } else {
-        this.view.cover_filename = newCover
-      }
     },
 
     async deleteView() {
