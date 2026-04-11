@@ -19,32 +19,41 @@
       </v-form>
 
       <!-- v-if="loading" -->
-      <v-container v-if="uploaded_files.length > 0" class="mt-5" style="max-width: 400px;">
-        <v-table density="compact" class="mb-4">
-          <thead>
-            <tr>
-              <th class="text-grey-darken-1 text-left">
-                <v-progress-circular color="primary" class="mr-5" :width="4" size="20"
-                  :model-value="progress"></v-progress-circular> Uploaded files
-              </th>
-              <th class="text-grey-darken-1 text-right" style="border: 0;">
-                
-                <v-btn @click="goTo('Unpublished')" variant="text" icon color="primary"> <v-tooltip activator="parent"
-                    location="top">Go to uploaded file page</v-tooltip>
-                  <v-icon>mdi-tag-arrow-right-outline</v-icon>
-                </v-btn>
+      <v-container v-if="uploaded_files.length > 0" class="mt-5" style="max-width: 500px;">
 
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in uploaded_files" :key="item.name">
-              <td style="border: 0px" class="text-left text-grey">{{ item.name }}</td>
-              <td style="border: 0px" class="text-right text-grey"></td>
-            </tr>
-          </tbody>
-        </v-table>
+        <!-- Header: progress + count + nav button -->
+        <div class="d-flex align-center mb-3 ga-2">
+          <v-progress-circular color="primary" :width="4" size="20" :model-value="progress"></v-progress-circular>
+          <span class="text-body-2 text-medium-emphasis">{{ uploaded_files.length }} / {{ total_files }} uploaded</span>
+          <v-spacer></v-spacer>
+          <v-btn @click="goTo('Unpublished')" variant="text" icon color="primary" size="small">
+            <v-tooltip activator="parent" location="top">Go to unpublished</v-tooltip>
+            <v-icon>mdi-tag-arrow-right-outline</v-icon>
+          </v-btn>
+        </div>
 
+        <!-- File list — most recent first, with thumbnail preview -->
+        <v-list density="compact" class="pa-0">
+          <v-list-item
+            v-for="item in [...uploaded_files].reverse()"
+            :key="item.name"
+            class="px-2 py-1 mb-1 rounded"
+            style="background: rgba(0,0,0,0.04);"
+          >
+            <template v-slot:prepend>
+              <v-img
+                :src="item._objectUrl"
+                width="40"
+                height="40"
+                cover
+                class="rounded mr-3"
+                style="flex-shrink: 0;"
+              ></v-img>
+            </template>
+            <v-list-item-title class="text-caption text-truncate">{{ item.name }}</v-list-item-title>
+            <v-list-item-subtitle class="text-caption text-medium-emphasis">{{ (item.size / 1024).toFixed(0) }} KB</v-list-item-subtitle>
+          </v-list-item>
+        </v-list>
 
         <!-- <v-progress-circular color="primary" :width="5" size="40" model-value="20"></v-progress-circular> -->
         <!-- <v-progress-linear color="primary" model-value="20" :height="5"></v-progress-linear> -->
@@ -67,12 +76,17 @@ export default {
     form: false,
     files: [],
     uploaded_files: [],
+    total_files: 0,
     loading: false,
     progress: 0,
     currentFile: "",
   }),
   mounted() {
     requireAuth(this)
+  },
+  beforeUnmount() {
+    // Revoke object URLs to free memory
+    this.uploaded_files.forEach(f => { if (f._objectUrl) URL.revokeObjectURL(f._objectUrl) })
   },
   methods: {
     // handleFilesUpload(event) {
@@ -96,8 +110,10 @@ export default {
       // Get alert store to be able to trigger some alert messages
       const { triggerAlert } = useAlertStore()
 
-      // Reset state
+      // Reset state — revoke previous object URLs first
+      this.uploaded_files.forEach(f => { if (f._objectUrl) URL.revokeObjectURL(f._objectUrl) })
       this.uploaded_files = []
+      this.total_files = this.files.length
       this.progress = 0
 
       // Note: I decided to upload files one by one, to limite size and post traitement handeling. It's potentially not the most efficient way
@@ -123,12 +139,14 @@ export default {
           triggerAlert("error", data.value.message, data.value.details)
           return
         } else {
+          // Attach a local preview URL for the thumbnail
+          file._objectUrl = URL.createObjectURL(file)
           this.uploaded_files.push(file)
-          this.progress = Math.round((100 * this.uploaded_files.length) / this.files.length);
+          this.progress = Math.round((100 * this.uploaded_files.length) / this.total_files);
         }
       }
       this.$refs.form.reset()
-      triggerAlert("success", "All files uploaded", "")
+      triggerAlert("success", `${this.uploaded_files.length} file${this.uploaded_files.length !== 1 ? 's' : ''} uploaded`, "")
       this.loading = false
       this.files = []
 
