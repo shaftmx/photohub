@@ -100,7 +100,8 @@
           <img :src="paths[sharedDatas.gridPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']" />
 
           <!-- No-tags indicator -->
-          <div v-if="Object.keys(photo['tags']).length === 0" class="no-tags-bar"></div>
+          <v-chip v-if="Object.keys(photo['tags']).length === 0" class="no-tags-chip"
+            color="error" size="x-small" variant="flat">no tags</v-chip>
 
           <!-- Selection overlay -->
           <div class="selection-overlay" :class="{ selected: selectedPhotosFilenames.includes(photo.filename) }"
@@ -230,13 +231,13 @@ export default {
 
 
 <style scoped>
-.no-tags-bar {
+.no-tags-chip {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: rgb(var(--v-theme-error));
+  top: 6px;
+  left: 6px;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .detail-btn {
