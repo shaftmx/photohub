@@ -53,6 +53,8 @@
             <PhotoDetail
               ref="photoDetail"
               :embedded="true"
+              :view-id="viewId"
+              :cover-filename="coverFilename"
               @deleted="onDeleted"
               @unpublished="onUnpublished"
             />
@@ -76,6 +78,8 @@ export default defineComponent({
   props: {
     photos: Array,
     paths: Object,
+    viewId: { type: [String, Number], default: null },
+    coverFilename: { type: String, default: null },
   },
 
   emits: ['photoDeleted', 'photoUnpublished'],

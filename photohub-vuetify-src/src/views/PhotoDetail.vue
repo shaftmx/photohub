@@ -82,6 +82,10 @@
         </v-chip>
         <v-chip size="small" variant="outlined">{{ photo.width }}×{{ photo.height }}</v-chip>
         <v-spacer></v-spacer>
+        <v-btn v-if="viewId" icon size="small" variant="text" :color="isCover ? 'primary' : 'default'"
+          :loading="loadingCover" @click="setCover()" :title="isCover ? 'Remove cover' : 'Set as cover'">
+          <v-icon>{{ isCover ? 'mdi-book-open-page-variant' : 'mdi-book-open-page-variant-outline' }}</v-icon>
+        </v-btn>
         <v-btn v-if="photo.published" icon size="small" variant="text" :loading="loadingUnpublish"
           @click="confirmAction('unpublish')" title="Move back to unpublished">
           <v-icon>mdi-cloud-off-outline</v-icon>
@@ -128,6 +132,8 @@ export default defineComponent({
 
   props: {
     embedded: { type: Boolean, default: false },
+    viewId: { type: [String, Number], default: null },
+    coverFilename: { type: String, default: null },
   },
 
   emits: ['closed', 'deleted', 'unpublished'],
@@ -137,6 +143,7 @@ export default defineComponent({
     loading: false,
     loadingDelete: false,
     loadingUnpublish: false,
+    loadingCover: false,
     photo: null,
     paths: {},
     editDescription: '',
@@ -145,9 +152,14 @@ export default defineComponent({
     confirmDialogAction: null,
     editTagsDialog: false,
     sharedDatas: {},
+    localCoverFilename: null,
   }),
 
   computed: {
+    isCover() {
+      return this.photo && this.localCoverFilename === this.photo.filename
+    },
+
     photoThumbUrl() {
       if (!this.photo || !this.paths) return ''
       const size = this.sharedDatas.isMobile ? 'xs' : 's'
@@ -156,8 +168,15 @@ export default defineComponent({
     },
   },
 
+  watch: {
+    coverFilename(val) {
+      this.localCoverFilename = val
+    },
+  },
+
   mounted() {
     this.sharedDatas = getSharedDatas(this)
+    this.localCoverFilename = this.coverFilename
   },
 
   methods: {
@@ -264,6 +283,22 @@ export default defineComponent({
         this.close()
       }
       this.loadingDelete = false
+    },
+
+    async setCover() {
+      if (!this.photo || !this.viewId) return
+      this.loadingCover = true
+      const { triggerAlert } = useAlertStore()
+      const newCover = this.isCover ? null : this.photo.filename
+      const { data, error } = await useAsyncPost(`/api/views/${this.viewId}/update`, { cover_filename: newCover })
+      if (error.value) {
+        triggerAlert('error', 'Save error', error.value)
+      } else if (data.value && data.value.ERROR) {
+        triggerAlert('error', data.value.message, data.value.details)
+      } else {
+        this.localCoverFilename = newCover
+      }
+      this.loadingCover = false
     },
 
     async doUnpublish() {

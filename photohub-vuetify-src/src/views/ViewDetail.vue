@@ -3,6 +3,8 @@
     ref="displayPhoto"
     :paths="paths"
     :photos="photos"
+    :view-id="$route.params.id"
+    :cover-filename="view.cover_filename"
     @photoDeleted="onPhotoDeleted"
     @photoUnpublished="onPhotoUnpublished"
   ></DisplayPhoto>
@@ -199,6 +201,20 @@ export default {
       this.photos = this.photos.filter(p => p.filename !== filename)
     },
 
+    async setCover(photo) {
+      const id = this.$route.params.id
+      const { triggerAlert } = useAlertStore()
+      const newCover = this.view.cover_filename === photo.filename ? null : photo.filename
+      const { data, error } = await useAsyncPost(`/api/views/${id}/update`, { cover_filename: newCover })
+      if (error.value) {
+        triggerAlert('error', 'Save error', error.value)
+      } else if (data.value && data.value.ERROR) {
+        triggerAlert('error', data.value.message, data.value.details)
+      } else {
+        this.view.cover_filename = newCover
+      }
+    },
+
     async deleteView() {
       this.deleting = true
       const id = this.$route.params.id
@@ -211,6 +227,36 @@ export default {
 </script>
 
 <style scoped>
+.cover-btn {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.35);
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  color: white;
+}
+
+.cover-btn.active {
+  opacity: 1;
+  background: rgba(var(--v-theme-primary), 0.75);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .item-inner:hover .cover-btn {
+    opacity: 1;
+  }
+}
+
 .markdown-body :deep(p) { margin: 0 0 6px; }
 .markdown-body :deep(p:last-child) { margin-bottom: 0; }
 .markdown-body :deep(h1),

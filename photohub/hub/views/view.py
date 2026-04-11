@@ -95,12 +95,11 @@ def list_views(request):
         v_data = _serialize_view(v)
         photos_qs = _apply_view_filters(v)
         v_data["photo_count"] = photos_qs.count()
-        # Auto-cover: use first matching photo if no explicit cover set
-        if not v.cover:
+        # Cover: use first matching photo if no explicit cover, or if explicit cover is no longer in filtered results
+        if not v.cover or not photos_qs.filter(filename=v.cover.filename).exists():
             first = photos_qs.first()
-            if first:
-                v_data["cover_filename"] = first.filename
-                v_data["cover_hash_path"] = genHasingPath(first.filename)
+            v_data["cover_filename"] = first.filename if first else None
+            v_data["cover_hash_path"] = genHasingPath(first.filename) if first else None
         data.append(v_data)
     return Response(200, data={"views": data, "paths": get_photo_root_paths()})
 
@@ -239,8 +238,17 @@ def get_view_photos(request, view_id):
 
     photos = _apply_view_filters(v)
     data_photos = [_serialize_photo(p) for p in photos]
+    v_data = _serialize_view(v)
+
+    # Edge case: if explicit cover no longer exists in filtered photos, fallback to first
+    photo_filenames = {p["filename"] for p in data_photos}
+    if v_data["cover_filename"] and v_data["cover_filename"] not in photo_filenames:
+        first = photos.first()
+        v_data["cover_filename"] = first.filename if first else None
+        v_data["cover_hash_path"] = genHasingPath(first.filename) if first else None
+
     return Response(200, data={
         "photos": data_photos,
         "paths": get_photo_root_paths(),
-        "view": _serialize_view(v),
+        "view": v_data,
     })
