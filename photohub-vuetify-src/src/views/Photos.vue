@@ -121,7 +121,7 @@
 
       <!-- Row 2: sort + photo count + grid size slider -->
       <v-sheet class="d-flex mb-2 align-center">
-        <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="doGetPhotos()" @update:sortDir="doGetPhotos()"></SortControls>
+        <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="onSortChange()" @update:sortDir="onSortChange()"></SortControls>
         <span class="text-body-2 text-medium-emphasis ml-3">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
         <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
         <v-sheet class="d-flex ma-0 pa-0 align-end justify-end w-50">
@@ -168,9 +168,9 @@
           @update:modelValue="onFilterModeChange"
         ></FilterModeToggle>
 
-        <!-- Toggle: all published tags vs tags in current selection (hidden in notags mode) -->
+        <!-- Toggle: all published tags vs tags in current selection (hidden in notags/none mode) -->
         <v-btn
-          v-if="filterTagMode !== 'notags'"
+          v-if="filterTagMode !== 'notags' && filterTagMode !== 'none'"
           :icon="showAllTags ? 'mdi-tag-multiple' : 'mdi-tag-search'"
           :color="showAllTags ? 'primary' : 'default'"
           :variant="showAllTags ? 'tonal' : 'text'"
@@ -317,7 +317,7 @@ export default {
     sortBy: 'date',
     sortDir: 'desc',
     // Filters
-    filterTagMode: 'quick', // 'quick' | 'detail' | 'notags'
+    filterTagMode: 'quick', // 'none' | 'quick' | 'detail' | 'notags'
     filterPanelOpen: true,  // Detailed filter panel open/closed
     showAllTags: true,      // true = all published-photo tags / false = only tags in current selection
     filter: [], // This is the actual computed filters used and displayed as query parameter
@@ -330,6 +330,7 @@ export default {
 
   computed: {
     filterMode() {
+      if (this.filterTagMode === 'none') return 'none'
       if (this.filterTagMode === 'quick') return 'basic'
       if (this.filterTagMode === 'detail') return 'smart'
       return 'notags'
@@ -386,40 +387,40 @@ export default {
       this.filter = newfilter.map((x) => x.name);
     },
 
-    "filter"(newfilter, oldfilter) {
-      console.log("--watch filter")
-      this.$router.push(this.urlQueryTags(newfilter, this.filterMode))
+    "filter"() {
+      this.syncUrl()
       this.doGetPhotos()
     },
 
     "filterFavorite"() {
+      this.syncUrl()
       this.doGetPhotos()
     },
 
     "filterRating"() {
+      this.syncUrl()
       this.doGetPhotos()
     },
 
     "filterRatingMode"() {
+      this.syncUrl()
       if (this.filterRating > 0) this.doGetPhotos()
     },
 
-    "filterTagMode"(newMode, oldMode) {
-      console.log("--watch filterTagMode")
-      this.$router.push(this.urlQueryTags(this.filter, this.filterMode))
+    "filterTagMode"() {
+      this.syncUrl()
       this.doGetPhotos()
     },
   },
 
   methods: {
     goToCreateView() {
-      // Collect all selected tag names (from quick or detail mode)
       const tagNames = this.filter.slice()
       this.$router.push({
         name: 'view-create',
         state: {
           filterConfig: {
-            filter_mode: this.filterMode,       // basic / smart / notags
+            filter_mode: this.filterMode,       // none / basic / smart / notags
             filter_tag_names: tagNames,
             filter_favorite: this.filterFavorite ? true : null,
             filter_rating_value: this.filterRating,
@@ -511,15 +512,15 @@ export default {
       if (value === null) return
       if (value === this.filterTagMode) return
 
-      if (value === 'notags') {
+      if (value === 'none' || value === 'notags') {
         this.filterQuick = []
         this.filterDetail = {}
         this.filter = []
-        this.filterTagMode = 'notags'
-      } else {
-        const wasNotags = this.filterTagMode === 'notags'
         this.filterTagMode = value
-        if (!wasNotags) this.syncFilters()
+      } else {
+        const wasTagless = this.filterTagMode === 'notags' || this.filterTagMode === 'none'
+        this.filterTagMode = value
+        if (!wasTagless) this.syncFilters()
       }
     },
 
@@ -545,46 +546,66 @@ export default {
     },
 
     async init() {
-      console.log("--init")
       await this.doGetTags()
 
-      if (this.$route.query.tags) {
-        const queryTags = this.$route.query.tags.split(",")
+      const q = this.$route.query
+      // Sort
+      if (q.sort_by) this.sortBy = q.sort_by
+      if (q.sort_dir) this.sortDir = q.sort_dir
+      // Favorite & rating
+      if (q.favorite === 'true') this.filterFavorite = true
+      if (q.rating) {
+        this.filterRating = parseInt(q.rating) || 0
+        if (q.rating_mode) this.filterRatingMode = q.rating_mode
+      }
+      // Filter mode
+      if (q.filter_mode) {
+        const modeMap = { basic: 'quick', smart: 'detail', notags: 'notags', none: 'none' }
+        this.filterTagMode = modeMap[q.filter_mode] || 'quick'
+      }
+      // Tags (only in quick/detail modes)
+      if (q.tags && this.filterTagMode !== 'none' && this.filterTagMode !== 'notags') {
+        const queryTags = q.tags.split(',')
         this.tags.forEach((tag) => {
           if (queryTags.includes(tag.name)) {
-            this.filterQuick.push(tag);
-            this.filter.push(tag.name);
+            this.filterQuick.push(tag)
+            this.filter.push(tag.name)
             if (!Object.keys(this.filterDetail).includes(tag.group_name)) {
-              this.filterDetail[tag.group_name] = [{ ...tag }];
+              this.filterDetail[tag.group_name] = [{ ...tag }]
             } else {
-              this.filterDetail[tag.group_name].push({ ...tag });
+              this.filterDetail[tag.group_name].push({ ...tag })
             }
           }
         })
       }
-      if (this.$route.query.filter_mode) {
-        const mode = this.$route.query.filter_mode
-        if (mode === 'basic') this.filterTagMode = 'quick'
-        else if (mode === 'notags') this.filterTagMode = 'notags'
-        else this.filterTagMode = 'detail'
-      }
       await this.doGetPhotos()
     },
 
-    urlQueryTags(tags, filter_mode) {
-      console.log("--urlQueryFilter")
-      let q = { ...this.$route.query }
-      if (tags != null) {
-        q.tags = [tags]
-      } else {
-        delete q.tags
+    syncUrl() {
+      const q = {}
+      // Filter mode (omit if quick with no tags = default)
+      if (this.filterTagMode !== 'quick' || this.filter.length > 0) {
+        q.filter_mode = this.filterMode
       }
-      if (filter_mode != null) {
-        q.filter_mode = filter_mode
-      } else {
-        delete q.filter_mode
+      // Tags
+      if (this.filter.length > 0 && this.filterTagMode !== 'none') {
+        q.tags = this.filter.join(',')
       }
-      return { query: q }
+      // Favorite & rating
+      if (this.filterFavorite) q.favorite = 'true'
+      if (this.filterRating > 0) {
+        q.rating = this.filterRating
+        q.rating_mode = this.filterRatingMode
+      }
+      // Sort (omit defaults)
+      if (this.sortBy !== 'date') q.sort_by = this.sortBy
+      if (this.sortDir !== 'desc') q.sort_dir = this.sortDir
+      this.$router.replace({ query: q })
+    },
+
+    onSortChange() {
+      this.syncUrl()
+      this.doGetPhotos()
     },
 
     syncFilters() {
@@ -618,7 +639,7 @@ export default {
 
       if (this.filterTagMode === 'notags') {
         params.no_tags = 'true'
-      } else if (this.filter.length > 0) {
+      } else if (this.filterTagMode !== 'none' && this.filter.length > 0) {
         params.tags = [this.filter]
         params.filter_mode = this.filterMode
       }

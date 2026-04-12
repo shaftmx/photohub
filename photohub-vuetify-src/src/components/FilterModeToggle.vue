@@ -7,6 +7,10 @@
     color="primary"
     mandatory
   >
+    <v-btn value="none" size="small">
+      <v-icon size="18">mdi-filter-off-outline</v-icon>
+      <v-tooltip activator="parent" location="top">No filter</v-tooltip>
+    </v-btn>
     <v-btn value="quick" size="small">
       <v-icon size="18">mdi-text-search-variant</v-icon>
       <v-tooltip activator="parent" location="top">Quick filter</v-tooltip>

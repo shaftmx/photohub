@@ -132,7 +132,7 @@
 
     <!-- Filter bar -->
     <v-sheet class="mb-3">
-      <div class="d-flex flex-wrap align-center ga-2" :class="(filterTagMode === 'quick' || (filterTagMode === 'detail' && filterPanelOpen)) ? 'mb-1' : ''">
+      <div class="d-flex flex-wrap align-center ga-2" :class="(filterTagMode === 'quick' || (filterTagMode === 'detail' && filterPanelOpen)) ? 'mb-1' : 'mb-0'">
         <FilterModeToggle
           v-model="filterTagMode"
           @update:modelValue="onFilterModeChange"
@@ -324,6 +324,7 @@ export default {
 
     // API filter_mode param
     filterMode() {
+      if (this.filterTagMode === 'none') return 'none'
       if (this.filterTagMode === 'quick') return 'basic'
       if (this.filterTagMode === 'detail') return 'smart'
       return 'notags'
@@ -359,7 +360,7 @@ export default {
     },
 
     _applyFilterState(state) {
-      const modeMap = { basic: 'quick', smart: 'detail', notags: 'notags' }
+      const modeMap = { basic: 'quick', smart: 'detail', notags: 'notags', none: 'none' }
       this.filterTagMode = modeMap[state.filter_mode] || 'quick'
       this.filterFavorite = !!state.filter_favorite
       this.filterRating = state.filter_rating_value || 0
@@ -424,12 +425,11 @@ export default {
 
       this.loading = true
       const params = new URLSearchParams()
-      params.set('filter_mode', this.filterMode)
-      if (this.filterMode !== 'notags' && this.filterTagNames.length) {
-        params.set('tags', this.filterTagNames.join(','))
-      }
-      if (this.filterMode === 'notags') {
+      if (this.filterTagMode === 'notags') {
         params.set('no_tags', 'true')
+      } else if (this.filterTagMode !== 'none' && this.filterTagNames.length) {
+        params.set('tags', this.filterTagNames.join(','))
+        params.set('filter_mode', this.filterMode)
       }
       if (this.filterFavorite) params.set('favorite', 'true')
       if (this.filterRating > 0) {
@@ -480,6 +480,10 @@ export default {
     },
 
     onFilterModeChange(newMode) {
+      if (newMode === 'none' || newMode === 'notags') {
+        this.filterQuick = []
+        this.filterDetail = {}
+      }
       this.filterTagMode = newMode
       this.fetchPreview()
     },
