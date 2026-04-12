@@ -241,7 +241,7 @@
     </v-dialog>
 
     <!-- Preview grid -->
-    <PhotoGrid :photos="photos" :paths="paths" show-favorite show-cover :cover-filename="coverFilename"
+    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" show-favorite show-cover :cover-filename="coverFilename"
       :draggable="dragMode"
       @item-click="onGridItemClick"
       @toggle-favorite="toggleFavorite"

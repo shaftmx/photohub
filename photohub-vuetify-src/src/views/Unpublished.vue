@@ -99,7 +99,7 @@
     </v-dialog>
 
     <!-- Photo grid -->
-    <PhotoGrid :photos="photos" :paths="paths" show-favorite
+    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" show-favorite
       @item-click="selectDeselect"
       @toggle-favorite="toggleFavorite">
       <template #overlay="{ photo }">

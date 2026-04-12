@@ -120,9 +120,9 @@
       </template>
 
       <!-- Row 2: sort + photo count + grid size slider -->
-      <v-sheet class="d-flex mb-2 align-center ga-3">
+      <v-sheet class="d-flex mb-2 align-center">
         <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="doGetPhotos()" @update:sortDir="doGetPhotos()"></SortControls>
-        <span class="text-body-2 text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
+        <span class="text-body-2 text-medium-emphasis ml-3">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
         <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
         <v-sheet class="d-flex ma-0 pa-0 align-end justify-end w-50">
           <v-slider v-model="sharedDatas.gridSize" style="max-width: 300px; width: 100%"
@@ -268,7 +268,7 @@
       </v-expand-transition>
     </v-sheet>
 
-    <PhotoGrid :photos="photos" :paths="paths" :show-favorite="!selectionMode"
+    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" :show-favorite="!selectionMode"
       @item-click="photo => selectionMode ? selectDeselect(photo) : $refs.displayPhoto.displayPhoto(photo.filename)"
       @toggle-favorite="toggleFavorite">
       <template #overlay="{ photo }">

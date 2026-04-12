@@ -75,7 +75,7 @@
     </v-sheet>
 
     <!-- Photo grid -->
-    <PhotoGrid :photos="photos" :paths="paths" show-favorite
+    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" show-favorite
       @item-click="photo => $refs.displayPhoto.displayPhoto(photo.filename)"
       @toggle-favorite="toggleFavorite">
     </PhotoGrid>

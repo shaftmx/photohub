@@ -1,7 +1,4 @@
-
-export  function getSharedDatas(app) {
-  console.log('Is Mobile:', app.$vuetify.display.mobile);
-
+export function getSharedDatas(app) {
   let data = {}
   // Used to generate potential different display on mobile phone
   data.isMobile = app.$vuetify.display.mobile
@@ -36,7 +33,6 @@ export  function getSharedDatas(app) {
 
     // --- Display photo full size
     data.displayPhotoSize = "m"
-
   }
 
   return data

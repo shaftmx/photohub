@@ -40,7 +40,6 @@
 <script>
 import '../styles/galleryGrid.css'
 import { defineComponent } from 'vue'
-import { getSharedDatas } from '../sharedDatas.js'
 
 export default defineComponent({
   props: {
@@ -50,10 +49,10 @@ export default defineComponent({
     showCover: { type: Boolean, default: false },
     coverFilename: { type: String, default: null },
     draggable: { type: Boolean, default: false },
+    sharedDatas: { type: Object, required: true },
   },
   emits: ['item-click', 'toggle-favorite', 'set-cover', 'reorder'],
   data: () => ({
-    sharedDatas: {},
     localPhotos: [],
     dragIndex: null,
     dragOverIndex: null,
@@ -67,9 +66,6 @@ export default defineComponent({
       },
       immediate: true,
     },
-  },
-  mounted() {
-    this.sharedDatas = getSharedDatas(this)
   },
   methods: {
     onDragStart(index) {
