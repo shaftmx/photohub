@@ -373,6 +373,80 @@ test.describe('Views — edit', () => {
 
 })
 
+test.describe('Views — custom order', () => {
+
+  let viewId: string
+
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage()
+    await loginAs(page)
+    await page.goto('/views/create')
+    await page.locator('.v-text-field input').first().fill('Custom Order View')
+    await page.getByRole('button', { name: 'Save' }).click()
+    await page.waitForURL(/views\/\d+/, { timeout: 15_000 })
+    viewId = page.url().match(/views\/(\d+)/)?.[1] || ''
+    await page.close()
+  })
+
+  test.afterAll(async ({ browser }) => {
+    if (!viewId) return
+    const page = await browser.newPage()
+    await loginAs(page)
+    await page.goto(`/views/${viewId}`)
+    await page.locator('button').filter({ has: page.locator('.mdi-delete-outline') }).last().click()
+    await page.getByRole('button', { name: 'Delete' }).last().click()
+    await page.close()
+  })
+
+  test('Custom order option is available in sort controls in edit view', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}/edit`)
+    await expect(page.getByText('Edit view')).toBeVisible()
+    await page.locator('.v-select').first().click()
+    await expect(page.getByRole('option', { name: 'Custom order' })).toBeVisible()
+    await page.keyboard.press('Escape')
+  })
+
+  test('Create custom order button appears after selecting Custom order', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}/edit`)
+    await expect(page.getByText('Edit view')).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    const hasPhotos = await page.locator('.item').first().isVisible()
+    if (!hasPhotos) return
+    // Select Custom order
+    await page.locator('.v-select').first().click()
+    await page.getByRole('option', { name: 'Custom order' }).click()
+    // "Create custom order" button should appear
+    await expect(page.getByRole('button', { name: /Create custom order/i })).toBeVisible()
+  })
+
+  test('Entering drag mode shows drag handles on photos', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}/edit`)
+    await expect(page.getByText('Edit view')).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    const hasPhotos = await page.locator('.item').first().isVisible()
+    if (!hasPhotos) return
+    // Select Custom order and create
+    await page.locator('.v-select').first().click()
+    await page.getByRole('option', { name: 'Custom order' }).click()
+    await page.getByRole('button', { name: /Create custom order/i }).click()
+    // Drag handles should be visible
+    await expect(page.locator('.drag-handle').first()).toBeVisible()
+  })
+
+  test('Custom order option is available in ViewDetail sort controls', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}`)
+    await expect(page.locator('.v-select').first()).toBeVisible()
+    await page.locator('.v-select').first().click()
+    await expect(page.getByRole('option', { name: 'Custom order' })).toBeVisible()
+    await page.keyboard.press('Escape')
+  })
+
+})
+
 test.describe('Views — delete from list', () => {
 
   test('delete a view from the cards list', async ({ page }) => {

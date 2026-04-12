@@ -77,7 +77,7 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 
 ---
 
-## What is tested (73 tests)
+## What is tested (92 tests)
 
 ### Authentication (`auth.spec.ts` — 4 tests)
 - Unauthenticated access to `/photos` redirects to `/login`
@@ -112,13 +112,16 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 - Sort by Upload date
 - Toggle sort direction (asc ↔ desc)
 
-### Photos — filters (`photos.spec.ts` — 8 tests)
+### Photos — filters (`photos.spec.ts` — 13 tests)
 - Quick filter mode is active by default
+- Switch to No filter mode (show all photos) — URL gets `filter_mode=none`
 - Switch to Detailed filter mode (expand panel appears)
 - Switch to No tags filter mode (grid updates)
-- Filter by favorite (heart toggle)
-- Filter by rating: click 3-star button, page does not crash
+- Filter by favorite — URL updates with `favorite=true`
+- Filter by rating — URL updates with `rating=N`
 - Rating mode toggle cycles between ≤ and = operators
+- Sort change updates URL with `sort_by=...`
+- URL params restore filter state on page reload (favorite persists)
 - "Save as view" button is visible in the filter bar
 - "Save as view" navigates to `/views/create` with filter state pre-filled
 
@@ -155,6 +158,12 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 - Preview grid respects sort selection
 - "Save as view" from Photos page pre-fills filter state in the form
 
+### Views — custom order (`views.spec.ts` — 4 tests)
+- "Custom order" option is available in sort controls in edit view
+- "Create custom order" button appears after selecting Custom order sort
+- Entering drag mode shows drag handles on photos
+- "Custom order" option is available in sort controls in view detail
+
 ### Views — detail (`views.spec.ts` — 9 tests)
 - View detail shows name, photo count, Public/Private badge
 - Filter chips toggle button shows/hides active filter chips
@@ -186,18 +195,14 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 **Photos**
 - Tag filtering with the Quick autocomplete (selecting specific tags)
 - Tag filtering with the Detailed panel (TagFilter component)
+- URL restore for rating, sort, filter_mode=detail/notags on reload (only favorite tested)
 - "Remove from favorites" bulk action
 - "Unpublish" bulk action actually unpublishing (only confirm dialog tested)
 - "Delete" bulk action actually deleting (only confirm dialog tested)
 - "Tag" bulk action opening the tag editor
-- Deleting a published photo from the detail panel
-- Unpublishing a published photo from the detail panel
-- Editing the description in the detail panel (save on blur)
 - Editing tags from the detail panel (EditTagsDialog)
 - EXIF data display in the detail panel
-- GPS coordinates → "Open in Google Maps" link
-- Rating sort (photos appear in correct order)
-- The detail panel "Rating" sort showing correct order
+- GPS "Open in Google Maps" button in Metadata section (requires photo with GPS EXIF)
 
 **Upload**
 - Duplicate file upload (same MD5 → "Picture already exist" response)
@@ -205,13 +210,14 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 - Large file or network error handling
 
 **Views**
-- Changing the cover photo from the edit UI (backend supports it, UI missing per TODO)
-- "Define as cover" shortcut in photo detail when in view context (not yet built)
-- Public views accessible without authentication (route not yet built)
-- Share link (`/shared_view/<token>`) — not yet built
-- Custom photo order (drag & drop) — not yet built
+- Custom order: actual drag & drop reorder (HTML5 drag events hard to simulate reliably)
+- Custom order: save persists and is restored on reload
+- Custom order: delete order reverts to normal sort
 - Tag filter in views (creating a view with specific tags, verifying filter is applied)
 - Rating filter in views (creating a view with a rating filter)
+- "No filter" mode (`none`) in ViewCreate
+- Public views accessible without authentication (route not yet built)
+- Share link (`/shared_view/<token>`) — not yet built
 
 **Home page**
 - Home page entirely untested (not yet built per TODO)

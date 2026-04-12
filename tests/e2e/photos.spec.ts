@@ -115,6 +115,14 @@ test.describe('Photos — filters', () => {
     await expect(page.getByText('Show filters').or(page.getByText('Hide filters'))).toBeVisible()
   })
 
+  test('switch to No filter mode (show all)', async ({ page }) => {
+    await page.locator('button:has(.mdi-filter-off-outline)').first().click()
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('.grid')).toBeAttached()
+    // URL should reflect filter_mode=none
+    await expect(page).toHaveURL(/filter_mode=none/)
+  })
+
   test('switch to No tags filter mode', async ({ page }) => {
     await page.locator('button:has(.mdi-tag-off-outline)').first().click()
     await page.waitForLoadState('networkidle')
@@ -122,19 +130,18 @@ test.describe('Photos — filters', () => {
     await expect(page.locator('.grid')).toBeAttached()
   })
 
-  test('filter by favorite', async ({ page }) => {
+  test('filter by favorite — URL updates', async ({ page }) => {
     await page.locator('button[title*="avorite"]').first().click()
     await page.waitForLoadState('networkidle')
-    // Grid is always in DOM regardless of result count (may be empty → 0 height → hidden)
     await expect(page.locator('.grid')).toBeAttached()
+    await expect(page).toHaveURL(/favorite=true/)
   })
 
-  test('filter by rating — click 3 stars', async ({ page }) => {
-    // Click the 3rd star button (title="3 stars")
+  test('filter by rating — URL updates', async ({ page }) => {
     await page.locator('button[title="3 stars"]').click()
     await page.waitForLoadState('networkidle')
-    // Grid is always in DOM regardless of result count
     await expect(page.locator('.grid')).toBeAttached()
+    await expect(page).toHaveURL(/rating=3/)
   })
 
   test('rating mode toggles between ≤ and =', async ({ page }) => {
@@ -145,6 +152,25 @@ test.describe('Photos — filters', () => {
     await expect(modeToggle).toHaveText('≤')
     await modeToggle.click()
     await expect(modeToggle).toHaveText('=')
+  })
+
+  test('sort change updates URL', async ({ page }) => {
+    await page.locator('.v-select').first().click()
+    await page.getByRole('option', { name: 'Rating' }).click()
+    await page.waitForLoadState('networkidle')
+    await expect(page).toHaveURL(/sort_by=rating/)
+  })
+
+  test('URL params restore filter state on reload', async ({ page }) => {
+    // Apply favorite filter → URL gets favorite=true
+    await page.locator('button[title*="avorite"]').first().click()
+    await page.waitForLoadState('networkidle')
+    const url = page.url()
+    expect(url).toContain('favorite=true')
+    // Reload — state should be restored
+    await page.goto(url)
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('button[title*="avorite"]').first()).toHaveClass(/v-btn--active|active/)
   })
 
   test('save as view button is visible', async ({ page }) => {
