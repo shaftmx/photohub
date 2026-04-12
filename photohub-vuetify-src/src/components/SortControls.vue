@@ -9,6 +9,7 @@
       variant="outlined"
       density="compact"
       hide-details
+      :disabled="disabled"
       style="min-width: 140px; max-width: 180px"
     ></v-select>
     <v-btn
@@ -16,6 +17,7 @@
       variant="text"
       density="compact"
       size="small"
+      :disabled="disabled"
       :title="sortDir === 'desc' ? 'Descending' : 'Ascending'"
       @click="$emit('update:sortDir', sortDir === 'desc' ? 'asc' : 'desc')"
     ></v-btn>
@@ -34,17 +36,20 @@ export default {
   name: 'SortControls',
 
   props: {
-    sortBy:       { type: String, default: 'date' },
-    sortDir:      { type: String, default: 'desc' },
-    // Extra options injected by specific pages (e.g. custom order in ViewDetail)
-    extraOptions: { type: Array,  default: () => [] },
+    sortBy:          { type: String,  default: 'date' },
+    sortDir:         { type: String,  default: 'desc' },
+    showCustomOrder: { type: Boolean, default: false },
+    disabled:        { type: Boolean, default: false },
+    // Extra options injected by specific pages
+    extraOptions:    { type: Array,   default: () => [] },
   },
 
   emits: ['update:sortBy', 'update:sortDir'],
 
   computed: {
     allOptions() {
-      return [...BASE_OPTIONS, ...this.extraOptions]
+      const custom = this.showCustomOrder ? [{ label: 'Custom order', value: 'custom' }] : []
+      return [...BASE_OPTIONS, ...custom, ...this.extraOptions]
     },
   },
 }

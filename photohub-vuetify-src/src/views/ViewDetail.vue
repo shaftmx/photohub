@@ -64,7 +64,7 @@
 
     <!-- Sort + grid size slider -->
     <v-sheet class="d-flex align-center mb-2 ga-2">
-      <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="applySort()" @update:sortDir="applySort()"></SortControls>
+      <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" :show-custom-order="true" @update:sortBy="applySort()" @update:sortDir="applySort()"></SortControls>
       <v-spacer></v-spacer>
       <v-sheet class="d-flex align-end justify-end" style="max-width: 300px; width: 50%">
         <v-slider v-model="sharedDatas.gridSize" :max="sharedDatas.gridMax" :min="sharedDatas.gridMin"
@@ -153,7 +153,12 @@ export default {
       this.sortDir = this.view.sort_dir
     },
 
-    applySort() {
+    async applySort() {
+      if (this.sortBy === 'custom') {
+        // Reload from API to get the persisted custom order
+        await this.loadView()
+        return
+      }
       const dir = this.sortDir === 'asc' ? 1 : -1
       const field = this.sortBy
       this.photos = [...this.photos].sort((a, b) => {

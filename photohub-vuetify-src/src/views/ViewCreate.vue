@@ -65,9 +65,67 @@
       ></v-textarea>
     </v-sheet>
 
-    <!-- Row 3: sort -->
-    <v-sheet class="mb-3">
-      <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="fetchPreview()" @update:sortDir="fetchPreview()"></SortControls>
+    <!-- Row 3: sort + drag mode controls -->
+    <v-sheet class="mb-3 d-flex align-center ga-2">
+      <!-- Sort controls: disabled in drag mode; 'custom' option only if custom order exists or being created -->
+      <SortControls
+        v-model:sortBy="sortBy"
+        v-model:sortDir="sortDir"
+        :show-custom-order="hasCustomOrder"
+        :disabled="dragMode"
+        @update:sortBy="onSortByChange"
+        @update:sortDir="fetchPreview()"
+      ></SortControls>
+
+      <!-- State A / A': "Create custom order" — visible when sort != 'custom' -->
+      <v-btn v-if="sortBy !== 'custom' && !dragMode"
+        prepend-icon="mdi-drag-variant"
+        variant="tonal"
+        density="compact"
+        size="small"
+        :disabled="hasCustomOrder"
+        :title="hasCustomOrder ? `A custom order already exists — select 'Custom order' to edit it` : 'Create a custom order from the current display order'"
+        @click="createCustomOrder"
+      >Custom order</v-btn>
+
+      <!-- State B: Reorder + Delete (sort == 'custom', not in drag mode) -->
+      <template v-if="sortBy === 'custom' && !dragMode">
+        <v-btn
+          prepend-icon="mdi-drag"
+          variant="tonal"
+          density="compact"
+          size="small"
+          @click="enterDragMode"
+        >Reorder</v-btn>
+        <v-btn
+          icon="mdi-delete-outline"
+          variant="text"
+          density="compact"
+          size="small"
+          color="error"
+          title="Delete custom order"
+          @click="deleteCustomOrder"
+        ></v-btn>
+      </template>
+
+      <!-- State C: Done + Cancel buttons (in drag mode) -->
+      <template v-if="dragMode">
+        <v-btn
+          prepend-icon="mdi-check"
+          variant="tonal"
+          color="primary"
+          density="compact"
+          size="small"
+          :loading="savingOrder"
+          @click="exitDragMode"
+        >Done</v-btn>
+        <v-btn
+          variant="text"
+          density="compact"
+          size="small"
+          @click="cancelReorder"
+        >Cancel</v-btn>
+      </template>
     </v-sheet>
 
     <!-- Filter bar -->
@@ -173,11 +231,26 @@
       </v-sheet>
     </v-sheet>
 
+    <!-- Delete custom order confirm dialog -->
+    <v-dialog v-model="confirmDeleteOrderDialog" max-width="400" persistent>
+      <v-card>
+        <v-card-title>Delete custom order?</v-card-title>
+        <v-card-text>The custom order will be removed and photos will be sorted by default order.</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" density="compact" @click="confirmDeleteOrderDialog = false">Cancel</v-btn>
+          <v-btn color="error" variant="tonal" density="compact" :loading="deletingOrder" @click="confirmDeleteCustomOrder">Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Preview grid -->
     <PhotoGrid :photos="photos" :paths="paths" show-favorite show-cover :cover-filename="coverFilename"
+      :draggable="dragMode"
       @item-click="onGridItemClick"
       @toggle-favorite="toggleFavorite"
-      @set-cover="setCover">
+      @set-cover="setCover"
+      @reorder="onReorder">
     </PhotoGrid>
 
   </v-sheet>
@@ -224,6 +297,17 @@ export default {
     // Cover (edit mode)
     coverFilename: null,
     coverHashPath: null,
+    // Custom order (edit mode)
+    dragMode: false,
+    savingOrder: false,
+    confirmDeleteOrderDialog: false,
+    deletingOrder: false,
+    hasCustomOrder: false,      // local state (DB value + unsaved changes)
+    dbHasCustomOrder: false,    // DB value only, for reset on filter change
+    originalSortBy: 'date',     // sort_by to revert to on delete custom order
+    localPhotoOrder: null,      // null = untouched, [] = clear, [filenames] = custom order
+    preDragPhotos: [],          // snapshot for cancel
+    preDragPhotoOrder: null,    // snapshot for cancel
   }),
 
   computed: {
@@ -274,7 +358,7 @@ export default {
           this._applyFilterState(state)
         }
       }
-      await this.fetchPreview()
+      await this.fetchPreview(false)
     },
 
     _applyFilterState(state) {
@@ -304,6 +388,9 @@ export default {
       this.isPublic = v.public
       this.sortBy = v.sort_by
       this.sortDir = v.sort_dir
+      this.hasCustomOrder = v.has_custom_order || false
+      this.dbHasCustomOrder = v.has_custom_order || false
+      this.originalSortBy = v.sort_by !== 'custom' ? v.sort_by : 'date'
       this.coverFilename = v.cover_filename || null
       this.coverHashPath = v.cover_hash_path || null
       this._applyFilterState({
@@ -330,7 +417,14 @@ export default {
       this.tagGroups = data.value.data.tag_groups
     },
 
-    async fetchPreview() {
+    async fetchPreview(resetOrder = true) {
+      if (resetOrder) {
+        // Reset drag/order state when filters or sort change
+        this.dragMode = false
+        this.localPhotoOrder = null
+        this.hasCustomOrder = this.dbHasCustomOrder
+      }
+
       this.loading = true
       const params = new URLSearchParams()
       params.set('filter_mode', this.filterMode)
@@ -345,7 +439,9 @@ export default {
         params.set('rating', this.filterRating)
         params.set('rating_mode', this.filterRatingMode)
       }
-      params.set('sort_by', this.sortBy)
+      // Use 'date' as sort for the preview API (custom order is view-specific)
+      const sortByParam = this.sortBy === 'custom' ? 'date' : this.sortBy
+      params.set('sort_by', sortByParam)
       params.set('sort_dir', this.sortDir)
 
       const { data, error } = await useAsyncFetch('/api/photos?' + params.toString())
@@ -391,6 +487,88 @@ export default {
       this.fetchPreview()
     },
 
+    onSortByChange() {
+      if (this.sortBy !== 'custom') {
+        this.dragMode = false
+        this.localPhotoOrder = null
+        this.fetchPreview()
+      }
+      // Switching TO 'custom': no fetch needed, photos already loaded; show State B
+    },
+
+    createCustomOrder() {
+      // Seed custom order from current display order, switch directly to drag mode (State C)
+      this.preDragPhotos = [...this.photos]
+      this.preDragPhotoOrder = this.localPhotoOrder
+      this.localPhotoOrder = this.photos.map(p => p.filename)
+      this.hasCustomOrder = true
+      this.sortBy = 'custom'
+      this.dragMode = true
+    },
+
+    enterDragMode() {
+      this.preDragPhotos = [...this.photos]
+      this.preDragPhotoOrder = this.localPhotoOrder
+      this.dragMode = true
+    },
+
+    async exitDragMode() {
+      if (this.isEditMode && this.localPhotoOrder !== null) {
+        const { triggerAlert } = useAlertStore()
+        this.savingOrder = true
+        const id = this.$route.params.id
+        const { error } = await useAsyncPost(`/api/views/${id}/update`, { photo_order: this.localPhotoOrder })
+        this.savingOrder = false
+        if (error.value) {
+          triggerAlert('error', 'Save error', error.value)
+          return
+        }
+        this.dbHasCustomOrder = true
+      }
+      this.dragMode = false
+    },
+
+    cancelReorder() {
+      this.photos = this.preDragPhotos
+      this.localPhotoOrder = this.preDragPhotoOrder
+      if (!this.preDragPhotoOrder && !this.dbHasCustomOrder) {
+        this.hasCustomOrder = false
+        this.sortBy = this.originalSortBy
+      }
+      this.dragMode = false
+    },
+
+    deleteCustomOrder() {
+      this.confirmDeleteOrderDialog = true
+    },
+
+    async confirmDeleteCustomOrder() {
+      const { triggerAlert } = useAlertStore()
+      this.deletingOrder = true
+      if (this.isEditMode) {
+        const id = this.$route.params.id
+        const { error } = await useAsyncPost(`/api/views/${id}/update`, { photo_order: [] })
+        if (error.value) {
+          triggerAlert('error', 'Save error', error.value)
+          this.deletingOrder = false
+          return
+        }
+        this.dbHasCustomOrder = false
+      }
+      this.deletingOrder = false
+      this.confirmDeleteOrderDialog = false
+      this.localPhotoOrder = null
+      this.hasCustomOrder = false
+      this.dragMode = false
+      this.sortBy = this.originalSortBy
+      this.fetchPreview(false)
+    },
+
+    onReorder(newPhotos) {
+      this.photos = newPhotos
+      this.localPhotoOrder = newPhotos.map(p => p.filename)
+    },
+
     async save() {
       const { triggerAlert } = useAlertStore()
       this.saving = true
@@ -408,6 +586,9 @@ export default {
         sort_dir: this.sortDir,
       }
       payload.cover_filename = this.coverFilename
+      if (this.localPhotoOrder !== null) {
+        payload.photo_order = this.localPhotoOrder
+      }
 
       const id = this.$route.params.id
       const url = this.isEditMode ? `/api/views/${id}/update` : '/api/views/create'

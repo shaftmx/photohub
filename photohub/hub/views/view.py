@@ -21,6 +21,7 @@ def _serialize_view(v):
         "filter_rating_mode": v.filter_rating_mode,
         "cover_filename": v.cover.filename if v.cover else None,
         "cover_hash_path": genHasingPath(v.cover.filename) if v.cover else None,
+        "has_custom_order": models.ViewPhotoOrder.objects.filter(view=v).exists(),
         "filter_tags": [
             {"id": t.id, "name": t.name, "color": t.color or t.tag_group.color, "group_name": t.tag_group.name}
             for t in v.filter_tags.all()
@@ -216,6 +217,22 @@ def update_view(request, view_id):
         tags = models.Tag.objects.filter(name__in=tag_names)
         v.filter_tags.set(tags)
 
+    # Cleanup orphan ViewPhotoOrder entries (photos no longer matching filters)
+    current_filenames = set(_apply_view_filters(v).values_list('filename', flat=True))
+    models.ViewPhotoOrder.objects.filter(view=v).exclude(photo__filename__in=current_filenames).delete()
+
+    # If photo_order provided in payload, replace the custom order
+    if "photo_order" in post:
+        photo_order = post["photo_order"]
+        models.ViewPhotoOrder.objects.filter(view=v).delete()
+        if photo_order:
+            for idx, filename in enumerate(photo_order):
+                try:
+                    photo = models.Photo.objects.get(filename=filename)
+                    models.ViewPhotoOrder.objects.create(view=v, photo=photo, order=idx)
+                except models.Photo.DoesNotExist:
+                    pass
+
     return Response(200, data={"view": _serialize_view(v)})
 
 
@@ -245,16 +262,29 @@ def get_view_photos(request, view_id):
     except models.View.DoesNotExist:
         return ErrorResponse("NotFound", 404, "View not found")
 
-    photos = _apply_view_filters(v)
-    data_photos = [_serialize_photo(p) for p in photos]
+    filtered_qs = _apply_view_filters(v)
     v_data = _serialize_view(v)
+
+    # Custom order: if sort_by == 'custom' AND ViewPhotoOrder records exist, return photos in that order
+    custom_order_qs = models.ViewPhotoOrder.objects.filter(view=v).select_related('photo').order_by('order')
+    if v.sort_by == 'custom' and custom_order_qs.exists():
+        filtered_filenames = set(filtered_qs.values_list('filename', flat=True))
+        ordered = [vpo.photo for vpo in custom_order_qs if vpo.photo.filename in filtered_filenames]
+        ordered_filenames = {p.filename for p in ordered}
+        # Append new photos not yet in custom order (e.g. newly matched ones)
+        for p in filtered_qs:
+            if p.filename not in ordered_filenames:
+                ordered.append(p)
+        data_photos = [_serialize_photo(p) for p in ordered]
+    else:
+        data_photos = [_serialize_photo(p) for p in filtered_qs]
 
     # Edge case: if explicit cover no longer exists in filtered photos, fallback to first
     photo_filenames = {p["filename"] for p in data_photos}
     if v_data["cover_filename"] and v_data["cover_filename"] not in photo_filenames:
-        first = photos.first()
-        v_data["cover_filename"] = first.filename if first else None
-        v_data["cover_hash_path"] = genHasingPath(first.filename) if first else None
+        first = data_photos[0] if data_photos else None
+        v_data["cover_filename"] = first["filename"] if first else None
+        v_data["cover_hash_path"] = genHasingPath(first["filename"]) if first else None
 
     return Response(200, data={
         "photos": data_photos,
