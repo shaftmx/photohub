@@ -67,6 +67,12 @@
     <div class="d-flex align-center mb-3">
       <v-icon size="small" class="mr-2" color="primary">mdi-information-outline</v-icon>
       <span class="text-body-2 font-weight-medium">Metadata</span>
+      <v-spacer></v-spacer>
+      <v-btn v-if="photo.exif && photo.exif.GPSDDFormat"
+        size="x-small" variant="tonal" color="primary" prepend-icon="mdi-map-marker-outline"
+        :href="googleMapsUrl(photo.exif.GPSDDFormat)" target="_blank" rel="noopener">
+        Maps
+      </v-btn>
     </div>
     <v-list density="compact" class="pa-0 mb-4 rounded-lg" style="background: rgba(0,0,0,0.04);">
       <v-list-item v-if="photo.origin_filename" class="px-3 py-1">
