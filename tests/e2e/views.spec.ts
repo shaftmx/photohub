@@ -398,42 +398,40 @@ test.describe('Views — custom order', () => {
     await page.close()
   })
 
-  test('Custom order option is available in sort controls in edit view', async ({ page }) => {
+  test('"Custom order" button is visible in edit view sort bar', async ({ page }) => {
     await loginAs(page)
     await page.goto(`/views/${viewId}/edit`)
     await expect(page.getByText('Edit view')).toBeVisible()
-    await page.locator('.v-select').first().click()
-    await expect(page.getByRole('option', { name: 'Custom order' })).toBeVisible()
-    await page.keyboard.press('Escape')
+    // State A: "Custom order" button always visible when no custom order exists yet
+    await expect(page.getByRole('button', { name: 'Custom order' })).toBeVisible()
   })
 
-  test('Create custom order button appears after selecting Custom order', async ({ page }) => {
+  test('Clicking "Custom order" enters drag mode', async ({ page }) => {
     await loginAs(page)
     await page.goto(`/views/${viewId}/edit`)
     await expect(page.getByText('Edit view')).toBeVisible()
     await page.waitForLoadState('networkidle')
     const hasPhotos = await page.locator('.item').first().isVisible()
     if (!hasPhotos) return
-    // Select Custom order
-    await page.locator('.v-select').first().click()
-    await page.getByRole('option', { name: 'Custom order' }).click()
-    // "Create custom order" button should appear
-    await expect(page.getByRole('button', { name: /Create custom order/i })).toBeVisible()
-  })
-
-  test('Entering drag mode shows drag handles on photos', async ({ page }) => {
-    await loginAs(page)
-    await page.goto(`/views/${viewId}/edit`)
-    await expect(page.getByText('Edit view')).toBeVisible()
-    await page.waitForLoadState('networkidle')
-    const hasPhotos = await page.locator('.item').first().isVisible()
-    if (!hasPhotos) return
-    // Select Custom order and create
-    await page.locator('.v-select').first().click()
-    await page.getByRole('option', { name: 'Custom order' }).click()
-    await page.getByRole('button', { name: /Create custom order/i }).click()
-    // Drag handles should be visible
+    // Click "Custom order" button → enters drag mode (State C) directly
+    await page.getByRole('button', { name: 'Custom order' }).click()
+    // Drag handles should be visible on photos
     await expect(page.locator('.drag-handle').first()).toBeVisible()
+  })
+
+  test('"Done" exits drag mode and shows "Reorder" button (State B)', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}/edit`)
+    await expect(page.getByText('Edit view')).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    const hasPhotos = await page.locator('.item').first().isVisible()
+    if (!hasPhotos) return
+    await page.getByRole('button', { name: 'Custom order' }).click()
+    await expect(page.locator('.drag-handle').first()).toBeVisible()
+    // Click Done → exits drag mode, State B shows "Reorder"
+    await page.getByRole('button', { name: 'Done' }).click()
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByRole('button', { name: 'Reorder' })).toBeVisible()
   })
 
   test('Custom order option is available in ViewDetail sort controls', async ({ page }) => {

@@ -167,10 +167,10 @@ test.describe('Photos — filters', () => {
     await page.waitForLoadState('networkidle')
     const url = page.url()
     expect(url).toContain('favorite=true')
-    // Reload — state should be restored
+    // Reload — state should be restored: active state shown via text-red color (no v-btn--active)
     await page.goto(url)
     await page.waitForLoadState('networkidle')
-    await expect(page.locator('button[title*="avorite"]').first()).toHaveClass(/v-btn--active|active/)
+    await expect(page.locator('button[title*="avorite"]').first()).toHaveClass(/text-red/)
   })
 
   test('save as view button is visible', async ({ page }) => {
