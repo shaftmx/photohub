@@ -94,7 +94,7 @@ test.describe('Views — create', () => {
   test('create a view with No tags filter mode', async ({ page }) => {
     const name = `No Tags View ${Date.now()}`
     await page.locator('.v-text-field input').first().fill(name)
-    await page.getByRole('button', { name: 'No tags' }).click()
+    await page.locator('button:has(.mdi-tag-off-outline)').first().click()
     await page.waitForLoadState('networkidle')
     await page.getByRole('button', { name: 'Save' }).click()
     await expect(page).toHaveURL(/views\/\d+/, { timeout: 15_000 })
@@ -117,7 +117,7 @@ test.describe('Views — create', () => {
 
   test('preview grid updates when filter changes', async ({ page }) => {
     // Switch to No tags mode
-    await page.getByRole('button', { name: 'No tags' }).click()
+    await page.locator('button:has(.mdi-tag-off-outline)').first().click()
     await page.waitForLoadState('networkidle')
     // Photo count indicator should update
     await expect(page.getByText(/\d+ photo/)).toBeVisible()
@@ -138,8 +138,8 @@ test.describe('Views — create', () => {
     await page.locator('button:has(.mdi-tag-off-outline)').first().click()
     await page.getByRole('button', { name: 'Save as view' }).click()
     await expect(page).toHaveURL(/views\/create/)
-    // In ViewCreate, No tags button has text — should be active (pre-filled)
-    await expect(page.getByRole('button', { name: 'No tags' })).toHaveClass(/v-btn--active|active/)
+    // In ViewCreate, No tags button should be active (pre-filled)
+    await expect(page.locator('button:has(.mdi-tag-off-outline)').first()).toHaveClass(/v-btn--active|active/)
   })
 
 })
@@ -299,7 +299,7 @@ test.describe('Views — edit', () => {
 
   test('edit page pre-fills filter mode', async ({ page }) => {
     // Quick is the default mode — should be active
-    await expect(page.getByRole('button', { name: 'Quick' })).toHaveClass(/v-btn--active|active/)
+    await expect(page.locator('button:has(.mdi-text-search-variant)').first()).toHaveClass(/v-btn--active|active/)
   })
 
   test('cancel navigates back to view detail', async ({ page }) => {
