@@ -77,7 +77,7 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 
 ---
 
-## What is tested (92 tests)
+## What is tested (99 tests)
 
 ### Authentication (`auth.spec.ts` — 4 tests)
 - Unauthenticated access to `/photos` redirects to `/login`
@@ -112,7 +112,7 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 - Sort by Upload date
 - Toggle sort direction (asc ↔ desc)
 
-### Photos — filters (`photos.spec.ts` — 13 tests)
+### Photos — filters (`photos.spec.ts` — 18 tests)
 - Quick filter mode is active by default
 - Switch to No filter mode (show all photos) — URL gets `filter_mode=none`
 - Switch to Detailed filter mode (expand panel appears)
@@ -121,7 +121,10 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 - Filter by rating — URL updates with `rating=N`
 - Rating mode toggle cycles between ≤ and = operators
 - Sort change updates URL with `sort_by=...`
-- URL params restore filter state on page reload (favorite persists)
+- URL params restore favorite filter on reload (`text-red` class active)
+- URL params restore rating filter on reload (star amber)
+- URL params restore sort on reload (select shows correct option)
+- URL params restore no-tags filter mode on reload (button active)
 - "Save as view" button is visible in the filter bar
 - "Save as view" navigates to `/views/create` with filter state pre-filled
 
@@ -134,10 +137,13 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 - Bulk delete: confirm dialog appears, cancel aborts
 - Bulk "Add to favorites": action runs, selection mode exits
 
-### Photo detail panel (`photos.spec.ts` — 4 tests)
+### Photo detail panel (`photos.spec.ts` — 6 tests)
 - Detail panel opens inside the fullscreen dialog (Details button)
 - Favorite toggle in detail panel: click + revert
 - Rating: set 4 stars, revert to 0
+- EXIF and Metadata sections are visible in the detail panel
+- Edit description: fill, blur to save, revert
+- Unpublish from detail panel: confirm dialog → API 200 → dialog closes
 - Navigate to next photo with carousel arrow (if available)
 
 ### Views — list (`views.spec.ts` — 5 tests)
@@ -147,21 +153,24 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 - View card hover reveals edit/delete buttons (`.card-actions`)
 - "New view" button navigates to `/views/create`
 
-### Views — create (`views.spec.ts` — 8 tests)
+### Views — create (`views.spec.ts` — 11 tests)
 - Save button is disabled when name is empty
 - Cancel navigates back to the views list
 - Create a view with only a name → redirects to view detail
 - Create a view with description, public toggle and sort → saves correctly
+- Create a view with No filter mode → saves correctly
 - Create a view with No tags filter mode → saves correctly
 - Create a view with favorite filter active → saves correctly
+- Create a view with rating filter → filter chip visible in detail
 - Preview grid photo count updates when filter mode changes
 - Preview grid respects sort selection
 - "Save as view" from Photos page pre-fills filter state in the form
 
-### Views — custom order (`views.spec.ts` — 4 tests)
-- "Custom order" option is available in sort controls in edit view
-- "Create custom order" button appears after selecting Custom order sort
-- Entering drag mode shows drag handles on photos
+### Views — custom order (`views.spec.ts` — 5 tests)
+- "Custom order" button is visible in edit view sort bar (State A)
+- Clicking "Custom order" enters drag mode (drag handles visible)
+- "Done" exits drag mode and "Reorder" button appears (State B)
+- Deleting custom order reverts to normal sort (State A restored)
 - "Custom order" option is available in sort controls in view detail
 
 ### Views — detail (`views.spec.ts` — 9 tests)
@@ -195,14 +204,12 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 **Photos**
 - Tag filtering with the Quick autocomplete (selecting specific tags)
 - Tag filtering with the Detailed panel (TagFilter component)
-- URL restore for rating, sort, filter_mode=detail/notags on reload (only favorite tested)
+- URL restore for `filter_mode=detail` on reload
 - "Remove from favorites" bulk action
-- "Unpublish" bulk action actually unpublishing (only confirm dialog tested)
 - "Delete" bulk action actually deleting (only confirm dialog tested)
 - "Tag" bulk action opening the tag editor
 - Editing tags from the detail panel (EditTagsDialog)
-- EXIF data display in the detail panel
-- GPS "Open in Google Maps" button in Metadata section (requires photo with GPS EXIF)
+- GPS "Open in Google Maps" button in Metadata section (requires photo with GPS EXIF data)
 
 **Upload**
 - Duplicate file upload (same MD5 → "Picture already exist" response)
@@ -214,8 +221,6 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 - Custom order: save persists and is restored on reload
 - Custom order: delete order reverts to normal sort
 - Tag filter in views (creating a view with specific tags, verifying filter is applied)
-- Rating filter in views (creating a view with a rating filter)
-- "No filter" mode (`none`) in ViewCreate
 - Public views accessible without authentication (route not yet built)
 - Share link (`/shared_view/<token>`) — not yet built
 

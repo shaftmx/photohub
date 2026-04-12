@@ -161,16 +161,47 @@ test.describe('Photos — filters', () => {
     await expect(page).toHaveURL(/sort_by=rating/)
   })
 
-  test('URL params restore filter state on reload', async ({ page }) => {
-    // Apply favorite filter → URL gets favorite=true
+  test('URL params restore favorite filter on reload', async ({ page }) => {
     await page.locator('button[title*="avorite"]').first().click()
     await page.waitForLoadState('networkidle')
     const url = page.url()
     expect(url).toContain('favorite=true')
-    // Reload — state should be restored: active state shown via text-red color (no v-btn--active)
+    // Reload — active state shown via text-red (no v-btn--active on this button)
     await page.goto(url)
     await page.waitForLoadState('networkidle')
     await expect(page.locator('button[title*="avorite"]').first()).toHaveClass(/text-red/)
+  })
+
+  test('URL params restore rating filter on reload', async ({ page }) => {
+    await page.locator('button[title="3 stars"]').click()
+    await page.waitForLoadState('networkidle')
+    const url = page.url()
+    expect(url).toContain('rating=3')
+    await page.goto(url)
+    await page.waitForLoadState('networkidle')
+    // 3rd star should be amber (active)
+    await expect(page.locator('button[title="3 stars"]').first()).toHaveClass(/text-amber/)
+  })
+
+  test('URL params restore sort on reload', async ({ page }) => {
+    await page.locator('.v-select').first().click()
+    await page.getByRole('option', { name: 'Rating' }).click()
+    await page.waitForLoadState('networkidle')
+    const url = page.url()
+    expect(url).toContain('sort_by=rating')
+    await page.goto(url)
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('.v-select').first()).toContainText('Rating')
+  })
+
+  test('URL params restore no-tags filter mode on reload', async ({ page }) => {
+    await page.locator('button:has(.mdi-tag-off-outline)').first().click()
+    await page.waitForLoadState('networkidle')
+    const url = page.url()
+    expect(url).toContain('filter_mode=notags')
+    await page.goto(url)
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('button:has(.mdi-tag-off-outline)').first()).toHaveClass(/v-btn--active|active/)
   })
 
   test('save as view button is visible', async ({ page }) => {
@@ -359,6 +390,13 @@ test.describe('Photo detail panel', () => {
     expect(resp.status()).toBe(200)
     // Dialog closes after unpublish — carousel is gone from the viewport
     await expect(page.locator('.v-carousel')).not.toBeVisible({ timeout: 8_000 })
+  })
+
+  test('EXIF section is visible in detail panel', async ({ page }) => {
+    // EXIF section header should be present (may be collapsed)
+    await expect(page.locator('.v-dialog').getByText('EXIF')).toBeVisible({ timeout: 8_000 })
+    // Metadata section should also be present
+    await expect(page.locator('.v-dialog').getByText('Metadata')).toBeVisible()
   })
 
   test('navigate to next photo with arrow', async ({ page }) => {

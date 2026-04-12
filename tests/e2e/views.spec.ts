@@ -115,6 +115,33 @@ test.describe('Views — create', () => {
     await page.getByRole('button', { name: 'Delete' }).last().click()
   })
 
+  test('create a view with No filter mode', async ({ page }) => {
+    const name = `No Filter View ${Date.now()}`
+    await page.locator('.v-text-field input').first().fill(name)
+    await page.locator('button:has(.mdi-filter-off-outline)').first().click()
+    await page.waitForLoadState('networkidle')
+    await page.getByRole('button', { name: 'Save' }).click()
+    await expect(page).toHaveURL(/views\/\d+/, { timeout: 15_000 })
+    // Cleanup
+    await page.locator('button').filter({ has: page.locator('.mdi-delete-outline') }).last().click()
+    await page.getByRole('button', { name: 'Delete' }).last().click()
+  })
+
+  test('create a view with rating filter', async ({ page }) => {
+    const name = `Rating View ${Date.now()}`
+    await page.locator('.v-text-field input').first().fill(name)
+    await page.locator('button[title="3 stars"]').click()
+    await page.waitForLoadState('networkidle')
+    await page.getByRole('button', { name: 'Save' }).click()
+    await expect(page).toHaveURL(/views\/\d+/, { timeout: 15_000 })
+    // Verify filter chip shows in view detail
+    await page.locator('button[title="Toggle filters"]').click()
+    await expect(page.locator('.v-chip').filter({ hasText: /3/ })).toBeVisible()
+    // Cleanup
+    await page.locator('button').filter({ has: page.locator('.mdi-delete-outline') }).last().click()
+    await page.getByRole('button', { name: 'Delete' }).last().click()
+  })
+
   test('preview grid updates when filter changes', async ({ page }) => {
     // Switch to No tags mode
     await page.locator('button:has(.mdi-tag-off-outline)').first().click()
@@ -431,7 +458,30 @@ test.describe('Views — custom order', () => {
     // Click Done → exits drag mode, State B shows "Reorder"
     await page.getByRole('button', { name: 'Done' }).click()
     await page.waitForLoadState('networkidle')
-    await expect(page.getByRole('button', { name: 'Reorder' })).toBeVisible()
+    // "Reorder" button in State B — use mdi icon to avoid matching drag-handle titles
+    await expect(page.locator('button:has(.mdi-cursor-move)')).toBeVisible()
+  })
+
+  test('Delete custom order reverts to normal sort (State A)', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}/edit`)
+    await expect(page.getByText('Edit view')).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    const hasPhotos = await page.locator('.item').first().isVisible()
+    if (!hasPhotos) return
+    // Create custom order → Done → State B
+    await page.getByRole('button', { name: 'Custom order' }).click()
+    await page.getByRole('button', { name: 'Done' }).click()
+    await page.waitForLoadState('networkidle')
+    // Delete order via icon button
+    await page.locator('button[title="Delete custom order"]').click()
+    // Confirm dialog
+    await expect(page.locator('.v-card-title').filter({ hasText: /delete.*order/i })).toBeVisible()
+    await page.getByRole('button', { name: 'Delete' }).last().click()
+    await page.waitForLoadState('networkidle')
+    // State A: "Custom order" button reappears (enabled)
+    await expect(page.getByRole('button', { name: 'Custom order' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Custom order' })).toBeEnabled()
   })
 
   test('Custom order option is available in ViewDetail sort controls', async ({ page }) => {
