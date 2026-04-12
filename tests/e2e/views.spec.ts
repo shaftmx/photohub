@@ -469,8 +469,14 @@ test.describe('Views — custom order', () => {
     await page.waitForLoadState('networkidle')
     const hasPhotos = await page.locator('.item').first().isVisible()
     if (!hasPhotos) return
-    // Create custom order → Done → State B
-    await page.getByRole('button', { name: 'Custom order' }).click()
+    // Enter drag mode — via "Reorder" (State B) if order already exists, else "Custom order" (State A)
+    const reorderBtn = page.locator('button:has(.mdi-cursor-move)')
+    const customOrderBtn = page.getByRole('button', { name: 'Custom order' })
+    if (await reorderBtn.isVisible()) {
+      await reorderBtn.click()
+    } else {
+      await customOrderBtn.click()
+    }
     await page.getByRole('button', { name: 'Done' }).click()
     await page.waitForLoadState('networkidle')
     // Delete order via icon button

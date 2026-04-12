@@ -394,7 +394,7 @@ test.describe('Photo detail panel', () => {
 
   test('EXIF section is visible in detail panel', async ({ page }) => {
     // EXIF section header should be present (may be collapsed)
-    await expect(page.locator('.v-dialog').getByText('EXIF')).toBeVisible({ timeout: 8_000 })
+    await expect(page.locator('.v-dialog').getByText('EXIF', { exact: true })).toBeVisible({ timeout: 8_000 })
     // Metadata section should also be present
     await expect(page.locator('.v-dialog').getByText('Metadata')).toBeVisible()
   })
