@@ -429,8 +429,8 @@ test.describe('Views — custom order', () => {
     await loginAs(page)
     await page.goto(`/views/${viewId}/edit`)
     await expect(page.getByText('Edit view')).toBeVisible()
-    // State A: "Custom order" button always visible when no custom order exists yet
-    await expect(page.getByRole('button', { name: 'Custom order' })).toBeVisible()
+    // State A: "Custom order" create button (has mdi-drag-variant icon) visible
+    await expect(page.locator('button:has(.mdi-drag-variant)')).toBeVisible()
   })
 
   test('Clicking "Custom order" enters drag mode', async ({ page }) => {
@@ -455,11 +455,21 @@ test.describe('Views — custom order', () => {
     if (!hasPhotos) return
     await page.getByRole('button', { name: 'Custom order' }).click()
     await expect(page.locator('.drag-handle').first()).toBeVisible()
-    // Click Done → exits drag mode, State B shows "Reorder"
+    // Click Done → exits drag mode, saves order + sort_by='custom' to DB
     await page.getByRole('button', { name: 'Done' }).click()
     await page.waitForLoadState('networkidle')
-    // "Reorder" button in State B — use mdi icon to avoid matching drag-handle titles
+    // State B: "Reorder" button visible + sort select shows "Custom order"
     await expect(page.locator('button:has(.mdi-cursor-move)')).toBeVisible()
+    await expect(page.locator('.v-select').first()).toContainText('Custom order')
+  })
+
+  test('"Custom order" option is available in ViewDetail sort controls when order exists', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}`)
+    await expect(page.locator('.v-select').first()).toBeVisible()
+    await page.locator('.v-select').first().click()
+    await expect(page.getByRole('option', { name: 'Custom order' })).toBeVisible()
+    await page.keyboard.press('Escape')
   })
 
   test('Delete custom order reverts to normal sort (State A)', async ({ page }) => {
@@ -469,37 +479,32 @@ test.describe('Views — custom order', () => {
     await page.waitForLoadState('networkidle')
     const hasPhotos = await page.locator('.item').first().isVisible()
     if (!hasPhotos) return
-    // Step 1: ensure a custom order exists — create one if not already (button enabled = no order yet)
-    const customOrderBtn = page.getByRole('button', { name: 'Custom order' })
-    if (await customOrderBtn.isEnabled()) {
-      // State A: create order → drag mode → Done saves it
+    // Ensure a custom order exists: create one if needed (State A, button enabled)
+    // Use icon-specific selector to avoid matching the v-select showing "Custom order"
+    const customOrderBtn = page.locator('button:has(.mdi-drag-variant)')
+    if (await customOrderBtn.isVisible()) {
+      const hasPhotosForDrag = await page.locator('.item').first().isVisible({ timeout: 2000 }).catch(() => false)
+      if (!hasPhotosForDrag) return
       await customOrderBtn.click()
-      await expect(page.locator('.drag-handle').first()).toBeVisible()
+      await page.waitForTimeout(300)
+      await expect(page.locator('.drag-handle').first()).toBeVisible({ timeout: 8000 })
       await page.getByRole('button', { name: 'Done' }).click()
       await page.waitForLoadState('networkidle')
     }
-    // Step 2: now has_custom_order=true — select "Custom order" in sort select → State B
-    await page.locator('.v-select').first().click()
-    await expect(page.getByRole('option', { name: 'Custom order' })).toBeVisible({ timeout: 5_000 })
-    await page.getByRole('option', { name: 'Custom order' }).click()
-    // State B: delete icon button should appear
+    // After Done, sort_by='custom' is persisted → State B directly, delete button visible
     await expect(page.locator('button[title="Delete custom order"]')).toBeVisible()
     await page.locator('button[title="Delete custom order"]').click()
     // Confirm dialog
     await expect(page.locator('.v-card-title').filter({ hasText: /delete.*order/i })).toBeVisible()
     await page.getByRole('button', { name: 'Delete' }).last().click()
     await page.waitForLoadState('networkidle')
-    // State A: "Custom order" button re-enabled (no order exists anymore)
-    await expect(page.getByRole('button', { name: 'Custom order' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Custom order' })).toBeEnabled()
-  })
-
-  test('Custom order option is available in ViewDetail sort controls', async ({ page }) => {
-    await loginAs(page)
+    // State A: "Custom order" create button (mdi-drag-variant) is back and enabled
+    await expect(page.locator('button:has(.mdi-drag-variant)')).toBeVisible()
+    await expect(page.locator('button:has(.mdi-drag-variant)')).toBeEnabled()
+    // ViewDetail should no longer show "Custom order" in sort options
     await page.goto(`/views/${viewId}`)
-    await expect(page.locator('.v-select').first()).toBeVisible()
     await page.locator('.v-select').first().click()
-    await expect(page.getByRole('option', { name: 'Custom order' })).toBeVisible()
+    await expect(page.getByRole('option', { name: 'Custom order' })).not.toBeVisible()
     await page.keyboard.press('Escape')
   })
 

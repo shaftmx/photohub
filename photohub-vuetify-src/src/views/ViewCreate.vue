@@ -86,9 +86,12 @@
         density="compact"
         size="small"
         :disabled="hasCustomOrder"
-        :title="hasCustomOrder ? `A custom order already exists — select 'Custom order' to edit it` : 'Create a custom order from the current display order'"
         @click="createCustomOrder"
-      >Custom order</v-btn>
+      >Custom order
+        <v-tooltip v-if="hasCustomOrder" activator="parent" location="top">
+          A custom order already exists — select "Custom order" in the sort menu to edit it
+        </v-tooltip>
+      </v-btn>
 
       <!-- State B: Reorder + Delete order -->
       <template v-if="sortBy === 'custom' && !dragMode">
@@ -518,13 +521,17 @@ export default {
         const { triggerAlert } = useAlertStore()
         this.savingOrder = true
         const id = this.$route.params.id
-        const { error } = await useAsyncPost(`/api/views/${id}/update`, { photo_order: this.localPhotoOrder })
+        const { error } = await useAsyncPost(`/api/views/${id}/update`, {
+          photo_order: this.localPhotoOrder,
+          sort_by: 'custom',
+        })
         this.savingOrder = false
         if (error.value) {
           triggerAlert('error', 'Save error', error.value)
           return
         }
         this.dbHasCustomOrder = true
+        this.sortBy = 'custom'
       }
       this.dragMode = false
     },

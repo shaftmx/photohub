@@ -265,9 +265,11 @@ def get_view_photos(request, view_id):
     filtered_qs = _apply_view_filters(v)
     v_data = _serialize_view(v)
 
-    # Custom order: if sort_by == 'custom' AND ViewPhotoOrder records exist, return photos in that order
+    # Custom order: if sort_by == 'custom' (view default or overridden by query param) AND records exist
+    sort_by_override = request.GET.get('sort_by')
+    effective_sort_by = sort_by_override if sort_by_override else v.sort_by
     custom_order_qs = models.ViewPhotoOrder.objects.filter(view=v).select_related('photo').order_by('order')
-    if v.sort_by == 'custom' and custom_order_qs.exists():
+    if effective_sort_by == 'custom' and custom_order_qs.exists():
         filtered_filenames = set(filtered_qs.values_list('filename', flat=True))
         ordered = [vpo.photo for vpo in custom_order_qs if vpo.photo.filename in filtered_filenames]
         ordered_filenames = {p.filename for p in ordered}

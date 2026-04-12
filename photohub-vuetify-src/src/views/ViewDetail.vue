@@ -64,7 +64,7 @@
 
     <!-- Sort + grid size slider -->
     <v-sheet class="d-flex align-center mb-2 ga-2">
-      <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" :show-custom-order="true" @update:sortBy="applySort()" @update:sortDir="applySort()"></SortControls>
+      <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" :show-custom-order="view.has_custom_order || false" @update:sortBy="applySort()" @update:sortDir="applySort()"></SortControls>
       <v-spacer></v-spacer>
       <v-sheet class="d-flex align-end justify-end" style="max-width: 300px; width: 50%">
         <v-slider v-model="sharedDatas.gridSize" :max="sharedDatas.gridMax" :min="sharedDatas.gridMin"
@@ -140,23 +140,24 @@ export default {
       return marked.parse(text || '')
     },
 
-    async loadView() {
+    async loadView({ sortBy } = {}) {
       this.loading = true
       const id = this.$route.params.id
-      const { data, error } = await useAsyncFetch(`/api/views/${id}/photos`)
+      const qs = sortBy ? `?sort_by=${sortBy}` : ''
+      const { data, error } = await useAsyncFetch(`/api/views/${id}/photos${qs}`)
       this.loading = false
       if (error.value) return
       this.view = data.value.data.view
       this.photos = data.value.data.photos
       this.paths = data.value.data.paths
-      this.sortBy = this.view.sort_by
+      this.sortBy = sortBy || this.view.sort_by
       this.sortDir = this.view.sort_dir
     },
 
     async applySort() {
       if (this.sortBy === 'custom') {
-        // Reload from API to get the persisted custom order
-        await this.loadView()
+        // Reload from API with sort_by=custom override to get the persisted custom order
+        await this.loadView({ sortBy: 'custom' })
         return
       }
       const dir = this.sortDir === 'asc' ? 1 : -1
