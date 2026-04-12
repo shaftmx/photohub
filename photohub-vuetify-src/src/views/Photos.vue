@@ -42,10 +42,10 @@
         </v-sheet>
         <v-sheet class="d-flex align-center justify-end ga-2 mb-2 ma-0 pa-0">
           <v-btn
-            @click="selectedFilenames.length === photos.length ? deselectAll() : selectAll()"
+            @click="selectedFilenames.length > 0 ? deselectAll() : selectAll()"
             size="small" color="secondary" variant="tonal" density="compact"
-            :prepend-icon="selectedFilenames.length === photos.length ? 'mdi-select-off' : 'mdi-select-all'"
-          >{{ selectedFilenames.length === photos.length ? 'Deselect all' : 'Select all' }}</v-btn>
+            :prepend-icon="selectedFilenames.length > 0 ? 'mdi-select-off' : 'mdi-select-all'"
+          >{{ selectedFilenames.length > 0 ? 'Deselect all' : 'Select all' }}</v-btn>
           <v-menu>
             <template v-slot:activator="{ props }">
               <v-btn v-bind="props" size="small" color="primary" variant="tonal"
@@ -80,10 +80,10 @@
             <template v-if="selectionMode">
               <span class="text-body-2 text-medium-emphasis">{{ selectedFilenames.length }} selected</span>
               <v-btn
-                @click="selectedFilenames.length === photos.length ? deselectAll() : selectAll()"
+                @click="selectedFilenames.length > 0 ? deselectAll() : selectAll()"
                 color="secondary" variant="tonal" density="compact"
-                :prepend-icon="selectedFilenames.length === photos.length ? 'mdi-select-off' : 'mdi-select-all'"
-              >{{ selectedFilenames.length === photos.length ? 'Deselect all' : 'Select all' }}</v-btn>
+                :prepend-icon="selectedFilenames.length > 0 ? 'mdi-select-off' : 'mdi-select-all'"
+              >{{ selectedFilenames.length > 0 ? 'Deselect all' : 'Select all' }}</v-btn>
               <v-menu>
                 <template v-slot:activator="{ props }">
                   <v-btn v-bind="props" color="primary" variant="tonal"

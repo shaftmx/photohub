@@ -27,11 +27,11 @@
         <v-sheet class="d-flex ma-0 pa-0 align-center ga-2">
           <span class="text-body-2 text-medium-emphasis">{{ selectedPhotosFilenames.length }} selected</span>
           <v-btn
-            @click="selectedPhotosFilenames.length === photos.length ? deselectAll() : selectAll()"
+            @click="selectedPhotosFilenames.length > 0 ? deselectAll() : selectAll()"
             :size="sharedDatas.isMobile ? 'small' : 'default'"
             color="secondary" variant="tonal" density="compact"
-            :prepend-icon="selectedPhotosFilenames.length === photos.length ? 'mdi-select-off' : 'mdi-select-all'"
-          >{{ selectedPhotosFilenames.length === photos.length ? 'Deselect all' : 'Select all' }}</v-btn>
+            :prepend-icon="selectedPhotosFilenames.length > 0 ? 'mdi-select-off' : 'mdi-select-all'"
+          >{{ selectedPhotosFilenames.length > 0 ? 'Deselect all' : 'Select all' }}</v-btn>
           <v-menu>
             <template v-slot:activator="{ props }">
               <v-btn v-bind="props" :size="sharedDatas.isMobile ? 'small' : 'default'" color="primary" variant="tonal"
