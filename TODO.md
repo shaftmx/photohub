@@ -9,10 +9,8 @@
 - ✅ Filter by tags (TagFilter component)
 - ✅ Tag filter: AND by default, optional OR mode (filter_mode=basic/smart)
 - ✅ Display all pictures
-- ⬜ Pagination or infinite scroll — TBD based on performance and UX
 - ✅ Show photos without tags (filter option — "No tags" mode in filter toggle)
 - ✅ One-click: create a view from current active tag filters ("Save as view" button)
-- ⬜ Future: create a view from a manual selection of specific photos
 - ✅ Selection mode: select multiple photos → bulk action: delete, unpublish, tag editing (reuse post-upload Tag pictures component)
 
 ## Photo properties
@@ -28,7 +26,7 @@
 - ✅ Edit tags
 - ✅ EXIF display
 - ✅ GPS: if EXIF contains GPS data, show an "Open in Google Maps" link next to the coordinates
-- ⬜ GPS shortcut in photo detail header — when GPS data is available, show a map-pin icon button at the top of the detail panel (alongside unpublish/delete) that opens Google Maps directly
+- ✅ GPS shortcut in photo detail header — when GPS data is available, show a map-pin icon button at the top of the detail panel (alongside unpublish/delete) that opens Google Maps directly
 - ✅ Favorite (heart) button
 - ✅ Rating (stars) widget
 - ✅ Define as cover — button in photo detail panel (embedded mode), visible only when viewing from within a view context
@@ -46,7 +44,7 @@
 - ✅ "Define as cover" shortcut in photo detail panel when viewing from within a view
 - ⬜ Public views accessible without authentication (field exists, no unauthenticated route yet)
 - ⬜ **Share link** (private views): random token URL `/shared_view/<token>`, read-only access without login; regenerating invalidates previous token
-- ⬜ **Custom order** — drag & drop or manual position entry; uses ViewPhotoOrder model
+- ✅ **Custom order** — drag & drop or manual position entry; uses ViewPhotoOrder model
 
 ### Bug fixes needed
 
@@ -99,6 +97,8 @@
 - ⬜ Show tags in grid thumbnail — TBD: colors only, tag names, hover tooltip?
 - ⬜ Map view — display all photos with GPS data on a global map
 - ⬜ **View map** — Google Maps page for a specific view: show all photos that have GPS data as markers on a map, clicking a marker opens the photo detail
+- ⬜ Pagination or infinite scroll — TBD based on performance and UX
+- ⬜ Future: create a view from a manual selection of specific photos
 
 
 ## Infra / Dev
