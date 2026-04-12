@@ -469,23 +469,18 @@ test.describe('Views — custom order', () => {
     await page.waitForLoadState('networkidle')
     const hasPhotos = await page.locator('.item').first().isVisible()
     if (!hasPhotos) return
-    // Enter drag mode — via "Reorder" (State B) if order already exists, else "Custom order" (State A)
-    const reorderBtn = page.locator('button:has(.mdi-cursor-move)')
-    const customOrderBtn = page.getByRole('button', { name: 'Custom order' })
-    if (await reorderBtn.isVisible()) {
-      await reorderBtn.click()
-    } else {
-      await customOrderBtn.click()
-    }
-    await page.getByRole('button', { name: 'Done' }).click()
-    await page.waitForLoadState('networkidle')
-    // Delete order via icon button
+    // Select "Custom order" from sort select (available when has_custom_order=true) → State B
+    await page.locator('.v-select').first().click()
+    await expect(page.getByRole('option', { name: 'Custom order' })).toBeVisible({ timeout: 5_000 })
+    await page.getByRole('option', { name: 'Custom order' }).click()
+    // State B: delete icon button should appear
+    await expect(page.locator('button[title="Delete custom order"]')).toBeVisible()
     await page.locator('button[title="Delete custom order"]').click()
     // Confirm dialog
     await expect(page.locator('.v-card-title').filter({ hasText: /delete.*order/i })).toBeVisible()
     await page.getByRole('button', { name: 'Delete' }).last().click()
     await page.waitForLoadState('networkidle')
-    // State A: "Custom order" button reappears (enabled)
+    // State A: "Custom order" button re-enabled (no order exists anymore)
     await expect(page.getByRole('button', { name: 'Custom order' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Custom order' })).toBeEnabled()
   })
