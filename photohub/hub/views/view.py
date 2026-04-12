@@ -70,7 +70,7 @@ def _apply_view_filters(v):
 
 
 def _serialize_photo(p):
-    fields = ["filename", "date", "owner", "height", "width", "tags", "favorite", "rating"]
+    fields = ["filename", "date", "owner", "height", "width", "tags", "favorite", "rating", "origin_filename"]
     _p = model_to_dict(p, fields=fields)
     _p["upload_date"] = p.upload_date.isoformat() if p.upload_date else ""
     _p["tags"] = {}
