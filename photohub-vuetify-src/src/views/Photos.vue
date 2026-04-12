@@ -21,12 +21,10 @@
       <v-sheet :class="!sharedDatas.isMobile ? 'ma-2 pa-2 me-auto' : ''">
         <div v-if="!sharedDatas.isMobile" class="d-flex align-center ga-2 mb-1">
           <h1 class="text-h4">{{ title }}</h1>
-          <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
         </div>
         <h1 v-if="!sharedDatas.isMobile" class="text-subtitle-1 mb-4">{{ subtitle }}</h1>
         <div v-if="sharedDatas.isMobile" class="d-flex align-center ga-2 mb-1">
           <h1 class="text-h6">{{ title }}</h1>
-          <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
         </div>
         <h1 v-if="sharedDatas.isMobile" class="text-body-2 mb-4">{{ subtitle }}</h1>
       </v-sheet>
@@ -121,9 +119,10 @@
         </v-sheet>
       </template>
 
-      <!-- Row 2: sort + grid size slider -->
-      <v-sheet class="d-flex mb-2 align-center">
+      <!-- Row 2: sort + photo count + grid size slider -->
+      <v-sheet class="d-flex mb-2 align-center ga-3">
         <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="doGetPhotos()" @update:sortDir="doGetPhotos()"></SortControls>
+        <span class="text-body-2 text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
         <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
         <v-sheet class="d-flex ma-0 pa-0 align-end justify-end w-50">
           <v-slider v-model="sharedDatas.gridSize" style="max-width: 300px; width: 100%"
@@ -164,18 +163,10 @@
     <v-sheet class="mb-2">
       <!-- Row 1: mode toggle + tag toggle + heart + rating + show filters -->
       <div class="d-flex flex-wrap align-center ga-2 mb-1">
-        <v-btn-toggle
-          :model-value="filterTagMode"
-          @update:model-value="onFilterModeChange"
-          density="compact"
-          variant="outlined"
-          color="primary"
-          mandatory
-        >
-          <v-btn value="quick" size="small"><v-icon size="18">mdi-text-search-variant</v-icon><v-tooltip activator="parent" location="top">Quick filter</v-tooltip></v-btn>
-          <v-btn value="detail" size="small"><v-icon size="18">mdi-tag-search</v-icon><v-tooltip activator="parent" location="top">Detailed filter</v-tooltip></v-btn>
-          <v-btn value="notags" size="small"><v-icon size="18">mdi-tag-off-outline</v-icon><v-tooltip activator="parent" location="top">No tags</v-tooltip></v-btn>
-        </v-btn-toggle>
+        <FilterModeToggle
+          v-model="filterTagMode"
+          @update:modelValue="onFilterModeChange"
+        ></FilterModeToggle>
 
         <!-- Toggle: all published tags vs tags in current selection (hidden in notags mode) -->
         <v-btn
@@ -189,7 +180,7 @@
           @click="showAllTags = !showAllTags"
         ></v-btn>
 
-        <v-divider vertical class="mx-1" style="height: 24px; align-self: center;"></v-divider>
+        <v-divider vertical style="height: 24px; align-self: center;"></v-divider>
 
         <!-- Favorite filter toggle -->
         <v-btn
@@ -227,9 +218,11 @@
         <v-btn
           v-if="filterTagMode === 'detail'"
           :append-icon="filterPanelOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-          variant="text"
+          variant="tonal"
+          color="primary"
           density="compact"
           size="small"
+          class="ml-2"
           @click="filterPanelOpen = !filterPanelOpen"
         >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
 
@@ -264,7 +257,7 @@
 
       <!-- Detailed filter — collapsible -->
       <v-expand-transition>
-        <div v-if="filterTagMode === 'detail' && filterPanelOpen">
+        <div v-if="filterTagMode === 'detail' && filterPanelOpen" class="filter-panel pl-3 mt-1">
           <TagFilter
             v-model="filterDetail"
             :tag-groups="tagGroupsFiltered"
@@ -293,6 +286,7 @@ import TagFilter from '@/components/TagFilter.vue'
 import TagPhotos from '@/components/TagPhotos.vue'
 import SortControls from '@/components/SortControls.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
+import FilterModeToggle from '@/components/FilterModeToggle.vue'
 </script>
 
 
@@ -700,5 +694,9 @@ export default {
 
 .selection-overlay.selected {
   background: rgba(var(--v-theme-primary), 0.45);
+}
+
+.filter-panel {
+  border-left: 2px solid rgba(var(--v-theme-primary), 0.4);
 }
 </style>

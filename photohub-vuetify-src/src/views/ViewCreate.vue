@@ -66,7 +66,7 @@
     </v-sheet>
 
     <!-- Row 3: sort + drag mode controls -->
-    <v-sheet class="mb-3 d-flex align-center ga-2">
+    <v-sheet class="mb-3 d-flex flex-wrap align-center ga-2">
       <!-- Sort controls: disabled in drag mode; 'custom' option only if custom order exists or being created -->
       <SortControls
         v-model:sortBy="sortBy"
@@ -77,7 +77,9 @@
         @update:sortDir="fetchPreview()"
       ></SortControls>
 
-      <!-- State A / A': "Create custom order" — visible when sort != 'custom' -->
+      <v-spacer></v-spacer>
+
+      <!-- State A / A': "Custom order" button -->
       <v-btn v-if="sortBy !== 'custom' && !dragMode"
         prepend-icon="mdi-drag-variant"
         variant="tonal"
@@ -88,10 +90,10 @@
         @click="createCustomOrder"
       >Custom order</v-btn>
 
-      <!-- State B: Reorder + Delete (sort == 'custom', not in drag mode) -->
+      <!-- State B: Reorder + Delete order -->
       <template v-if="sortBy === 'custom' && !dragMode">
         <v-btn
-          prepend-icon="mdi-drag"
+          prepend-icon="mdi-cursor-move"
           variant="tonal"
           density="compact"
           size="small"
@@ -108,7 +110,7 @@
         ></v-btn>
       </template>
 
-      <!-- State C: Done + Cancel buttons (in drag mode) -->
+      <!-- State C: Done + Cancel -->
       <template v-if="dragMode">
         <v-btn
           prepend-icon="mdi-check"
@@ -129,22 +131,14 @@
     </v-sheet>
 
     <!-- Filter bar -->
-    <v-sheet class="mb-2">
-      <div class="d-flex flex-wrap align-center ga-2 mb-1">
-        <v-btn-toggle
-          :model-value="filterTagMode"
-          @update:model-value="onFilterModeChange"
-          density="compact"
-          variant="outlined"
-          color="primary"
-          mandatory
-        >
-          <v-btn value="quick" prepend-icon="mdi-text-search-variant" size="small">Quick</v-btn>
-          <v-btn value="detail" prepend-icon="mdi-tag-search" size="small">Detailed</v-btn>
-          <v-btn value="notags" prepend-icon="mdi-tag-off-outline" size="small">No tags</v-btn>
-        </v-btn-toggle>
+    <v-sheet class="mb-3">
+      <div class="d-flex flex-wrap align-center ga-2" :class="(filterTagMode === 'quick' || (filterTagMode === 'detail' && filterPanelOpen)) ? 'mb-1' : ''">
+        <FilterModeToggle
+          v-model="filterTagMode"
+          @update:modelValue="onFilterModeChange"
+        ></FilterModeToggle>
 
-        <v-divider vertical class="mx-1" style="height: 24px; align-self: center;"></v-divider>
+        <v-divider vertical style="height: 24px; align-self: center;"></v-divider>
 
         <!-- Favorite filter toggle -->
         <v-btn
@@ -183,9 +177,11 @@
         <v-btn
           v-if="filterTagMode === 'detail'"
           :append-icon="filterPanelOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-          variant="text"
+          variant="tonal"
+          color="primary"
           density="compact"
           size="small"
+          class="ml-2"
           @click="filterPanelOpen = !filterPanelOpen"
         >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
       </div>
@@ -204,9 +200,9 @@
         @update:model-value="fetchPreview()"
       ></v-autocomplete>
 
-      <!-- Detailed filter -->
+      <!-- Detailed filter panel -->
       <v-expand-transition>
-        <div v-if="filterTagMode === 'detail' && filterPanelOpen">
+        <div v-if="filterTagMode === 'detail' && filterPanelOpen" class="filter-panel pl-3 mt-1">
           <TagFilter
             v-model="filterDetail"
             :tag-groups="tagGroups"
@@ -261,6 +257,7 @@ import TagFilter from '@/components/TagFilter.vue'
 import SortControls from '@/components/SortControls.vue'
 import DisplayPhoto from '@/components/DisplayPhoto.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
+import FilterModeToggle from '@/components/FilterModeToggle.vue'
 </script>
 
 <script>
@@ -285,7 +282,7 @@ export default {
     sharedDatas: {},
     // Filters
     filterTagMode: 'quick',  // quick / detail / notags
-    filterPanelOpen: true,
+    filterPanelOpen: false,
     filterQuick: [],
     filterDetail: {},
     filterFavorite: false,
@@ -606,3 +603,9 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.filter-panel {
+  border-left: 2px solid rgba(var(--v-theme-primary), 0.4);
+}
+</style>

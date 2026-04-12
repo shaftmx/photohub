@@ -60,7 +60,7 @@
       </v-sheet>
 
       <!-- Row 2: sort + grid size slider -->
-      <v-sheet class="d-flex mb-0 align-center">
+      <v-sheet class="d-flex mb-2 align-center">
         <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="doGetPhotos()" @update:sortDir="doGetPhotos()"></SortControls>
         <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
         <v-sheet class="d-flex ma-0 pa-0 align-end justify-end w-50">
