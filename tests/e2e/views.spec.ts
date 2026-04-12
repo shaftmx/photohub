@@ -469,7 +469,16 @@ test.describe('Views — custom order', () => {
     await page.waitForLoadState('networkidle')
     const hasPhotos = await page.locator('.item').first().isVisible()
     if (!hasPhotos) return
-    // Select "Custom order" from sort select (available when has_custom_order=true) → State B
+    // Step 1: ensure a custom order exists — create one if not already (button enabled = no order yet)
+    const customOrderBtn = page.getByRole('button', { name: 'Custom order' })
+    if (await customOrderBtn.isEnabled()) {
+      // State A: create order → drag mode → Done saves it
+      await customOrderBtn.click()
+      await expect(page.locator('.drag-handle').first()).toBeVisible()
+      await page.getByRole('button', { name: 'Done' }).click()
+      await page.waitForLoadState('networkidle')
+    }
+    // Step 2: now has_custom_order=true — select "Custom order" in sort select → State B
     await page.locator('.v-select').first().click()
     await expect(page.getByRole('option', { name: 'Custom order' })).toBeVisible({ timeout: 5_000 })
     await page.getByRole('option', { name: 'Custom order' }).click()
