@@ -33,6 +33,7 @@
 
 ## Views
 
+- ⬜ **Back button in view detail** — when logged in and viewing a view, show a back button that returns to the views list
 - ✅ View has a name and a description/notes (text, markdown)
 - ✅ Dynamic: view = tag filters → auto-includes new matching photos
 - ✅ Filter config: tags, favorite, rating, filter mode (quick/detailed/notags)
@@ -58,6 +59,8 @@
 - ⬜ Each view entry shows: name + cover photo
 - ⬜ Non-authenticated user can access a private view via its share link
 - ⬜ Future: public link grouping multiple private views
+- ⬜ **Home vs Views** — currently home has the same content as Views; decide: add distinct home content (featured views, stats, recent uploads?) or remove home and redirect to Views
+- ⬜ **Logo clickable** — top-left logo should be a link/router-link redirecting to home
 
 ## Tags management
 
@@ -105,4 +108,6 @@
 
 - ⬜ README — ASCII schema of docker-compose dev setup
 - ⬜ README — document how to dump DB to `db-init`
-- ⬜ Change app favicon
+- ⬜ **Favicon & app icon** — generate a custom icon and favicon for the site
+- ⬜ **Open in new tab** — most links can't be opened in a new tab via Chrome (middle-click / right-click → open in new tab); investigate: likely `@click` handlers replacing `<a href>` — convert navigation to router-link or `<a>` where possible
+- ⬜ **Menu: current user** — replace hardcoded "John Leider" with actual logged-in username; clean up unused menu items
