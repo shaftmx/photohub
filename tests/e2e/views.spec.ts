@@ -21,12 +21,12 @@ test.describe('Views — list page', () => {
     }
   })
 
-  test('view card shows name, photo count and public/private badge', async ({ page }) => {
+  test('view card shows name and photo count', async ({ page }) => {
     const card = page.locator('.view-card').first()
     if (await card.isVisible()) {
-      await expect(card.locator('.text-body-1')).toBeVisible()          // name
+      await expect(card.locator('.text-body-1')).toBeVisible()           // name
       await expect(card.locator('.text-caption')).toContainText(/photo/) // count
-      await expect(card.locator('.v-chip')).toBeVisible()               // badge
+      // Private views show a lock icon; public views show nothing — no chip anymore
     }
   })
 
@@ -131,13 +131,14 @@ test.describe('Views — create', () => {
   })
 
   test('"Save as view" from Photos pre-fills filter state', async ({ page }) => {
-    // Navigate to Photos, apply No Tags mode, then save as view
+    // Navigate to Photos, apply No Tags mode (icon-only button), then save as view
     await page.goto('/photos')
     await waitForGrid(page)
-    await page.getByRole('button', { name: 'No tags' }).click()
+    // In Photos, filter buttons are icon-only — locate by mdi icon class
+    await page.locator('button:has(.mdi-tag-off-outline)').first().click()
     await page.getByRole('button', { name: 'Save as view' }).click()
     await expect(page).toHaveURL(/views\/create/)
-    // No tags button should be active (pre-filled)
+    // In ViewCreate, No tags button has text — should be active (pre-filled)
     await expect(page.getByRole('button', { name: 'No tags' })).toHaveClass(/v-btn--active|active/)
   })
 
@@ -242,6 +243,23 @@ test.describe('Views — detail', () => {
     await expect(page.locator('.item').first()).toBeVisible()
   })
 
+  test('"define as cover" button visible in photo detail panel from view context', async ({ page }) => {
+    await waitForGrid(page)
+    // Open photo detail via carousel
+    await page.locator('.item img').first().click()
+    await expect(page).toHaveURL(/displayPhoto=/)
+    // Open the detail panel — icon-only button with mdi-information-outline
+    await page.locator('.photo-toolbar button:has(.mdi-information-outline)').click()
+    // Cover button should be visible (view context passes viewId to PhotoDetail)
+    const coverBtn = page.locator('.v-dialog').locator('button[title="Set as cover"], button[title="Remove cover"]')
+    await expect(coverBtn).toBeVisible({ timeout: 8_000 })
+    // Toggle cover and revert
+    await coverBtn.click()
+    await page.waitForLoadState('networkidle')
+    await coverBtn.click()
+    await page.waitForLoadState('networkidle')
+  })
+
 })
 
 test.describe('Views — edit', () => {
@@ -331,6 +349,26 @@ test.describe('Views — edit', () => {
     const countAfter = await page.locator('.item').count()
     // Photo count should be the same regardless of sort
     expect(countAfter).toBe(countBefore)
+  })
+
+  test('set cover photo from grid in edit view', async ({ page }) => {
+    await page.waitForLoadState('networkidle')
+    // Cover button appears on hover — check that at least one item is visible
+    const firstItem = page.locator('.item-inner').first()
+    const hasPhotos = await firstItem.isVisible()
+    if (!hasPhotos) return
+
+    await firstItem.hover()
+    const coverBtn = firstItem.locator('.cover-btn')
+    await expect(coverBtn).toBeVisible()
+    // Set as cover
+    await coverBtn.click()
+    await page.waitForLoadState('networkidle')
+    // Cover mini-card should appear in the header
+    await expect(page.locator('.text-caption').filter({ hasText: 'Cover' })).toBeVisible()
+    // Unset via the mini-card remove button
+    await page.locator('.text-caption').filter({ hasText: 'Cover' }).locator('xpath=..').locator('button').click()
+    await expect(page.locator('.text-caption').filter({ hasText: 'Cover' })).not.toBeVisible()
   })
 
 })

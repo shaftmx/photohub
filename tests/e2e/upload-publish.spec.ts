@@ -17,8 +17,8 @@ test.describe('Upload', () => {
     await page.getByLabel('File input', { exact: true }).setInputFiles(FIXTURE_PHOTO)
     await expect(page.getByRole('button', { name: 'Upload' })).toBeEnabled()
     await page.getByRole('button', { name: 'Upload' }).click()
-    // Success alert should appear
-    await expect(page.getByText('All files uploaded')).toBeVisible({ timeout: 15_000 })
+    // Success alert: "N file(s) uploaded"
+    await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })
     // Uploaded file appears in the list
     await expect(page.getByText('test-photo.jpg')).toBeVisible()
   })
@@ -26,7 +26,7 @@ test.describe('Upload', () => {
   test('upload button navigates to Unpublished', async ({ page }) => {
     await page.getByLabel('File input', { exact: true }).setInputFiles(FIXTURE_PHOTO)
     await page.getByRole('button', { name: 'Upload' }).click()
-    await expect(page.getByText('All files uploaded')).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })
     // Navigate to unpublished via the icon button that appears after upload
     await page.locator('button .mdi-tag-arrow-right-outline').click()
     await expect(page).toHaveURL(/unpublished/)
@@ -35,7 +35,7 @@ test.describe('Upload', () => {
   test('upload multiple files at once', async ({ page }) => {
     await page.getByLabel('File input', { exact: true }).setInputFiles([FIXTURE_PHOTO, FIXTURE_PHOTO_2])
     await page.getByRole('button', { name: 'Upload' }).click()
-    await expect(page.getByText('All files uploaded')).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByText(/\d+ file.* uploaded/)).toBeVisible({ timeout: 20_000 })
   })
 
 })
@@ -58,6 +58,58 @@ test.describe('Unpublished', () => {
     // exact: true avoids matching "Deselect all" (which contains "Select all" as substring)
     await page.getByRole('button', { name: 'Select all', exact: true }).click()
     await page.getByRole('button', { name: 'Deselect all', exact: true }).click()
+  })
+
+  test('deselect all activates after selecting a single photo', async ({ page }) => {
+    await waitForGrid(page)
+    // Select just one photo by clicking it
+    await page.locator('.item').first().click()
+    await expect(page.getByText('1 selected')).toBeVisible()
+    // "Deselect all" should now be visible even with only 1 selected
+    await expect(page.getByRole('button', { name: 'Deselect all', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Deselect all', exact: true }).click()
+    await expect(page.getByText('0 selected')).toBeVisible()
+  })
+
+  test('favorite button appears on photo hover in unpublished grid', async ({ page }) => {
+    await waitForGrid(page)
+    const firstItem = page.locator('.item-inner').first()
+    await firstItem.hover()
+    await expect(firstItem.locator('.favorite-btn')).toBeVisible()
+  })
+
+  test('toggle favorite on hover in unpublished grid', async ({ page }) => {
+    await waitForGrid(page)
+    const firstItem = page.locator('.item-inner').first()
+    await firstItem.hover()
+    const favBtn = firstItem.locator('.favorite-btn')
+    await favBtn.click()
+    await page.waitForLoadState('networkidle')
+    await expect(favBtn).toBeVisible()
+    // Revert
+    await favBtn.click()
+    await page.waitForLoadState('networkidle')
+  })
+
+  test('bulk add to favorites', async ({ page }) => {
+    await waitForGrid(page)
+    await page.locator('.item').first().click()
+    await expect(page.getByText('1 selected')).toBeVisible()
+    await page.getByRole('button', { name: 'Actions' }).click()
+    await page.locator('.v-list-item').filter({ hasText: 'Add to favorites' }).click()
+    await page.waitForLoadState('networkidle')
+    // Selection should be cleared after bulk action
+    await expect(page.getByText('0 selected')).toBeVisible()
+  })
+
+  test('bulk remove from favorites', async ({ page }) => {
+    await waitForGrid(page)
+    await page.locator('.item').first().click()
+    await expect(page.getByText('1 selected')).toBeVisible()
+    await page.getByRole('button', { name: 'Actions' }).click()
+    await page.locator('.v-list-item').filter({ hasText: 'Remove from favorites' }).click()
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByText('0 selected')).toBeVisible()
   })
 
   test('open photo detail from unpublished', async ({ page }) => {
@@ -101,7 +153,7 @@ test.describe('Unpublished', () => {
     await navigateTo(page, 'Upload')
     await page.getByLabel('File input', { exact: true }).setInputFiles([FIXTURE_PHOTO, FIXTURE_PHOTO_2])
     await page.getByRole('button', { name: 'Upload' }).click()
-    await expect(page.getByText('All files uploaded')).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })
     await navigateTo(page, 'Unpublished')
 
     await waitForGrid(page)

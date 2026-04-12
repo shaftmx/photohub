@@ -22,8 +22,8 @@ test.describe('Photos — grid & display', () => {
   test('detail panel: close button returns to grid', async ({ page }) => {
     await page.locator('.item img').first().click()
     await expect(page).toHaveURL(/displayPhoto=/)
-    // Close button is the first button in the dialog toolbar (mdi-close icon, no text)
-    await page.locator('.v-dialog .v-toolbar button').first().click()
+    // Close button is in .photo-toolbar (custom toolbar, not v-toolbar)
+    await page.locator('.photo-toolbar button:has(.mdi-close)').click()
     await expect(page).not.toHaveURL(/displayPhoto=/)
   })
 
@@ -105,16 +105,18 @@ test.describe('Photos — filters', () => {
   })
 
   test('Quick filter mode is default', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'Quick' })).toHaveClass(/v-btn--active|active/)
+    // Filter buttons are icon-only in Photos — use the mdi icon class to locate them
+    const quickBtn = page.locator('button:has(.mdi-text-search-variant)').first()
+    await expect(quickBtn).toHaveClass(/v-btn--active|active/)
   })
 
   test('switch to Detailed filter mode', async ({ page }) => {
-    await page.getByRole('button', { name: 'Detailed' }).click()
+    await page.locator('button:has(.mdi-tag-search)').first().click()
     await expect(page.getByText('Show filters').or(page.getByText('Hide filters'))).toBeVisible()
   })
 
   test('switch to No tags filter mode', async ({ page }) => {
-    await page.getByRole('button', { name: 'No tags' }).click()
+    await page.locator('button:has(.mdi-tag-off-outline)').first().click()
     await page.waitForLoadState('networkidle')
     // Grid is always in DOM regardless of result count (may be empty → 0 height → hidden)
     await expect(page.locator('.grid')).toBeAttached()
@@ -131,8 +133,8 @@ test.describe('Photos — filters', () => {
     // Click the 3rd star button (title="3 stars")
     await page.locator('button[title="3 stars"]').click()
     await page.waitForLoadState('networkidle')
-    // Grid container is always in DOM — just check the page didn't crash
-    await expect(page.locator('.v-container.grid, .v-container[class*="grid"]').first()).toBeAttached()
+    // Grid is always in DOM regardless of result count
+    await expect(page.locator('.grid')).toBeAttached()
   })
 
   test('rating mode toggles between ≤ and =', async ({ page }) => {
@@ -150,8 +152,8 @@ test.describe('Photos — filters', () => {
   })
 
   test('save as view navigates to create view with pre-filled filters', async ({ page }) => {
-    // Apply a filter first
-    await page.getByRole('button', { name: 'Detailed' }).click()
+    // Apply a filter first — filter buttons are icon-only in Photos
+    await page.locator('button:has(.mdi-tag-search)').first().click()
     await page.getByRole('button', { name: 'Save as view' }).click()
     await expect(page).toHaveURL(/views\/create/)
     // Create view page should be pre-filled with filter state
@@ -197,6 +199,17 @@ test.describe('Photos — selection mode', () => {
     await page.locator('.v-btn').filter({ hasText: 'Deselect all' }).click()
     // Counter goes back to 0
     await expect(page.getByText(`${total} selected`)).not.toBeVisible()
+  })
+
+  test('deselect all activates after selecting a single photo', async ({ page }) => {
+    await page.getByRole('button', { name: 'Select', exact: true }).click()
+    // Select just one photo
+    await page.locator('.item-inner').first().click()
+    await expect(page.getByText('1 selected')).toBeVisible()
+    // "Deselect all" should be visible even with only 1 photo selected
+    await expect(page.getByRole('button', { name: 'Deselect all', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Deselect all', exact: true }).click()
+    await expect(page.getByText('0 selected')).toBeVisible()
   })
 
   test('bulk unpublish — confirm dialog appears', async ({ page }) => {
@@ -259,8 +272,8 @@ test.describe('Photo detail panel', () => {
     // Open the fullscreen photo dialog
     await page.locator('.item img').first().click()
     await expect(page).toHaveURL(/displayPhoto=/)
-    // Open the detail panel inside the dialog
-    await page.locator('.v-dialog').getByRole('button', { name: 'Details' }).click()
+    // Open the detail panel — the toggle button uses mdi-information-outline (icon-only)
+    await page.locator('.photo-toolbar button:has(.mdi-information-outline)').click()
   })
 
   test('detail panel opens and shows filename', async ({ page }) => {
@@ -297,11 +310,11 @@ test.describe('Photo detail panel', () => {
     const original = await textarea.inputValue()
     await textarea.fill('Test description')
     // Blur to trigger auto-save
-    await page.locator('.v-dialog .v-toolbar-title').click()
+    await page.locator('.photo-toolbar').click()
     await page.waitForLoadState('networkidle')
     // Revert
     await textarea.fill(original)
-    await page.locator('.v-dialog .v-toolbar-title').click()
+    await page.locator('.photo-toolbar').click()
     await page.waitForLoadState('networkidle')
   })
 
