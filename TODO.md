@@ -43,8 +43,8 @@
 - ✅ Create / Edit / Delete / List / Detail UI
 - ✅ Cover photo: selectable from view edit UI (grid hover button + mini-card with remove in edit form)
 - ✅ "Define as cover" shortcut in photo detail panel when viewing from within a view
-- ⬜ Public views accessible without authentication (field exists, no unauthenticated route yet)
-- ⬜ **Share link** (private views): random token URL `/shared_view/<token>`, read-only access without login; regenerating invalidates previous token
+- ✅ Public views accessible without authentication (field exists, no unauthenticated route yet)
+- ✅ **Share link** (private views): random token URL `/shared_view/<token>`, read-only access without login; regenerating invalidates previous token
 - ✅ **Custom order** — drag & drop or manual position entry; uses ViewPhotoOrder model
 
 ### Bug fixes needed
