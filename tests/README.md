@@ -77,7 +77,32 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 
 ---
 
-## What is tested (109 tests)
+## What is tested (126 tests)
+
+### Home — authenticated (`home.spec.ts` — 4 tests)
+- Gallery grid is visible when views exist
+- Gallery card shows name overlay
+- Clicking a gallery card navigates to view detail
+- Empty state shows "Create your first view" when no views exist
+
+### Home — unauthenticated (`home.spec.ts` — 3 tests)
+- Home page loads without login (no redirect)
+- No "New view" button visible when not logged in
+- Public views are visible without authentication
+
+### AppBar — logo (`home.spec.ts` — 1 test)
+- Logo click navigates to home from another page
+
+### AppBar — unauthenticated menu (`home.spec.ts` — 3 tests)
+- Menu shows Login item when not logged in
+- Menu hides auth-only items (Upload, Photos, Logout) when not logged in
+- Login item in menu navigates to login page
+
+### AppBar — authenticated menu (`home.spec.ts` — 5 tests)
+- Menu shows username when logged in
+- Menu shows all auth items (Photos, Views, Upload, Logout)
+- Menu does not show Login item when logged in
+- Dark theme toggle is visible in menu
 
 ### Authentication (`auth.spec.ts` — 4 tests)
 - Unauthenticated access to `/photos` redirects to `/login`
@@ -236,9 +261,6 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 - Custom order: save persists and is restored on reload
 - Tag filter in views (creating a view with specific tags, verifying filter is applied)
 
-**Home page**
-- Home page entirely untested (not yet built per TODO)
-
 **Tags management**
 - Tags UI (not yet built — currently YAML only)
 
@@ -258,6 +280,7 @@ tests/
   e2e/
     helpers.ts            — shared auth, navigation, grid helpers
     auth.spec.ts          — login / logout / redirect
+    home.spec.ts          — home gallery, public access, AppBar menu, logo
     upload-publish.spec.ts — upload JPEG, unpublished list, publish, delete
     photos.spec.ts        — grid display, filters, sort, selection mode, detail panel
     views.spec.ts         — create, list, detail, edit, delete views
