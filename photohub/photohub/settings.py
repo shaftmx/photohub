@@ -202,14 +202,16 @@ RAW_PHOTO_OVERRIDE_EXISTS = strtobool(os.environ.get('RAW_PHOTO_OVERRIDE_EXISTS'
 #   s  (800px)  — grid thumbnails on desktop
 #   m  (1200px) — fullscreen display on mobile
 #   l  (2000px) — fullscreen display on desktop
-#   xl (4000px) — available for large grid sizes or future download feature
+#   xl (4000px) — commented out; if needed for downloads, generate on-the-fly from raw
 # Not overridable via env vars.
 SAMPLE_PHOTOS_SETTINGS = [
     {"name": "xs", "max_size": 400,  "quality": "web_medium"},
     {"name": "s",  "max_size": 800,  "quality": "web_medium"},
     {"name": "m",  "max_size": 1200, "quality": "web_high"},
-    {"name": "l",  "max_size": 2000, "quality": "web_high"},
-    {"name": "xl", "max_size": 4000, "quality": "web_very_high"},
+    {"name": "l",  "max_size": 2500, "quality": "web_high"},
+    # xl disabled — not used by any view. If needed for future ZIP download,
+    # generate on-the-fly from raw rather than storing permanently.
+    # {"name": "xl", "max_size": 4000, "quality": "web_very_high"},
 ]
 
 
