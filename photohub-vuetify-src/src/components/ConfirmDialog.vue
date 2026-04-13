@@ -14,7 +14,7 @@
       <v-card-actions class="px-5 pb-4">
         <v-spacer></v-spacer>
         <v-btn variant="text" @click="$emit('update:modelValue', false)">Cancel</v-btn>
-        <v-btn :color="action === 'delete' ? 'error' : 'warning'" variant="flat"
+        <v-btn :color="action === 'delete' ? 'error' : 'warning'" variant="tonal"
           @click="$emit('confirm')" :loading="loading">
           {{ action === 'delete' ? 'Delete' : 'Unpublish' }}
         </v-btn>

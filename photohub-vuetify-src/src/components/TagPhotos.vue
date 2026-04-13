@@ -19,7 +19,7 @@
           <v-btn @click="close()" color="primary" variant="tonal" :size="sharedDatas.isMobile ? 'small' : 'default'"
             density="compact" prepend-icon="mdi-keyboard-backspace" :loading="loading">Back</v-btn>
           <!-- :disabled="taggedPhotos.length > 1 || JSON.stringify(currentCommonTags) != JSON.stringify(stagingCommonTags) ? true : false" -->
-          <v-btn @click="doApplyTags()" class="ml-2" color="primary" variant="flat" :loading="loading"
+          <v-btn @click="doApplyTags()" class="ml-2" color="primary" variant="tonal" :loading="loading"
             :size="sharedDatas.isMobile ? 'small' : 'default'" density="compact" prepend-icon="mdi-check-circle"
             :disabled="JSON.stringify(taggedPhotos) == JSON.stringify(photos) && JSON.stringify(currentCommonTags) == JSON.stringify(stagingCommonTags) ? true : false">Apply</v-btn>
         </v-sheet>

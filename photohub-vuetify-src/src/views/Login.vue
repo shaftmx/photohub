@@ -9,7 +9,7 @@
         <v-text-field v-model="password" :readonly="loading" :rules="[required]" clearable type="password"
           label="Password" placeholder="Enter your password"></v-text-field>
         <br>
-        <v-btn :disabled="!form" :loading="loading" block color="primary" size="large" type="submit" variant="elevated">
+        <v-btn :disabled="!form" :loading="loading" block color="primary" size="large" type="submit" variant="tonal">
           Login
         </v-btn>
         <div class="mt-2">
