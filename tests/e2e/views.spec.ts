@@ -534,3 +534,167 @@ test.describe('Views — delete from list', () => {
   })
 
 })
+
+// ─── Views — public access ────────────────────────────────────────────────────
+
+test.describe('Views — public access', () => {
+
+  let viewId: string
+
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage()
+    await loginAs(page)
+    await page.goto('/views/create')
+    await page.locator('.v-text-field input').first().fill('Public Access View')
+    // Toggle public
+    await page.locator('.v-switch input[type="checkbox"]').first().check({ force: true })
+    await page.getByRole('button', { name: 'Save' }).click()
+    await page.waitForURL(/views\/\d+/, { timeout: 15_000 })
+    viewId = page.url().match(/views\/(\d+)/)?.[1] || ''
+    await page.close()
+  })
+
+  test.afterAll(async ({ browser }) => {
+    if (!viewId) return
+    const page = await browser.newPage()
+    await loginAs(page)
+    await page.goto(`/views/${viewId}`)
+    await page.locator('button').filter({ has: page.locator('.mdi-delete-outline') }).last().click()
+    await page.getByRole('button', { name: 'Delete' }).last().click()
+    await page.close()
+  })
+
+  test('public view accessible without login', async ({ page }) => {
+    // No login — navigate directly
+    await page.goto(`/views/${viewId}`)
+    await expect(page.getByText('Public Access View')).toBeVisible()
+    // Public chip visible
+    await expect(page.locator('.v-chip').filter({ hasText: 'Public' })).toBeVisible()
+  })
+
+  test('public view shows no edit or delete buttons', async ({ page }) => {
+    await page.goto(`/views/${viewId}`)
+    await expect(page.getByText('Public Access View')).toBeVisible()
+    await expect(page.locator('button').filter({ has: page.locator('.mdi-pencil-outline') })).not.toBeVisible()
+    await expect(page.locator('button').filter({ has: page.locator('.mdi-delete-outline') })).not.toBeVisible()
+  })
+
+  test('invalid numeric ID shows "View not found"', async ({ page }) => {
+    await loginAs(page)
+    await page.goto('/views/999999')
+    await expect(page.getByText('View not found')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Back to views' })).toBeVisible()
+  })
+
+})
+
+// ─── Views — share link ───────────────────────────────────────────────────────
+
+test.describe('Views — share link', () => {
+
+  let viewId: string
+
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage()
+    await loginAs(page)
+    await page.goto('/views/create')
+    await page.locator('.v-text-field input').first().fill('Share Link View')
+    await page.getByRole('button', { name: 'Save' }).click()
+    await page.waitForURL(/views\/\d+/, { timeout: 15_000 })
+    viewId = page.url().match(/views\/(\d+)/)?.[1] || ''
+    await page.close()
+  })
+
+  test.afterAll(async ({ browser }) => {
+    if (!viewId) return
+    const page = await browser.newPage()
+    await loginAs(page)
+    await page.goto(`/views/${viewId}`)
+    await page.locator('button').filter({ has: page.locator('.mdi-delete-outline') }).last().click()
+    await page.getByRole('button', { name: 'Delete' }).last().click()
+    await page.close()
+  })
+
+  test('share button visible on private view', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}`)
+    await expect(page.locator('button[title="Share link"]')).toBeVisible()
+  })
+
+  test('generate share link creates a URL', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}`)
+    await page.locator('button[title="Share link"]').click()
+    await expect(page.getByText('Private share link')).toBeVisible()
+    await page.getByRole('button', { name: 'Generate link' }).click()
+    await page.waitForLoadState('networkidle')
+    // URL field now visible with a share URL
+    await expect(page.locator('input[readonly]').first()).toBeVisible()
+    const val = await page.locator('input[readonly]').first().inputValue()
+    expect(val).toContain('/views/')
+  })
+
+  test('share link accessible without login (read-only)', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}`)
+    await page.locator('button[title="Share link"]').click()
+    await page.waitForLoadState('networkidle')
+    const shareUrl = await page.locator('input[readonly]').first().inputValue()
+    const token = shareUrl.split('/views/')[1]
+
+    // Open in anonymous context (no auth)
+    const anonPage = await page.context().browser()!.newPage()
+    await anonPage.goto(`/views/${token}`)
+    await expect(anonPage.getByText('Share Link View')).toBeVisible()
+    await expect(anonPage.locator('button[title="Share link"]')).not.toBeVisible()
+    await expect(anonPage.locator('button').filter({ has: anonPage.locator('.mdi-pencil-outline') })).not.toBeVisible()
+    await anonPage.close()
+  })
+
+  test('invalid token shows "link no longer valid"', async ({ page }) => {
+    await page.goto('/views/00000000-0000-0000-0000-000000000000')
+    await expect(page.getByText('This shared link is no longer valid')).toBeVisible()
+  })
+
+  test('share icon appears on view card in list', async ({ page }) => {
+    await loginAs(page)
+    await navigateTo(page, 'Views')
+    const card = page.locator('.view-card').filter({ hasText: 'Share Link View' })
+    // The share-variant icon (not outline) should be visible in the card cover badges
+    await expect(card.locator('i.mdi-share-variant')).toBeVisible()
+  })
+
+  test('regenerate shows confirmation warning', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}`)
+    await page.locator('button[title="Share link"]').click()
+    await page.waitForLoadState('networkidle')
+    await page.getByRole('button', { name: 'Regenerate' }).click()
+    await expect(page.getByText('This will invalidate the current link')).toBeVisible()
+    await page.getByRole('button', { name: 'Cancel' }).click()
+    await expect(page.getByText('This will invalidate the current link')).not.toBeVisible()
+  })
+
+  test('revoke share link removes access', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}`)
+    await page.locator('button[title="Share link"]').click()
+    await page.waitForLoadState('networkidle')
+    const shareUrl = await page.locator('input[readonly]').first().inputValue()
+    const token = shareUrl.split('/views/')[1]
+
+    // Revoke
+    await page.getByRole('button', { name: 'Revoke' }).click()
+    await page.waitForLoadState('networkidle')
+    // Menu closes, share button back to outline (no active link)
+    await expect(page.locator('button[title="Share link"]')).toBeVisible()
+    await expect(page.locator('button[title="Share link"] .mdi-share-variant-outline')).toBeVisible()
+
+    // Token should no longer work
+    const anonPage = await page.context().browser()!.newPage()
+    await anonPage.goto(`/views/${token}`)
+    await expect(anonPage.getByText('This shared link is no longer valid')).toBeVisible()
+    await anonPage.close()
+  })
+
+})
