@@ -1,3 +1,4 @@
+import uuid
 from ..logger import LOG
 from ..utils import *
 from django.views.decorators.http import require_http_methods
@@ -22,6 +23,7 @@ def _serialize_view(v):
         "cover_filename": v.cover.filename if v.cover else None,
         "cover_hash_path": genHasingPath(v.cover.filename) if v.cover else None,
         "has_custom_order": models.ViewPhotoOrder.objects.filter(view=v).exists(),
+        "share_link": v.share_link or None,
         "filter_tags": [
             {"id": t.id, "name": t.name, "color": t.color or t.tag_group.color, "group_name": t.tag_group.name}
             for t in v.filter_tags.all()
@@ -252,6 +254,18 @@ def delete_view(request, view_id):
 
 
 #
+# GET /api/public/views/<id>/photos — unauthenticated access for public views
+#
+@require_http_methods(["GET"])
+def get_public_view_photos(request, view_id):
+    try:
+        v = models.View.objects.get(id=view_id, public=True)
+    except models.View.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "View not found or not public")
+
+    return _build_view_photos_response(request, v)
+
+
 # GET /api/views/<id>/photos — photos matching this view's filters
 #
 @login_required
@@ -262,6 +276,10 @@ def get_view_photos(request, view_id):
     except models.View.DoesNotExist:
         return ErrorResponse("NotFound", 404, "View not found")
 
+    return _build_view_photos_response(request, v)
+
+
+def _build_view_photos_response(request, v):
     filtered_qs = _apply_view_filters(v)
     v_data = _serialize_view(v)
 
@@ -273,7 +291,6 @@ def get_view_photos(request, view_id):
         filtered_filenames = set(filtered_qs.values_list('filename', flat=True))
         ordered = [vpo.photo for vpo in custom_order_qs if vpo.photo.filename in filtered_filenames]
         ordered_filenames = {p.filename for p in ordered}
-        # Append new photos not yet in custom order (e.g. newly matched ones)
         for p in filtered_qs:
             if p.filename not in ordered_filenames:
                 ordered.append(p)
@@ -293,3 +310,48 @@ def get_view_photos(request, view_id):
         "paths": get_photo_root_paths(),
         "view": v_data,
     })
+
+
+#
+# POST /api/views/<id>/share-link — generate or regenerate a share token
+#
+@login_required
+@require_http_methods(["POST"])
+def generate_share_link(request, view_id):
+    try:
+        v = models.View.objects.get(id=view_id, owner=request.user.username)
+    except models.View.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "View not found")
+
+    v.share_link = str(uuid.uuid4())
+    v.save()
+    return Response(200, data={"share_link": v.share_link})
+
+
+#
+# DELETE /api/views/<id>/share-link — revoke the share token
+#
+@login_required
+@require_http_methods(["POST"])
+def revoke_share_link(request, view_id):
+    try:
+        v = models.View.objects.get(id=view_id, owner=request.user.username)
+    except models.View.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "View not found")
+
+    v.share_link = ''
+    v.save()
+    return Response(200, data={"share_link": None})
+
+
+#
+# GET /api/shared_view/<token>/photos — read-only access via share token
+#
+@require_http_methods(["GET"])
+def get_shared_view_photos(request, token):
+    try:
+        v = models.View.objects.get(share_link=token)
+    except models.View.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "Shared view not found")
+
+    return _build_view_photos_response(request, v)

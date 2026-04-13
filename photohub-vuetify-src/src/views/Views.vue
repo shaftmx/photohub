@@ -41,9 +41,10 @@
           <div v-else class="cover-placeholder">
             <v-icon size="48" color="grey-lighten-1">mdi-image-album</v-icon>
           </div>
-          <!-- Private lock -->
+          <!-- Private lock + share indicator -->
           <div v-if="!view.public" class="cover-badges">
             <v-icon size="14" color="white" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));">mdi-lock</v-icon>
+            <v-icon v-if="view.share_link" size="14" color="white" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));">mdi-share-variant</v-icon>
           </div>
         </div>
 

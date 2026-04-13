@@ -1,15 +1,20 @@
 <template>
   <div>
     <!-- Description -->
-    <v-textarea :model-value="descriptionModel" label="Description" density="compact" variant="outlined"
-      rows="2" auto-grow class="mb-2" hide-details
-      @update:model-value="$emit('update:descriptionModel', $event)"
-      @blur="$emit('saveDescription')"></v-textarea>
-    <p class="text-caption text-medium-emphasis mb-4">Description is saved automatically</p>
+    <template v-if="!readonly">
+      <v-textarea :model-value="descriptionModel" label="Description" density="compact" variant="outlined"
+        rows="2" auto-grow class="mb-2" hide-details
+        @update:model-value="$emit('update:descriptionModel', $event)"
+        @blur="$emit('saveDescription')"></v-textarea>
+      <p class="text-caption text-medium-emphasis mb-4">Description is saved automatically</p>
+    </template>
+    <template v-else-if="photo.description">
+      <p class="text-body-2 mb-4">{{ photo.description }}</p>
+    </template>
 
     <!-- Favorite & Rating -->
     <v-divider class="mb-3"></v-divider>
-    <div class="d-flex align-center mb-4 ga-4">
+    <div v-if="!readonly" class="d-flex align-center mb-4 ga-4">
       <!-- Favorite toggle -->
       <v-btn
         :icon="photo.favorite ? 'mdi-heart' : 'mdi-heart-outline'"
@@ -42,7 +47,7 @@
       <v-icon size="small" class="mr-2" color="primary">mdi-tag-multiple</v-icon>
       <span class="text-body-2 font-weight-medium">Tags</span>
       <v-spacer></v-spacer>
-      <v-btn size="x-small" variant="tonal" color="primary" prepend-icon="mdi-pencil"
+      <v-btn v-if="!readonly" size="x-small" variant="tonal" color="primary" prepend-icon="mdi-pencil"
         @click="$emit('editTags', photo.filename)">Edit</v-btn>
     </div>
     <div v-if="Object.keys(photo.tags).length === 0" class="text-caption text-medium-emphasis mb-4 ml-1">
@@ -148,6 +153,7 @@ export default {
     photo: { type: Object, required: true },
     descriptionModel: { type: String, default: '' },
     showExif: { type: Boolean, default: false },
+    readonly: { type: Boolean, default: false },
   },
 
   emits: ['update:descriptionModel', 'update:showExif', 'saveDescription', 'editTags', 'toggleFavorite', 'setRating'],

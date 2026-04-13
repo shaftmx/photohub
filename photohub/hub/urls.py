@@ -40,12 +40,18 @@ urlpatterns = [
     path("prv", troubleshooting.index, name="index"),
     path("", troubleshooting.public_index, name="public_index"),
 
+    # Public / shared view access (no auth required)
+    path("public/views/<int:view_id>/photos", views_api.get_public_view_photos, name="get_public_view_photos"),
+    path("shared_view/<str:token>/photos", views_api.get_shared_view_photos, name="get_shared_view_photos"),
+
     # Views
     path("views", views_api.list_views, name="list_views"),
     path("views/create", views_api.create_view, name="create_view"),
     path("views/<int:view_id>", views_api.get_view, name="get_view"),
     path("views/<int:view_id>/update", views_api.update_view, name="update_view"),
     path("views/<int:view_id>/delete", views_api.delete_view, name="delete_view"),
+    path("views/<int:view_id>/share-link", views_api.generate_share_link, name="generate_share_link"),
+    path("views/<int:view_id>/share-link/revoke", views_api.revoke_share_link, name="revoke_share_link"),
     path("views/<int:view_id>/photos", views_api.get_view_photos, name="get_view_photos"),
 
     # Admin

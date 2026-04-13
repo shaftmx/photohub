@@ -5,11 +5,12 @@
     :photos="photos"
     :view-id="$route.params.id"
     :cover-filename="view.cover_filename"
+    :readonly="!isAuthenticated"
     @photoDeleted="onPhotoDeleted"
     @photoUnpublished="onPhotoUnpublished"
   ></DisplayPhoto>
 
-  <v-sheet class="pa-4" v-if="!loading">
+  <v-sheet class="pa-4" v-if="!loading && !invalidToken && !notFound">
 
     <!-- Header row -->
     <v-sheet class="d-flex align-center mb-2 ga-2">
@@ -33,10 +34,67 @@
         @click="descriptionOpen = !descriptionOpen"
       ></v-btn>
       <v-spacer></v-spacer>
-      <v-btn icon="mdi-pencil-outline" variant="text" density="compact" size="small"
-        @click="$router.push({ name: 'view-edit', params: { id: $route.params.id } })"></v-btn>
-      <v-btn icon="mdi-delete-outline" variant="text" density="compact" size="small" color="error"
-        @click="confirmDeleteDialog = true"></v-btn>
+      <template v-if="isAuthenticated">
+        <!-- Share button (private views only) -->
+        <v-menu v-if="!view.public" v-model="shareMenu" :close-on-content-click="false" location="bottom end">
+          <template v-slot:activator="{ props }">
+            <v-btn v-bind="props"
+              :icon="view.share_link ? 'mdi-share-variant' : 'mdi-share-variant-outline'"
+              :color="view.share_link ? 'primary' : 'default'"
+              variant="text" density="compact" size="small"
+              title="Share link"
+            ></v-btn>
+          </template>
+          <v-card min-width="360" class="pa-3">
+            <div class="text-body-2 font-weight-medium mb-3">Private share link</div>
+            <template v-if="view.share_link">
+              <!-- URL field — small font to fit UUID url -->
+              <v-text-field
+                :model-value="shareUrl"
+                density="compact" variant="outlined" readonly hide-details
+                class="mb-1" style="font-size: 12px;"
+              >
+                <template v-slot:append-inner>
+                  <v-btn size="x-small" variant="text" :color="copied ? 'success' : 'default'"
+                    @click="copyShareLink">
+                    <v-icon>{{ copied ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>
+                    <v-tooltip activator="parent" location="top">{{ copied ? 'Copied!' : 'Copy link' }}</v-tooltip>
+                  </v-btn>
+                </template>
+              </v-text-field>
+              <div class="d-flex ga-2 mt-2">
+                <v-btn size="small" variant="tonal" color="primary" prepend-icon="mdi-refresh"
+                  :loading="generatingLink" @click="confirmRegenerate = true">Regenerate</v-btn>
+                <v-spacer></v-spacer>
+                <v-btn size="small" variant="text" color="error" prepend-icon="mdi-link-off"
+                  :loading="revokingLink" @click="revokeShareLink">Revoke</v-btn>
+              </div>
+              <!-- Regenerate warning -->
+              <v-expand-transition>
+                <div v-if="confirmRegenerate" class="mt-3 pa-2 rounded" style="background: rgba(var(--v-theme-warning), 0.08);">
+                  <p class="text-caption mb-2">This will invalidate the current link. Anyone with the old link will lose access.</p>
+                  <div class="d-flex ga-2">
+                    <v-btn size="x-small" variant="text" @click="confirmRegenerate = false">Cancel</v-btn>
+                    <v-btn size="x-small" variant="tonal" color="warning" :loading="generatingLink"
+                      @click="generateShareLink">Confirm</v-btn>
+                  </div>
+                </div>
+              </v-expand-transition>
+            </template>
+            <template v-else>
+              <p class="text-caption text-medium-emphasis mb-3">
+                Generate a link to share this private view in read-only mode.
+              </p>
+              <v-btn block variant="tonal" color="primary" prepend-icon="mdi-link-plus"
+                :loading="generatingLink" @click="generateShareLink">Generate link</v-btn>
+            </template>
+          </v-card>
+        </v-menu>
+        <v-btn icon="mdi-pencil-outline" variant="text" density="compact" size="small"
+          @click="$router.push({ name: 'view-edit', params: { id: $route.params.id } })"></v-btn>
+        <v-btn icon="mdi-delete-outline" variant="text" density="compact" size="small" color="error"
+          @click="confirmDeleteDialog = true"></v-btn>
+      </template>
     </v-sheet>
 
     <!-- Filter chips (collapsible) -->
@@ -75,7 +133,7 @@
     </v-sheet>
 
     <!-- Photo grid -->
-    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" show-favorite
+    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" :show-favorite="isAuthenticated"
       @item-click="photo => $refs.displayPhoto.displayPhoto(photo.filename)"
       @toggle-favorite="toggleFavorite">
     </PhotoGrid>
@@ -95,6 +153,17 @@
 
   </v-sheet>
 
+  <v-sheet v-else-if="invalidToken" class="d-flex flex-column align-center justify-center pa-12 ga-4">
+    <v-icon size="64" color="medium-emphasis">mdi-link-off</v-icon>
+    <span class="text-h6 text-medium-emphasis">This shared link is no longer valid</span>
+  </v-sheet>
+
+  <v-sheet v-else-if="notFound" class="d-flex flex-column align-center justify-center pa-12 ga-4">
+    <v-icon size="64" color="medium-emphasis">mdi-image-off-outline</v-icon>
+    <span class="text-h6 text-medium-emphasis">View not found</span>
+    <v-btn variant="tonal" prepend-icon="mdi-arrow-left" @click="$router.push({ name: 'Views' })">Back to views</v-btn>
+  </v-sheet>
+
   <v-sheet v-else class="d-flex justify-center pa-12">
     <v-progress-circular indeterminate color="primary"></v-progress-circular>
   </v-sheet>
@@ -109,7 +178,7 @@ import PhotoGrid from '@/components/PhotoGrid.vue'
 <script>
 import { marked } from 'marked'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
-import { requireAuth } from '../authrequired.js'
+
 import { useAlertStore } from '../stores/alert'
 import { getSharedDatas } from '../sharedDatas.js'
 
@@ -125,12 +194,20 @@ export default {
     sortDir: 'desc',
     filtersOpen: false,
     descriptionOpen: false,
+    isAuthenticated: false,
+    invalidToken: false,
+    notFound: false,
+    // Share link
+    shareMenu: false,
+    generatingLink: false,
+    revokingLink: false,
+    copied: false,
+    confirmRegenerate: false,
     // Delete dialog
     confirmDeleteDialog: false,
   }),
 
   mounted() {
-    requireAuth(this)
     this.sharedDatas = getSharedDatas(this)
     this.loadView()
   },
@@ -142,14 +219,48 @@ export default {
 
     async loadView({ sortBy } = {}) {
       this.loading = true
-      const id = this.$route.params.id
+      const param = this.$route.params.id
       const qs = sortBy ? `?sort_by=${sortBy}` : ''
-      const { data, error } = await useAsyncFetch(`/api/views/${id}/photos${qs}`)
+      const isToken = isNaN(param)
+      let result
+
+      if (isToken) {
+        // Shared view access via token — no auth needed
+        result = await useAsyncFetch(`/api/shared_view/${param}/photos${qs}`)
+        if (!result.error.value && !result.data.value?.ERROR) {
+          this.isAuthenticated = false
+        } else {
+          // Invalid or revoked token
+          this.loading = false
+          this.invalidToken = true
+          return
+        }
+      } else {
+        // Normal access by ID — try auth, fallback to public
+        result = await useAsyncFetch(`/api/views/${param}/photos${qs}`)
+        if (!result.error.value && result.data.value?.ERROR === 'AuthRequired') {
+          result = await useAsyncFetch(`/api/public/views/${param}/photos${qs}`)
+          if (!result.error.value && !result.data.value?.ERROR) {
+            this.isAuthenticated = false
+          } else {
+            this.$router.push({ name: 'Login', query: { next: this.$route.fullPath } })
+            return
+          }
+        } else if (!result.error.value && !result.data.value?.ERROR) {
+          this.isAuthenticated = true
+        } else {
+          this.loading = false
+          this.notFound = true
+          return
+        }
+      }
+
       this.loading = false
-      if (error.value) return
-      this.view = data.value.data.view
-      this.photos = data.value.data.photos
-      this.paths = data.value.data.paths
+      this.invalidToken = false
+      this.notFound = false
+      this.view = result.data.value.data.view
+      this.photos = result.data.value.data.photos
+      this.paths = result.data.value.data.paths
       this.sortBy = sortBy || this.view.sort_by
       this.sortDir = this.view.sort_dir
     },
@@ -196,6 +307,43 @@ export default {
       await useAsyncPost(`/api/views/${id}/delete`, {})
       this.deleting = false
       this.$router.push({ name: 'Views' })
+    },
+
+    async generateShareLink() {
+      this.generatingLink = true
+      const id = this.$route.params.id
+      const { data, error } = await useAsyncPost(`/api/views/${id}/share-link`, {})
+      this.generatingLink = false
+      if (!error.value && !data.value?.ERROR) {
+        this.view = { ...this.view, share_link: data.value.data.share_link }
+        this.copied = false
+        this.confirmRegenerate = false
+      }
+    },
+
+    async revokeShareLink() {
+      this.revokingLink = true
+      const id = this.$route.params.id
+      const { data, error } = await useAsyncPost(`/api/views/${id}/share-link/revoke`, {})
+      this.revokingLink = false
+      if (!error.value && !data.value?.ERROR) {
+        this.view = { ...this.view, share_link: null }
+        this.shareMenu = false
+      }
+    },
+
+    copyShareLink() {
+      navigator.clipboard.writeText(this.shareUrl)
+      this.copied = true
+      setTimeout(() => { this.copied = false }, 2000)
+    },
+  },
+
+  computed: {
+    shareUrl() {
+      return this.view.share_link
+        ? `${window.location.origin}/views/${this.view.share_link}`
+        : ''
     },
   },
 }

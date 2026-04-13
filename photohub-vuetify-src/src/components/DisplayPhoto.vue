@@ -55,6 +55,7 @@
               :embedded="true"
               :view-id="viewId"
               :cover-filename="coverFilename"
+              :readonly="readonly"
               @deleted="onDeleted"
               @unpublished="onUnpublished"
             />
@@ -80,6 +81,7 @@ export default defineComponent({
     paths: Object,
     viewId: { type: [String, Number], default: null },
     coverFilename: { type: String, default: null },
+    readonly: { type: Boolean, default: false },
   },
 
   emits: ['photoDeleted', 'photoUnpublished'],

@@ -12,14 +12,16 @@
       <v-btn icon @click="close()"><v-icon>mdi-close</v-icon></v-btn>
       <v-toolbar-title class="text-body-1 font-weight-medium">Photo details</v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-btn v-if="photo && photo.published" icon variant="text" color="white"
-        :loading="loadingUnpublish" @click="confirmAction('unpublish')" title="Move back to unpublished">
-        <v-icon>mdi-cloud-off-outline</v-icon>
-      </v-btn>
-      <v-btn icon variant="text" color="error"
-        :loading="loadingDelete" @click="confirmAction('delete')" title="Delete permanently">
-        <v-icon>mdi-delete-outline</v-icon>
-      </v-btn>
+      <template v-if="!readonly">
+        <v-btn v-if="photo && photo.published" icon variant="text" color="white"
+          :loading="loadingUnpublish" @click="confirmAction('unpublish')" title="Move back to unpublished">
+          <v-icon>mdi-cloud-off-outline</v-icon>
+        </v-btn>
+        <v-btn icon variant="text" color="error"
+          :loading="loadingDelete" @click="confirmAction('delete')" title="Delete permanently">
+          <v-icon>mdi-delete-outline</v-icon>
+        </v-btn>
+      </template>
     </v-toolbar>
 
     <div v-if="loading" class="d-flex justify-center align-center pa-12">
@@ -51,6 +53,7 @@
         :photo="photo"
         :description-model="editDescription"
         :show-exif="showExif"
+        :readonly="readonly"
         @update:descriptionModel="editDescription = $event"
         @update:showExif="showExif = $event"
         @saveDescription="saveDescription"
@@ -82,24 +85,27 @@
         </v-chip>
         <v-chip size="small" variant="outlined">{{ photo.width }}×{{ photo.height }}</v-chip>
         <v-spacer></v-spacer>
-        <v-btn v-if="viewId" icon size="small" variant="text" :color="isCover ? 'primary' : 'default'"
-          :loading="loadingCover" @click="setCover()" :title="isCover ? 'Remove cover' : 'Set as cover'">
-          <v-icon>{{ isCover ? 'mdi-book-open-page-variant' : 'mdi-book-open-page-variant-outline' }}</v-icon>
-        </v-btn>
-        <v-btn v-if="photo.published" icon size="small" variant="text" :loading="loadingUnpublish"
-          @click="confirmAction('unpublish')" title="Move back to unpublished">
-          <v-icon>mdi-cloud-off-outline</v-icon>
-        </v-btn>
-        <v-btn icon size="small" variant="text" color="error" :loading="loadingDelete"
-          @click="confirmAction('delete')" title="Delete permanently">
-          <v-icon>mdi-delete-outline</v-icon>
-        </v-btn>
+        <template v-if="!readonly">
+          <v-btn v-if="viewId" icon size="small" variant="text" :color="isCover ? 'primary' : 'default'"
+            :loading="loadingCover" @click="setCover()" :title="isCover ? 'Remove cover' : 'Set as cover'">
+            <v-icon>{{ isCover ? 'mdi-book-open-page-variant' : 'mdi-book-open-page-variant-outline' }}</v-icon>
+          </v-btn>
+          <v-btn v-if="photo.published" icon size="small" variant="text" :loading="loadingUnpublish"
+            @click="confirmAction('unpublish')" title="Move back to unpublished">
+            <v-icon>mdi-cloud-off-outline</v-icon>
+          </v-btn>
+          <v-btn icon size="small" variant="text" color="error" :loading="loadingDelete"
+            @click="confirmAction('delete')" title="Delete permanently">
+            <v-icon>mdi-delete-outline</v-icon>
+          </v-btn>
+        </template>
       </div>
 
       <PhotoDetailBody
         :photo="photo"
         :description-model="editDescription"
         :show-exif="showExif"
+        :readonly="readonly"
         @update:descriptionModel="editDescription = $event"
         @update:showExif="showExif = $event"
         @saveDescription="saveDescription"
@@ -134,6 +140,7 @@ export default defineComponent({
     embedded: { type: Boolean, default: false },
     viewId: { type: [String, Number], default: null },
     coverFilename: { type: String, default: null },
+    readonly: { type: Boolean, default: false },
   },
 
   emits: ['closed', 'deleted', 'unpublished'],
