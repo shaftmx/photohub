@@ -41,6 +41,7 @@ urlpatterns = [
     path("", troubleshooting.public_index, name="public_index"),
 
     # Public / shared view access (no auth required)
+    path("public/views", views_api.list_public_views, name="list_public_views"),
     path("public/views/<int:view_id>/photos", views_api.get_public_view_photos, name="get_public_view_photos"),
     path("shared_view/<str:token>/photos", views_api.get_shared_view_photos, name="get_shared_view_photos"),
 

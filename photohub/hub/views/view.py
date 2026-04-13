@@ -254,6 +254,25 @@ def delete_view(request, view_id):
 
 
 #
+# GET /api/public/views — list public views (no auth required)
+#
+@require_http_methods(["GET"])
+def list_public_views(request):
+    views = models.View.objects.filter(public=True).order_by('name')
+    data = []
+    for v in views:
+        v_data = _serialize_view(v)
+        photos_qs = _apply_view_filters(v)
+        v_data["photo_count"] = photos_qs.count()
+        if not v.cover or not photos_qs.filter(filename=v.cover.filename).exists():
+            first = photos_qs.first()
+            v_data["cover_filename"] = first.filename if first else None
+            v_data["cover_hash_path"] = genHasingPath(first.filename) if first else None
+        data.append(v_data)
+    return Response(200, data={"views": data, "paths": get_photo_root_paths()})
+
+
+#
 # GET /api/public/views/<id>/photos — unauthenticated access for public views
 #
 @require_http_methods(["GET"])

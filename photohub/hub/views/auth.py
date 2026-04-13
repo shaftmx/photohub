@@ -18,7 +18,7 @@ from django.forms.models import model_to_dict
 def is_authenticated(request):
     LOG.error("--- is_authenticated from %s" % request)
     if request.user.is_authenticated:
-        return Response(data="User is authenticated")
+        return Response(data={"username": request.user.username})
     else:
         return ErrorAuthRequired()
 

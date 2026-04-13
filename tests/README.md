@@ -77,7 +77,7 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 
 ---
 
-## What is tested (99 tests)
+## What is tested (109 tests)
 
 ### Authentication (`auth.spec.ts` — 4 tests)
 - Unauthenticated access to `/photos` redirects to `/login`
@@ -173,7 +173,7 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 - Deleting custom order reverts to normal sort (State A restored)
 - "Custom order" option is available in sort controls in view detail
 
-### Views — detail (`views.spec.ts` — 9 tests)
+### Views — detail (`views.spec.ts` — 10 tests)
 - View detail shows name, photo count, Public/Private badge
 - Filter chips toggle button shows/hides active filter chips
 - Description toggle button shows/hides the markdown description
@@ -183,6 +183,21 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 - Favorite button appears on photo hover (same as Photos page)
 - Edit button navigates to `/views/:id/edit`
 - Delete button opens confirm dialog, cancel aborts
+- Back button (← arrow) navigates to the views list
+
+### Views — public access (`views.spec.ts` — 3 tests)
+- Public view is accessible without authentication
+- Private view redirects to login when accessed without authentication
+- Non-existent view ID shows "View not found" error message
+
+### Views — share link (`views.spec.ts` — 7 tests)
+- Share button is visible for private views (authenticated)
+- Generate a share link: URL field appears with a copyable link
+- Copy button copies the URL and shows a checkmark
+- Share link URL navigates to a read-only view (no edit/delete buttons)
+- Read-only view: photo detail panel hides edit actions
+- Regenerate share link: new URL replaces the old one
+- Revoke share link: URL field disappears, share icon outline restored
 
 ### Views — edit (`views.spec.ts` — 6 tests)
 - Edit page pre-fills name from the existing view
@@ -219,10 +234,7 @@ Any valid JPEG works (even 1x1px). They are used for upload tests.
 **Views**
 - Custom order: actual drag & drop reorder (HTML5 drag events hard to simulate reliably)
 - Custom order: save persists and is restored on reload
-- Custom order: delete order reverts to normal sort
 - Tag filter in views (creating a view with specific tags, verifying filter is applied)
-- Public views accessible without authentication (route not yet built)
-- Share link (`/shared_view/<token>`) — not yet built
 
 **Home page**
 - Home page entirely untested (not yet built per TODO)
