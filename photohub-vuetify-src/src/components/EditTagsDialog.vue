@@ -23,7 +23,7 @@
         <v-toolbar-title class="text-body-1 font-weight-medium">Edit tags</v-toolbar-title>
         <v-spacer></v-spacer>
         <v-btn
-          variant="flat"
+          variant="text"
           color="white"
           prepend-icon="mdi-check-circle"
           :loading="loading"
