@@ -58,7 +58,6 @@
 - ⬜ Not logged-in: lists public views only
 - ⬜ Each view entry shows: name + cover photo
 - ⬜ Non-authenticated user can access a private view via its share link
-- ⬜ Future: public link grouping multiple private views
 - ⬜ **Home vs Views** — currently home has the same content as Views; decide: add distinct home content (featured views, stats, recent uploads?) or remove home and redirect to Views
 - ⬜ **Logo clickable** — top-left logo should be a link/router-link redirecting to home
 
@@ -102,6 +101,7 @@
 - ⬜ **View map** — Google Maps page for a specific view: show all photos that have GPS data as markers on a map, clicking a marker opens the photo detail
 - ⬜ Pagination or infinite scroll — TBD based on performance and UX
 - ⬜ Future: create a view from a manual selection of specific photos
+- ⬜ Future: public link grouping multiple private views. Something that could be in view, a way to create a multi view link and edit it. A random link where you can select views to display. Can be edited / regenerated / deleted. With a small display of all linked views. Could be something folded by default at the bottom of the views page
 
 
 ## Infra / Dev
