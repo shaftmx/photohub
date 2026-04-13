@@ -33,7 +33,7 @@
 
 ## Views
 
-- ⬜ **Back button in view detail** — when logged in and viewing a view, show a back button that returns to the views list
+- ✅ **Back button in view detail** — when logged in and viewing a view, show a back button that returns to the views list
 - ✅ View has a name and a description/notes (text, markdown)
 - ✅ Dynamic: view = tag filters → auto-includes new matching photos
 - ✅ Filter config: tags, favorite, rating, filter mode (quick/detailed/notags)

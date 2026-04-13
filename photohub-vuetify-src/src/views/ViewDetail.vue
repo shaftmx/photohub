@@ -14,6 +14,8 @@
 
     <!-- Header row -->
     <v-sheet class="d-flex align-center mb-2 ga-2">
+      <v-btn v-if="isAuthenticated" icon="mdi-arrow-left" variant="text" density="compact" size="small"
+        title="Back to views" @click="$router.push({ name: 'Views' })"></v-btn>
       <span class="text-h6">{{ view.name }}</span>
       <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
       <v-chip size="x-small" :color="view.public ? 'success' : 'default'" variant="tonal">
