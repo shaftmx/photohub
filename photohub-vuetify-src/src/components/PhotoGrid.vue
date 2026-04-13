@@ -14,7 +14,7 @@
     >
       <div class="item-inner">
         <img
-          :src="paths[sharedDatas.gridPhotoSize] + '/' + photo.hash_path + '/' + photo.filename"
+          :src="paths[adaptivePhotoSize] + '/' + photo.hash_path + '/' + photo.filename"
           @click="!draggable && $emit('item-click', photo)"
         />
         <slot name="overlay" :photo="photo"></slot>
@@ -65,6 +65,22 @@ export default defineComponent({
         }
       },
       immediate: true,
+    },
+  },
+  computed: {
+    // Pick the smallest sample whose max_size (px) is at least 2× the rendered
+    // grid item height, so images stay sharp at any slider position.
+    // Breakpoints come from paths._sizes (populated by get_photo_root_paths()
+    // from SAMPLE_PHOTOS_SETTINGS in settings.py) — no hardcoded values here.
+    adaptivePhotoSize() {
+      const sizes = this.paths._sizes
+      if (!sizes) return this.sharedDatas.gridPhotoSize || 's'
+      const target = (this.sharedDatas.gridSize || 0) * 2
+      const sorted = Object.entries(sizes).sort((a, b) => a[1] - b[1])
+      for (const [name, maxSize] of sorted) {
+        if (maxSize >= target) return name
+      }
+      return sorted[sorted.length - 1][0]
     },
   },
   methods: {

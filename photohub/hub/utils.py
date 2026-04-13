@@ -70,9 +70,11 @@ def get_photo_root_paths():
     # from MEDIA_ROOT /data/statics + RAW_PHOTOS_PATH (raw) it will generate something for HTTP urls like
     # "raw": "/static/raw",
     # "xs": "/static/cache/samples/xs",
+    # "_sizes": {"xs": 400, "s": 800, ...}  — max_size per sample, used by frontend to pick the right sample
     paths = {"raw": p_join("/", basename(settings.MEDIA_ROOT), settings.RAW_PHOTOS_PATH)}
     for sample in settings.SAMPLE_PHOTOS_SETTINGS:
         paths[sample["name"]] = p_join("/", basename(settings.MEDIA_ROOT), settings.SAMPLE_PHOTOS_PATH, sample["name"])
+    paths["_sizes"] = {sample["name"]: sample["max_size"] for sample in settings.SAMPLE_PHOTOS_SETTINGS}
     return paths
 
 
