@@ -167,6 +167,12 @@ Or use the vuejs dev server and target the docker compose url for the /api
 ## Manual Rebuild vuejs code (if you don't use dev container web-vue)
 docker run -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-src -v /tmp/photohub-vuetify/:/photohub-vuetify  node:lts-alpine3.21 sh -c "cd /photohub-vuetify-src/ && yarn build --outDir /photohub-vuetify --emptyOutDir"
 
+## Add a new npm dependency (dev container running)
+# Install in running container (updates yarn.lock — commit it after)
+docker compose -f docker-compose.yml -f docker-compose-dev.yml exec web-vue yarn --cwd /photohub-vuetify-src add <package>
+# Then reinstall to sync (if already up-to-date message)
+docker compose -f docker-compose.yml -f docker-compose-dev.yml exec web-vue yarn --cwd /photohub-vuetify-src install
+
 ## Automatic Use vuejs dev server (if you don't use dev container web-vue)
 docker run --network=host -it -v $PWD/photohub-vuetify-src/:/photohub-vuetify-src -v /tmp/photohub-vuetify/:/photohub-vuetify  node:lts-alpine3.21 sh -c "cd /photohub-vuetify-src/ && yarn dev --host"
 

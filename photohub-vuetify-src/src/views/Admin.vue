@@ -8,7 +8,7 @@
     </div>
 
     <!-- Tabs — each tab is conditionally shown based on the user's role -->
-    <v-tabs v-model="tab" color="primary" class="mb-6">
+    <v-tabs v-model="tab" color="primary" class="mb-6" @update:modelValue="onTabChange">
       <v-tab v-if="role === 'admin'" value="users" class="text-none">Users</v-tab>
       <v-tab v-if="role === 'admin' || role === 'contributor'" value="tags" class="text-none">Tags</v-tab>
       <v-tab v-if="role === 'admin'" value="quality" class="text-none">Photo quality</v-tab>
@@ -182,12 +182,58 @@
       <!-- ─────────────── Tab: Tags ─────────────── -->
       <v-window-item value="tags">
         <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Tag groups &amp; tags</p>
-        <p class="text-body-2 text-medium-emphasis mb-4">
+        <p class="text-body-2 text-medium-emphasis mb-2">
           Edit tag groups and tags in YAML format. Save to apply.
           Removing an entry here does <strong>not</strong> delete it from the database — existing photo associations are preserved.
         </p>
-        <v-textarea v-model="tagsYaml" :loading="tagsLoading" rows="22"
-          variant="outlined" class="font-monospace" hide-details></v-textarea>
+        <v-expansion-panels variant="accordion" class="mb-4" density="compact">
+          <v-expansion-panel>
+            <v-expansion-panel-title class="text-body-2 text-medium-emphasis py-1">YAML syntax reference</v-expansion-panel-title>
+            <v-expansion-panel-text>
+              <div class="text-body-2 mb-3">
+                <strong>Structure</strong>
+                <pre class="syntax-block">tag_groups:
+  - name: "Country"          # required — group name
+    type: checkbox            # see below
+    color: "#FFCC00"          # optional — hex (#FFCC00) or CSS name (blue, red…)
+    description: "..."        # optional
+    tags:
+      - name: "France"        # required
+        color: "#0055A4"      # optional — overrides group color</pre>
+              </div>
+              <div class="text-body-2 mb-3">
+                <strong>type</strong> — controls how the group is rendered in the tag editor and filters:
+                <v-table density="compact" class="mt-2 syntax-table">
+                  <thead>
+                    <tr>
+                      <th>Value</th>
+                      <th>Tag editor (photo detail)</th>
+                      <th>Filter panel</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><code>checkbox</code></td>
+                      <td>Chips — click to toggle each tag</td>
+                      <td>Chips — click to toggle filter</td>
+                    </tr>
+                    <tr>
+                      <td><code>combobox</code></td>
+                      <td>Autocomplete input — type to search or add</td>
+                      <td>Autocomplete input</td>
+                    </tr>
+                  </tbody>
+                </v-table>
+              </div>
+              <div class="text-body-2">
+                <strong>color</strong> — set at group level, overridable per tag. Accepts hex (<code>#0055A4</code>) or any CSS color name (<code>blue</code>, <code>red</code>…). Used as chip background color throughout the UI.
+              </div>
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
+        <div class="yaml-editor-wrap" :class="{ loading: tagsLoading }">
+          <div ref="yamlEditor"></div>
+        </div>
         <div class="d-flex mt-4">
           <v-btn color="primary" variant="flat" class="text-none" :loading="tagsSaving" @click="saveTags">Save tags</v-btn>
         </div>
@@ -211,9 +257,13 @@
 
 <script>
 import { requireAdminOrContributor } from '../authrequired.js'
-import { useAsyncFetch } from '../reactivefetch.js'
-import { useAsyncPost } from '../reactivefetch.js'
+import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { useAlertStore } from '../stores/alert'
+import { EditorView, basicSetup } from 'codemirror'
+import { yaml } from '@codemirror/lang-yaml'
+import { oneDark } from '@codemirror/theme-one-dark'
+import { indentWithTab } from '@codemirror/commands'
+import { keymap } from '@codemirror/view'
 
 export default {
   data: () => ({
@@ -268,11 +318,17 @@ export default {
 
     this.role = result.role
     this.currentUserId = result.id
-    // Set the initial visible tab based on role
     this.tab = this.role === 'contributor' ? 'tags' : 'users'
 
     if (this.role === 'admin') await this.loadUsers()
     await this.loadTags()
+  },
+
+  beforeUnmount() {
+    if (this._cmEditor) {
+      this._cmEditor.destroy()
+      this._cmEditor = null
+    }
   },
 
   methods: {
@@ -386,6 +442,37 @@ export default {
     },
 
     // ── Tags ──────────────────────────────────────────────────────────────
+    async onTabChange(tab) {
+      if (tab === 'tags') {
+        await this.$nextTick()
+        this._initEditor(this.tagsYaml)
+      }
+    },
+
+    _initEditor(content) {
+      if (this._cmEditor) {
+        this._cmEditor.destroy()
+        this._cmEditor = null
+      }
+      if (!this.$refs.yamlEditor) return
+      this._cmEditor = new EditorView({
+        doc: content,
+        extensions: [
+          basicSetup,
+          yaml(),
+          oneDark,
+          keymap.of([indentWithTab]),
+          // Sync editor content back to tagsYaml on every change
+          EditorView.updateListener.of(update => {
+            if (update.docChanged) {
+              this.tagsYaml = update.state.doc.toString()
+            }
+          }),
+        ],
+        parent: this.$refs.yamlEditor,
+      })
+    },
+
     async loadTags() {
       this.tagsLoading = true
       const { data } = await useAsyncFetch('/api/admin/tags')
@@ -393,6 +480,11 @@ export default {
         this.tagsYaml = data.value.data?.yaml || ''
       }
       this.tagsLoading = false
+      // Init editor only if the Tags tab is currently visible
+      if (this.tab === 'tags') {
+        await this.$nextTick()
+        this._initEditor(this.tagsYaml)
+      }
     },
 
     async saveTags() {
@@ -414,6 +506,45 @@ export default {
 <style scoped>
 .font-monospace {
   font-family: monospace;
+}
+
+.syntax-block {
+  background: rgba(var(--v-theme-on-surface), 0.04);
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-family: monospace;
+  margin-top: 6px;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.syntax-table {
+  font-size: 12px;
+}
+.syntax-table code {
+  font-size: 11px;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.yaml-editor-wrap {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 4px;
+  overflow: hidden;
+}
+.yaml-editor-wrap.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+/* Make the editor fill the container and set a comfortable height */
+.yaml-editor-wrap :deep(.cm-editor) {
+  height: 520px;
+  font-size: 13px;
+}
+.yaml-editor-wrap :deep(.cm-scroller) {
+  overflow: auto;
 }
 
 /* Permissions table — alternate row shading */

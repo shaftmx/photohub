@@ -60,13 +60,19 @@
         clearable
         multiple
         density="compact"
-        direction="horizontal"
-        variant="solo-inverted"
+        variant="outlined"
+        hide-details
+        class="mb-4"
+        :color="group.color"
         item-title="name"
         :items="group.tags"
         :model-value="modelValue[group.name] || []"
         @update:model-value="onGroupUpdate(group.name, $event)"
-      ></v-autocomplete>
+      >
+        <template v-slot:chip="{ props, item }">
+          <v-chip v-bind="props" :color="item.raw.color || group.color" variant="outlined" size="small" rounded="lg">{{ item.title }}</v-chip>
+        </template>
+      </v-autocomplete>
     </v-sheet>
   </v-sheet>
 </template>
