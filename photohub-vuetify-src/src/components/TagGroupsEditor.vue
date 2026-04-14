@@ -51,14 +51,22 @@
         density="compact"
         variant="outlined"
         hide-details
-        class="mb-4"
+        class="mb-4 combobox-compact"
         :color="group.color"
         :items="group.tags.map(t => t.name)"
         :model-value="modelValue[group.name] || []"
         @update:model-value="onGroupUpdate(group.name, $event)"
       >
-        <template v-slot:chip="{ props, item }">
-          <v-chip v-bind="props" :color="group.color" variant="outlined" size="small" rounded="lg">{{ item.title }}</v-chip>
+        <template v-slot:chip="{ item, index, props }">
+          <v-chip v-if="index < 2" v-bind="props"
+            variant="outlined" size="small" rounded="lg"
+            class="tag-chip"
+            :style="{ '--chip-color': group.tags.find(t => t.name === item.title)?.color || group.color }">
+            {{ item.title }}
+          </v-chip>
+          <span v-else-if="index === 2" class="text-caption text-medium-emphasis align-self-center">
+            (+{{ (modelValue[group.name] || []).length - 2 }} others)
+          </span>
         </template>
       </v-combobox>
 
@@ -91,3 +99,15 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.tag-chip {
+  color: var(--chip-color) !important;
+  border-color: var(--chip-color) !important;
+  background-color: color-mix(in srgb, var(--chip-color) 15%, transparent) !important;
+}
+/* Vuetify applies --v-high-emphasis-opacity to the field input, making chips pale */
+.combobox-compact :deep(.v-field__input) {
+  opacity: 1 !important;
+}
+</style>
