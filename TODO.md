@@ -54,12 +54,12 @@
 
 ## Home page
 
-- ⬜ Logged-in: lists all views (public + private)
-- ⬜ Not logged-in: lists public views only
-- ⬜ Each view entry shows: name + cover photo
-- ⬜ Non-authenticated user can access a private view via its share link
-- ⬜ **Home vs Views** — currently home has the same content as Views; decide: add distinct home content (featured views, stats, recent uploads?) or remove home and redirect to Views
-- ⬜ **Logo clickable** — top-left logo should be a link/router-link redirecting to home
+- ✅ Logged-in: lists all views (public + private)
+- ✅ Not logged-in: lists public views only
+- ✅ Each view entry shows: name + cover photo
+- ✅ Non-authenticated user can access a private view via its share link
+- ✅ **Home vs Views** — home = gallery vitrine (16/9 cards, name overlay, no edit/delete); /views = management UI
+- ✅ **Logo clickable** — top-left logo navigates to home
 
 ## Tags management
 
@@ -69,30 +69,75 @@
 
 ## Admin / Setup page
 
-- ⬜ Admin page accessible at any time (not only when empty)
-- ⬜ Configure compression rates and other settings hard to change via env vars
-- ⬜ Inject default tags via YAML or a custom UI
-- ⬜ **Full admin panel** — tabbed UI covering:
-  - Backup / export (photos + metadata)
-  - User management (create / delete users)
-  - Tag management (add / rename / delete tags and groups)
-  - Photo quality settings (compression rates, resize dimensions) — or read-only config summary if too complex to edit live (TBD)
+- ⬜ Admin page accessible at any time when logged as admin (not only when empty)
+  - Access restricted to `is_staff=True` users via `@staff_member_required`
+  - Contributor access (group `"contributor"`) restricted to Tags tab only
+  - User created via `DJANGO_SUPERUSER_USERNAME` in entrypoint automatically has `is_staff=True`
+  - AppBar: add "Admin" link, visible only to `is_staff` and `contributor` users
+  - AppBar: display username + role badge next to it in the menu
+- ⬜ **Full admin panel** — tabbed UI, each tab visible only to users with the required role:
+
+  - **Tab: Users** (admin only — `is_staff=True`):
+    - List all users with their role
+    - Create user: username + password, accounts created by admin only (no self-registration)
+    - Delete user: photos/views `owner` field reassigned to the deleting admin's username
+    - Force password reset: admin sets a new password for any user
+    - Assign role to user (admin / contributor / member)
+    - Roles via native Django groups (no custom model):
+      - **Admin** — `is_staff=True` (via `createsuperuser` entrypoint) — full access
+      - **Contributor** — Django group `"contributor"` — full app access (upload, photos, views)
+        but admin panel restricted to Tags tab only
+      - **Member** — Django group `"member"` — read-only; sees public and private views +
+        photo detail (including EXIF) once logged in; cannot upload, edit, or access admin
+    - Groups `"contributor"` and `"member"` created via data migration on first run
+    - Check pattern: `is_staff` for admin, `user.groups.filter(name='contributor')` for contributor
+
+  - **Tab: Tags** (admin + contributor):
+    - YAML editor to add / rename / delete tags and tag groups
+    - App starts with no tags — admin creates them via this editor
+    - A `bootstrap/example-tags.yml` provided in the repo as a reference to copy-paste
+    - Replaces the `/api/bootstrap` endpoint (to be removed)
+
+  - **Tab: Photo quality** (admin only):
+    - Settings editable at runtime, stored in DB (`AppConfig` model, key/value)
+    - Env vars set the initial defaults only; once changed here they are no longer read
+    - `settings.py` doc to be updated: "Initial default value — can be overridden at runtime via admin"
+    - `RAW_PHOTOS_QUALITY` — select: None / web_low / web_medium / web_high / web_maximum
+    - `RAW_PHOTOS_MAX_SIZE` — number input (px), empty = None
+    - `RAW_PHOTO_OVERRIDE_EXISTS` — toggle
+    - `SAMPLE_PHOTOS_SETTINGS` — YAML text editor (name / max_size / quality per sample)
+      + **Resample all** button to regenerate all existing samples with new settings
+    - Read-only info: `MEDIA_ROOT`, `DUMP_ROOT`, disk usage
+
+  - **Tab: Backup / export** (admin only):
+    - See Export / Import section below
 
 ## Export / Import
 
-- ⬜ Export/import photos and tags (endpoint exists)
-- ⬜ Update to include all photo properties: favorites, rating, description, tags
-- ⬜ Update to include view definitions (name, description, visibility, share links, cover, order)
+Goal: portability of photos across PhotoHub instances or external apps.
+Views, users, and other app state → handled via a separate DB dump outside the app.
+
+- ⬜ **Export** — dump selected or all photos to `DUMP_ROOT` folder:
+  - Raw photo file
+  - `<filename>_meta.yml` — tags, favorite, rating, description
+  - `<filename>_exif.yml` — EXIF data (informational only, not used on re-import)
+  - Reuses / replaces existing `admin.dump` endpoint (currently outputs YAML per photo)
+- ⬜ **Import** — read a dump folder and ingest into PhotoHub:
+  - Photos without `_meta.yml` are accepted (raw only, no metadata)
+  - If photo already exists (same MD5): override tags, favorite, rating, description
+  - EXIF re-extracted from raw file on import (ignore `_exif.yml`)
+  - Samples regenerated via normal upload process
 - ⬜ **ZIP download** — generate and download a zip of photos; scope TBD: current filter/selection in Photos, a full view, or a manual selection; photo size selectable (raw, medium, small sample)
 
 ## Backend / API
 
-- ⬜ Resample — admin URL missing; force-resample all photos
+- ⬜ Resample — move to admin panel "Photo quality" tab (Resample all button)
+- ⬜ Remove `/api/bootstrap` endpoint — replaced by Tags YAML editor in admin panel
+- ⬜ Remove troubleshooting endpoints (`hub/views/troubleshooting.py`)
 - ⬜ Panoramic photo handling — special resize/display if ratio > 1/3
 - ⬜ Non-JPEG support — `save_photo` in `hub/utils.py` only handles JPEG
 - ⬜ Video support — `Photo.type` field already in model
-- ⬜ Remove troubleshooting endpoints (`hub/views/troubleshooting.py`)
-- ⬜ Document all env vars in `settings.py`
+- ✅ Document all env vars in `settings.py`
 
 ## Future / Ideas
 
@@ -102,6 +147,10 @@
 - ⬜ Pagination or infinite scroll — TBD based on performance and UX
 - ⬜ Future: create a view from a manual selection of specific photos
 - ⬜ Future: public link grouping multiple private views. Something that could be in view, a way to create a multi view link and edit it. A random link where you can select views to display. Can be edited / regenerated / deleted. With a small display of all linked views. Could be something folded by default at the bottom of the views page
+- ⬜ Question to be defined and see if we resolve them:
+  - Possible de désactiver unpublish? 
+  - Upload link auto createvtag and vieux 
+  - Garder unpublish si on peut filtrer no tags?
 
 
 ## Infra / Dev
