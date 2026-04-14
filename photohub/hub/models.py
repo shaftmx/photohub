@@ -76,6 +76,15 @@ class View(models.Model):
     filter_rating_mode = models.CharField(max_length=4, default='gte')  # lte / gte / eq
 
 
+class AppConfig(models.Model):
+    """Runtime configuration — overrides settings.py defaults, stored in DB."""
+    key = models.CharField(max_length=100, unique=True)
+    value = models.TextField()
+
+    def __str__(self):
+        return '%s=%s' % (self.key, self.value)
+
+
 class ViewPhotoOrder(models.Model):
     order = models.IntegerField()
     view = models.ForeignKey(View, on_delete=models.CASCADE)

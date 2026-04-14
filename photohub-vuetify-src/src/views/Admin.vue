@@ -243,10 +243,89 @@
         <TagGroupsEditor :tag-groups="tagGroups" v-model="tagsPreviewSelection" />
       </v-window-item>
 
-      <!-- ─────────────── Tab: Photo quality (placeholder) ─────────────── -->
+      <!-- ─────────────── Tab: Photo quality ─────────────── -->
       <v-window-item value="quality">
-        <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Photo quality</p>
-        <p class="text-body-2 text-medium-emphasis">Coming soon.</p>
+        <v-row>
+          <v-col cols="12" md="5">
+            <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-4" style="letter-spacing:.08em">Raw photo processing</p>
+
+            <v-select
+              v-model="qualityConfig.RAW_PHOTOS_QUALITY"
+              :items="[75, 85, 90, 95, 100]"
+              label="JPEG quality"
+              density="compact"
+              variant="outlined"
+              class="mb-3"
+              hint="Quality used when converting RAW photos to JPEG (0-100)"
+              persistent-hint
+            ></v-select>
+
+            <v-text-field
+              v-model.number="qualityConfig.RAW_PHOTOS_MAX_SIZE"
+              label="Max size (px)"
+              type="number"
+              density="compact"
+              variant="outlined"
+              class="mb-3"
+              hint="Longest edge in pixels — 0 = no resize"
+              persistent-hint
+            ></v-text-field>
+
+            <v-switch
+              v-model="qualityConfig.RAW_PHOTO_OVERRIDE_EXISTS"
+              :true-value="'True'"
+              :false-value="'False'"
+              label="Override existing files"
+              color="primary"
+              density="compact"
+              class="mb-4"
+              hide-details
+            ></v-switch>
+
+            <v-btn color="primary" variant="flat" class="text-none" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
+          </v-col>
+
+          <v-col cols="12" md="7">
+            <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-2" style="letter-spacing:.08em">Sample photos settings</p>
+            <p class="text-body-2 text-medium-emphasis mb-2">
+              YAML list defining the sample sizes to generate for each photo.<br>
+              Each entry: <code>name</code>, <code>max_size</code>, <code>quality</code> (optional).
+            </p>
+            <div class="yaml-editor-wrap" :class="{ loading: qualityLoading }">
+              <div ref="sampleEditor"></div>
+            </div>
+            <div class="d-flex align-center mt-4 mb-6 gap-3">
+              <v-btn color="primary" variant="flat" class="text-none" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
+              <v-btn variant="tonal" class="text-none ml-3" :loading="resampleLoading" @click="resampleAll">Resample all photos</v-btn>
+            </div>
+          </v-col>
+        </v-row>
+
+        <!-- Read-only storage info -->
+        <v-divider class="mb-4"></v-divider>
+        <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Storage</p>
+        <div v-if="qualityConfig.disk_usage" class="d-flex flex-wrap gap-4 mb-2">
+          <div>
+            <span class="text-caption text-medium-emphasis">MEDIA_ROOT</span><br>
+            <code class="text-body-2">{{ qualityConfig.MEDIA_ROOT }}</code>
+          </div>
+          <div>
+            <span class="text-caption text-medium-emphasis">DUMP_ROOT</span><br>
+            <code class="text-body-2">{{ qualityConfig.DUMP_ROOT }}</code>
+          </div>
+          <div>
+            <span class="text-caption text-medium-emphasis">Total</span><br>
+            <span class="text-body-2">{{ formatBytes(qualityConfig.disk_usage.total) }}</span>
+          </div>
+          <div>
+            <span class="text-caption text-medium-emphasis">Used</span><br>
+            <span class="text-body-2">{{ formatBytes(qualityConfig.disk_usage.used) }}</span>
+          </div>
+          <div>
+            <span class="text-caption text-medium-emphasis">Free</span><br>
+            <span class="text-body-2">{{ formatBytes(qualityConfig.disk_usage.free) }}</span>
+          </div>
+        </div>
       </v-window-item>
 
       <!-- ─────────────── Tab: Backup / Export (placeholder) ─────────────── -->
@@ -318,6 +397,13 @@ export default {
     tagsSaving: false,
     tagGroups: [],
     tagsPreviewSelection: {},
+
+    // Photo quality tab
+    qualityConfig: {},
+    qualitySampleYaml: '',
+    qualityLoading: false,
+    qualitySaving: false,
+    resampleLoading: false,
   }),
 
   async mounted() {
@@ -336,6 +422,10 @@ export default {
     if (this._cmEditor) {
       this._cmEditor.destroy()
       this._cmEditor = null
+    }
+    if (this._cmSampleEditor) {
+      this._cmSampleEditor.destroy()
+      this._cmSampleEditor = null
     }
   },
 
@@ -455,6 +545,9 @@ export default {
         await this.$nextTick()
         this._initEditor(this.tagsYaml)
       }
+      if (tab === 'quality') {
+        await this.loadConfig()
+      }
     },
 
     _initEditor(content) {
@@ -499,6 +592,80 @@ export default {
         await this.$nextTick()
         this._initEditor(this.tagsYaml)
       }
+    },
+
+    // ── Photo quality ─────────────────────────────────────────────────────
+    async loadConfig() {
+      this.qualityLoading = true
+      const { data } = await useAsyncFetch('/api/admin/config')
+      if (data.value && !data.value.ERROR) {
+        this.qualityConfig = data.value.data || {}
+        this.qualitySampleYaml = this.qualityConfig.SAMPLE_PHOTOS_SETTINGS || ''
+      }
+      this.qualityLoading = false
+      await this.$nextTick()
+      this._initSampleEditor(this.qualitySampleYaml)
+    },
+
+    _initSampleEditor(content) {
+      if (this._cmSampleEditor) {
+        this._cmSampleEditor.destroy()
+        this._cmSampleEditor = null
+      }
+      if (!this.$refs.sampleEditor) return
+      this._cmSampleEditor = new EditorView({
+        doc: content,
+        extensions: [
+          basicSetup,
+          yaml(),
+          oneDark,
+          keymap.of([indentWithTab]),
+          EditorView.updateListener.of(update => {
+            if (update.docChanged) {
+              this.qualitySampleYaml = update.state.doc.toString()
+            }
+          }),
+        ],
+        parent: this.$refs.sampleEditor,
+      })
+    },
+
+    async saveConfig() {
+      const { triggerAlert } = useAlertStore()
+      this.qualitySaving = true
+      const payload = {
+        RAW_PHOTOS_QUALITY:      this.qualityConfig.RAW_PHOTOS_QUALITY,
+        RAW_PHOTOS_MAX_SIZE:     this.qualityConfig.RAW_PHOTOS_MAX_SIZE,
+        RAW_PHOTO_OVERRIDE_EXISTS: this.qualityConfig.RAW_PHOTO_OVERRIDE_EXISTS,
+        SAMPLE_PHOTOS_SETTINGS:  this.qualitySampleYaml,
+      }
+      const { data } = await useAsyncPost('/api/admin/config', payload)
+      this.qualitySaving = false
+      if (data.value && !data.value.ERROR) {
+        triggerAlert('success', 'Settings saved', '')
+      } else {
+        triggerAlert('error', 'Save failed', data.value?.details || '')
+      }
+    },
+
+    async resampleAll() {
+      const { triggerAlert } = useAlertStore()
+      this.resampleLoading = true
+      const { data } = await useAsyncPost('/api/admin/resample', {})
+      this.resampleLoading = false
+      if (data.value && !data.value.ERROR) {
+        triggerAlert('success', 'Resample started', 'Processing in background')
+      } else {
+        triggerAlert('error', 'Resample failed', data.value?.details || '')
+      }
+    },
+
+    formatBytes(bytes) {
+      if (!bytes) return '–'
+      const units = ['B', 'KB', 'MB', 'GB', 'TB']
+      let i = 0
+      while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++ }
+      return bytes.toFixed(1) + ' ' + units[i]
     },
 
     async saveTags() {

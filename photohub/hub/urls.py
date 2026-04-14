@@ -9,6 +9,7 @@ from .views import unpublished
 from .views import admin
 from .views import admin_users
 from .views import admin_tags
+from .views import admin_config
 from .views import view as views_api
 
 
@@ -71,4 +72,8 @@ urlpatterns = [
 
     # Admin — tags (admin + contributor)
     path("admin/tags", admin_tags.tags_view, name="admin_tags"),
+
+    # Admin — config / photo quality (admin only)
+    path("admin/config", admin_config.config_view, name="admin_config"),
+    path("admin/resample", admin_config.resample_all, name="admin_resample"),
 ]
