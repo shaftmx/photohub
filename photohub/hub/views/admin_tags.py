@@ -30,16 +30,19 @@ def _get_tags(request):
     for tg in tag_groups:
         entry = {
             "name": tg.name,
-            "color": tg.color,
             "type": tg.type,
-            "tags": [
-                {"name": t.name, "color": t.color}
-                for t in tg.tag_set.all().order_by('name')
-            ]
+            "tags": [],
         }
-        # Only include description if it has a value (keeps YAML clean)
+        # Only include optional fields when they have a value (keeps YAML clean)
+        if tg.color:
+            entry["color"] = tg.color
         if tg.description:
             entry["description"] = tg.description
+        for t in tg.tag_set.all().order_by('name'):
+            t_entry = {"name": t.name}
+            if t.color:
+                t_entry["color"] = t.color
+            entry["tags"].append(t_entry)
         data["tag_groups"].append(entry)
     yaml_str = yaml.safe_dump(data, allow_unicode=True, sort_keys=False, default_flow_style=False)
     return Response(data={"yaml": yaml_str})
