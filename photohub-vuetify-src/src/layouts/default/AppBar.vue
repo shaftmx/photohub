@@ -3,7 +3,7 @@
   <v-app-bar flat class="bg-primary" :density="density">
     <v-app-bar-title>
       <span class="logo-link" @click="$router.push({ name: 'Home' })">
-        <v-icon icon="mdi-circle-slice-4" />
+        <img src="/icon.svg" alt="PhotoHub" class="logo-icon" />
         PhotoHub
       </span>
     </v-app-bar-title>
@@ -149,6 +149,12 @@ export default {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  filter: brightness(0) invert(1);  /* white on purple AppBar */
 }
 </style>

@@ -127,20 +127,18 @@ Views, users, and other app state → handled via a separate DB dump outside the
   - If photo already exists (same MD5): override tags, favorite, rating, description
   - EXIF re-extracted from raw file on import (ignore `_exif.yml`)
   - Samples regenerated via normal upload process
-- ⬜ **ZIP download** — generate and download a zip of photos; scope TBD: current filter/selection in Photos, a full view, or a manual selection; photo size selectable (raw, medium, small sample)
 
 ## Backend / API
 
 - ⬜ Resample — move to admin panel "Photo quality" tab (Resample all button)
 - ⬜ Remove `/api/bootstrap` endpoint — replaced by Tags YAML editor in admin panel
 - ⬜ Remove troubleshooting endpoints (`hub/views/troubleshooting.py`)
-- ⬜ Panoramic photo handling — special resize/display if ratio > 1/3
-- ⬜ Non-JPEG support — `save_photo` in `hub/utils.py` only handles JPEG
-- ⬜ Video support — `Photo.type` field already in model
 - ✅ Document all env vars in `settings.py`
 
 ## Future / Ideas
-
+- ⬜ Panoramic photo handling — special resize/display if ratio > 1/3 ?
+- ⬜ Non-JPEG support — `save_photo` in `hub/utils.py` only handles JPEG
+- ⬜ Video support — `Photo.type` field already in model
 - ⬜ Show tags in grid thumbnail — TBD: colors only, tag names, hover tooltip?
 - ⬜ Map view — display all photos with GPS data on a global map
 - ⬜ **View map** — Google Maps page for a specific view: show all photos that have GPS data as markers on a map, clicking a marker opens the photo detail
@@ -148,15 +146,20 @@ Views, users, and other app state → handled via a separate DB dump outside the
 - ⬜ Future: create a view from a manual selection of specific photos
 - ⬜ Future: public link grouping multiple private views. Something that could be in view, a way to create a multi view link and edit it. A random link where you can select views to display. Can be edited / regenerated / deleted. With a small display of all linked views. Could be something folded by default at the bottom of the views page
 - ⬜ Question to be defined and see if we resolve them:
-  - Possible de désactiver unpublish? 
-  - Upload link auto createvtag and vieux 
-  - Garder unpublish si on peut filtrer no tags?
-
+  - Upload link: Auto unpublish et create view with a tag ? or from a view generate upload link and set photo tags matching view filters. 
+  - Garder unpublish si on peut filtrer no tags? option to enable/disable it, check impact on the code ?
+- ⬜ **ZIP download** — generate and download a zip of photos; scope TBD: current filter/selection in Photos, a full view, or a manual selection; photo size selectable (raw, medium, small sample)
 
 ## Infra / Dev
 
 - ⬜ README — ASCII schema of docker-compose dev setup
 - ⬜ README — document how to dump DB to `db-init`
 - ⬜ **Favicon & app icon** — generate a custom icon and favicon for the site
+  - Prompt for ChatGPT/DALL-E:
+    Create a minimal, modern logo for a self-hosted private photo gallery web app called **PhotoHub**.
+    Constraints: flat vector style, geometric, no gradients, no drop shadows. Must work as a favicon at 16×16 and 32×32px. Works on both light and dark backgrounds. Maximum 2 colors.
+    Colors: primary deep violet/purple (#6750A4), secondary white or very light neutral, background transparent.
+    Deliverables: SVG icon (square, no text), SVG wordmark (icon + "PhotoHub" in a clean sans-serif), favicon variant (simplified for small sizes).
+    Creative direction: feel free to interpret "photo" and "hub" freely — it doesn't have to be a camera or a lens. Think about concepts like collection, light, memory, connection, archive, gallery, sharing. The result should feel like a modern SaaS product icon — think Linear, Vercel, Notion level of simplicity and confidence. Surprise me.
+    Do NOT use: realistic illustrations, lens flare, gradients, more than 2 colors, overly complex shapes.
 - ⬜ **Open in new tab** — most links can't be opened in a new tab via Chrome (middle-click / right-click → open in new tab); investigate: likely `@click` handlers replacing `<a href>` — convert navigation to router-link or `<a>` where possible
-- ⬜ **Menu: current user** — replace hardcoded "John Leider" with actual logged-in username; clean up unused menu items
