@@ -45,7 +45,10 @@
 - ✅ "Define as cover" shortcut in photo detail panel when viewing from within a view
 - ✅ Public views accessible without authentication (field exists, no unauthenticated route yet)
 - ✅ **Share link** (private views): random token URL `/shared_view/<token>`, read-only access without login; regenerating invalidates previous token
+  - ⬜ **Link expiration** — optional expiry date on share links; expired links return 403; configurable at generation time (no expiry = permanent)
 - ✅ **Custom order** — drag & drop or manual position entry; uses ViewPhotoOrder model
+- ⬜ **Bulk selection in ViewCreate (edit mode)** — add selection + bulk actions (delete, tag edit, unpublish) in the edit view grid; ViewDetail stays read-only; useful for moderating contributor/guest uploads
+  - When implementing: extract selection logic into a shared `usePhotoSelection` composable and refactor Photos + Unpublished at the same time to eliminate duplication
 
 ### Bug fixes needed
 
@@ -144,10 +147,15 @@ Views, users, and other app state → handled via a separate DB dump outside the
 - ⬜ **View map** — Google Maps page for a specific view: show all photos that have GPS data as markers on a map, clicking a marker opens the photo detail
 - ⬜ Pagination or infinite scroll — TBD based on performance and UX
 - ⬜ Future: create a view from a manual selection of specific photos
-- ⬜ Future: public link grouping multiple private views. Something that could be in view, a way to create a multi view link and edit it. A random link where you can select views to display. Can be edited / regenerated / deleted. With a small display of all linked views. Could be something folded by default at the bottom of the views page
-- ⬜ Question to be defined and see if we resolve them:
-  - Upload link: Auto unpublish et create view with a tag ? or from a view generate upload link and set photo tags matching view filters. 
-  - Garder unpublish si on peut filtrer no tags? option to enable/disable it, check impact on the code ?
+- ⬜ **Upload link** — shareable link allowing anyone (no account) to upload photos into a specific context:
+  - Two modes:
+    - **View-scoped**: linked to a view; uploaded photos are auto-tagged to match the view's tag filters and auto-published; uploaders see their photos appear immediately in the view
+    - **Generic**: not linked to a view; uploaded photos land in Unpublished as usual (owner curates manually)
+  - Link management: generate / revoke (like private view share links)
+  - **Link expiration** — optional expiry date (same concept as view share link expiration)
+  - Moderation: owner can delete/edit photos uploaded by guests via bulk selection in ViewDetail or Photos filter
+- ⬜ **Multi-view group link** — a shareable link that bundles multiple private views into a single public page; create/edit/delete the group, select which views to include, regenerate/revoke the link; displayed folded at the bottom of the Views page
+  - **Link expiration** — optional expiry date (same concept as above)
 - ⬜ **ZIP download** — generate and download a zip of photos; scope TBD: current filter/selection in Photos, a full view, or a manual selection; photo size selectable (raw, medium, small sample)
 
 ## Infra / Dev
