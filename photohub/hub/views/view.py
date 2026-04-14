@@ -92,7 +92,7 @@ def _serialize_photo(p):
 @login_required
 @require_http_methods(["GET"])
 def list_views(request):
-    views = models.View.objects.filter(owner=request.user.username).order_by('name')
+    views = models.View.objects.all().order_by('name')
     data = []
     for v in views:
         v_data = _serialize_view(v)
@@ -110,7 +110,7 @@ def list_views(request):
 #
 # POST /api/views — create a new view
 #
-@login_required
+@admin_or_contributor_required
 @require_http_methods(["POST"])
 def create_view(request):
     post, err = json_decode(request.body)
@@ -161,7 +161,7 @@ def create_view(request):
 @require_http_methods(["GET"])
 def get_view(request, view_id):
     try:
-        v = models.View.objects.get(id=view_id, owner=request.user.username)
+        v = models.View.objects.get(id=view_id)
     except models.View.DoesNotExist:
         return ErrorResponse("NotFound", 404, "View not found")
     return Response(200, data={"view": _serialize_view(v)})
@@ -170,7 +170,7 @@ def get_view(request, view_id):
 #
 # POST /api/views/<id>/update — update a view
 #
-@login_required
+@admin_or_contributor_required
 @require_http_methods(["POST"])
 def update_view(request, view_id):
     post, err = json_decode(request.body)
@@ -178,7 +178,7 @@ def update_view(request, view_id):
         return ErrorRequest(details=err)
 
     try:
-        v = models.View.objects.get(id=view_id, owner=request.user.username)
+        v = models.View.objects.get(id=view_id)
     except models.View.DoesNotExist:
         return ErrorResponse("NotFound", 404, "View not found")
 
@@ -241,11 +241,11 @@ def update_view(request, view_id):
 #
 # POST /api/views/<id>/delete — delete a view
 #
-@login_required
+@admin_or_contributor_required
 @require_http_methods(["POST"])
 def delete_view(request, view_id):
     try:
-        v = models.View.objects.get(id=view_id, owner=request.user.username)
+        v = models.View.objects.get(id=view_id)
     except models.View.DoesNotExist:
         return ErrorResponse("NotFound", 404, "View not found")
     v.delete()
@@ -291,7 +291,7 @@ def get_public_view_photos(request, view_id):
 @require_http_methods(["GET"])
 def get_view_photos(request, view_id):
     try:
-        v = models.View.objects.get(id=view_id, owner=request.user.username)
+        v = models.View.objects.get(id=view_id)
     except models.View.DoesNotExist:
         return ErrorResponse("NotFound", 404, "View not found")
 
@@ -334,11 +334,11 @@ def _build_view_photos_response(request, v):
 #
 # POST /api/views/<id>/share-link — generate or regenerate a share token
 #
-@login_required
+@admin_or_contributor_required
 @require_http_methods(["POST"])
 def generate_share_link(request, view_id):
     try:
-        v = models.View.objects.get(id=view_id, owner=request.user.username)
+        v = models.View.objects.get(id=view_id)
     except models.View.DoesNotExist:
         return ErrorResponse("NotFound", 404, "View not found")
 
@@ -350,11 +350,11 @@ def generate_share_link(request, view_id):
 #
 # DELETE /api/views/<id>/share-link — revoke the share token
 #
-@login_required
+@admin_or_contributor_required
 @require_http_methods(["POST"])
 def revoke_share_link(request, view_id):
     try:
-        v = models.View.objects.get(id=view_id, owner=request.user.username)
+        v = models.View.objects.get(id=view_id)
     except models.View.DoesNotExist:
         return ErrorResponse("NotFound", 404, "View not found")
 

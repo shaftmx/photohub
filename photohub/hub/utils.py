@@ -11,14 +11,46 @@ from django.core.files.storage import default_storage
 from django.conf import settings
 from os.path import basename
 
-# Login required
+# Role helper — returns "admin" / "contributor" / "member" / "unknown"
+def get_role(user):
+    if user.is_staff:
+        return "admin"
+    if user.groups.filter(name='contributor').exists():
+        return "contributor"
+    if user.groups.filter(name='member').exists():
+        return "member"
+    return "unknown"
+
+# Login required (fixed: auth check runs BEFORE the view body)
 def login_required(func):
     def wrapper(*args, **kwargs):
-        ret = func(*args, **kwargs)
         request = args[0]
         if not request.user.is_authenticated:
             return ErrorAuthRequired()
-        return ret 
+        return func(*args, **kwargs)
+    return wrapper
+
+# Admin (is_staff) required
+def admin_required(func):
+    def wrapper(*args, **kwargs):
+        request = args[0]
+        if not request.user.is_authenticated:
+            return ErrorAuthRequired()
+        if not request.user.is_staff:
+            return ErrorForbidden()
+        return func(*args, **kwargs)
+    return wrapper
+
+# Admin OR contributor required
+def admin_or_contributor_required(func):
+    def wrapper(*args, **kwargs):
+        request = args[0]
+        if not request.user.is_authenticated:
+            return ErrorAuthRequired()
+        role = get_role(request.user)
+        if role not in ("admin", "contributor"):
+            return ErrorForbidden()
+        return func(*args, **kwargs)
     return wrapper
 
 #Response

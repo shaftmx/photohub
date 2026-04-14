@@ -145,6 +145,7 @@ Views, users, and other app state → handled via a separate DB dump outside the
 - ⬜ Show tags in grid thumbnail — TBD: colors only, tag names, hover tooltip?
 - ⬜ Map view — display all photos with GPS data on a global map
 - ⬜ **View map** — Google Maps page for a specific view: show all photos that have GPS data as markers on a map, clicking a marker opens the photo detail
+- ⬜ **Filter by owner** — photos and views have an `owner` field (username); future UI to filter/isolate content by owner; currently ignored — all authenticated users see all content
 - ⬜ Pagination or infinite scroll — TBD based on performance and UX
 - ⬜ Future: create a view from a manual selection of specific photos
 - ⬜ **Upload link** — shareable link allowing anyone (no account) to upload photos into a specific context:

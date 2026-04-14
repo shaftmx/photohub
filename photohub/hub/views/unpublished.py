@@ -16,7 +16,7 @@ from django.forms.models import model_to_dict
 # Unpublished
 #
 
-@login_required
+@admin_or_contributor_required
 @require_http_methods(["GET"])
 def get_unpublished(request):
     photos = apply_sort(
@@ -53,7 +53,7 @@ def get_unpublished(request):
 #     print(e.headline)
 
 
-@login_required
+@admin_or_contributor_required
 @require_http_methods(["POST"])
 def publish(request):
     post, err = json_decode(request.body)

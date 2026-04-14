@@ -3,6 +3,7 @@
   ref="displayPhoto"
   :paths="paths"
   :photos="photos"
+  :readonly="!authStore.canEdit"
   @photoDeleted="onPhotoDeleted"
   @photoUnpublished="onPhotoUnpublished"
 ></DisplayPhoto>
@@ -107,7 +108,7 @@
                 </v-list>
               </v-menu>
             </template>
-            <v-btn
+            <v-btn v-if="authStore.canEdit"
               :color="selectionMode ? 'primary' : 'default'"
               :variant="selectionMode ? 'tonal' : 'outlined'"
               density="compact"
@@ -268,7 +269,7 @@
       </v-expand-transition>
     </v-sheet>
 
-    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" :show-favorite="!selectionMode"
+    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" :show-favorite="!selectionMode && authStore.canEdit"
       @item-click="(photo, index, event) => selectionMode ? selectDeselect(photo, index, event) : $refs.displayPhoto.displayPhoto(photo.filename)"
       @toggle-favorite="toggleFavorite">
       <template #overlay="{ photo, index }">
@@ -287,6 +288,8 @@ import TagPhotos from '@/components/TagPhotos.vue'
 import SortControls from '@/components/SortControls.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
 import FilterModeToggle from '@/components/FilterModeToggle.vue'
+import { useAuthStore } from '../stores/auth.js'
+const authStore = useAuthStore()
 </script>
 
 

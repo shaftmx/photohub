@@ -16,9 +16,13 @@ from django.forms.models import model_to_dict
 #
 @require_http_methods(["GET"])
 def is_authenticated(request):
-    LOG.error("--- is_authenticated from %s" % request)
+    from ..utils import get_role
     if request.user.is_authenticated:
-        return Response(data={"username": request.user.username})
+        return Response(data={
+            "id": request.user.id,
+            "username": request.user.username,
+            "role": get_role(request.user),
+        })
     else:
         return ErrorAuthRequired()
 

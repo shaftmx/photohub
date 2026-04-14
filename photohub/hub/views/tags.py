@@ -18,7 +18,7 @@ from django.forms.models import model_to_dict
 #
 # Tags
 #
-@login_required
+@admin_or_contributor_required
 @require_http_methods(["POST"])
 def apply_tags(request):
     post, err = json_decode(request.body)

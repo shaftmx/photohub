@@ -127,7 +127,7 @@ def get_photos(request):
     return Response(200, data=data)
 
 
-@login_required
+@admin_or_contributor_required
 @require_http_methods(["POST"])
 def upload_photo(request):
     LOG.debug("--upload_photo")

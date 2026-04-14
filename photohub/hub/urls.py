@@ -7,6 +7,8 @@ from .views import photo_actions
 from .views import tags
 from .views import unpublished
 from .views import admin
+from .views import admin_users
+from .views import admin_tags
 from .views import view as views_api
 
 
@@ -55,8 +57,18 @@ urlpatterns = [
     path("views/<int:view_id>/share-link/revoke", views_api.revoke_share_link, name="revoke_share_link"),
     path("views/<int:view_id>/photos", views_api.get_view_photos, name="get_view_photos"),
 
-    # Admin
+    # Admin — legacy endpoints (to be removed once admin panel is complete)
     path("bootstrap", admin.bootstrap, name="bootstrap"),
     path("dump", admin.dump, name="dump"),
     path("restore", admin.restore, name="restore"),
+
+    # Admin — users (admin only)
+    path("admin/users", admin_users.list_users, name="admin_list_users"),
+    path("admin/users/create", admin_users.create_user, name="admin_create_user"),
+    path("admin/users/<int:user_id>/delete", admin_users.delete_user, name="admin_delete_user"),
+    path("admin/users/<int:user_id>/set-password", admin_users.set_password, name="admin_set_password"),
+    path("admin/users/<int:user_id>/set-role", admin_users.set_role, name="admin_set_role"),
+
+    # Admin — tags (admin + contributor)
+    path("admin/tags", admin_tags.tags_view, name="admin_tags"),
 ]

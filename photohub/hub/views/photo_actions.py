@@ -46,7 +46,7 @@ def get_photo(request, filename):
 #
 # Unpublish a photo (published=False)
 #
-@login_required
+@admin_or_contributor_required
 @require_http_methods(["POST"])
 def unpublish_photo(request, filename):
     try:
@@ -63,7 +63,7 @@ def unpublish_photo(request, filename):
 #
 # Delete a photo (DB + files on disk)
 #
-@login_required
+@admin_or_contributor_required
 @require_http_methods(["POST"])
 def delete_photo(request, filename):
     try:
@@ -94,7 +94,7 @@ def delete_photo(request, filename):
 #
 # Update photo description/metadata
 #
-@login_required
+@admin_or_contributor_required
 @require_http_methods(["POST"])
 def update_photo(request, filename):
     post, err = json_decode(request.body)

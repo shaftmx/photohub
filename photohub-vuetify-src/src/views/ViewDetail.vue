@@ -5,7 +5,7 @@
     :photos="photos"
     :view-id="$route.params.id"
     :cover-filename="view.cover_filename"
-    :readonly="!isAuthenticated"
+    :readonly="!authStore.canEdit"
     @photoDeleted="onPhotoDeleted"
     @photoUnpublished="onPhotoUnpublished"
   ></DisplayPhoto>
@@ -36,7 +36,7 @@
         @click="descriptionOpen = !descriptionOpen"
       ></v-btn>
       <v-spacer></v-spacer>
-      <template v-if="isAuthenticated">
+      <template v-if="authStore.canEdit">
         <!-- Share button (private views only) -->
         <v-menu v-if="!view.public" v-model="shareMenu" :close-on-content-click="false" location="bottom end">
           <template v-slot:activator="{ props }">
@@ -135,7 +135,7 @@
     </v-sheet>
 
     <!-- Photo grid -->
-    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" :show-favorite="isAuthenticated"
+    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" :show-favorite="authStore.canEdit"
       @item-click="photo => $refs.displayPhoto.displayPhoto(photo.filename)"
       @toggle-favorite="toggleFavorite">
     </PhotoGrid>
@@ -175,12 +175,13 @@
 import SortControls from '@/components/SortControls.vue'
 import DisplayPhoto from '@/components/DisplayPhoto.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
+import { useAuthStore } from '../stores/auth.js'
+const authStore = useAuthStore()
 </script>
 
 <script>
 import { marked } from 'marked'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
-
 import { useAlertStore } from '../stores/alert'
 import { getSharedDatas } from '../sharedDatas.js'
 

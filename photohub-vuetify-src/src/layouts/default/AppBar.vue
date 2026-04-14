@@ -20,6 +20,9 @@
           <template v-if="isAuthenticated">
             <v-list>
               <v-list-item prepend-icon="mdi-account-circle" :title="username">
+                <template v-slot:append>
+                  <v-chip v-if="role" :color="roleBadgeColor" size="x-small" variant="flat">{{ role }}</v-chip>
+                </template>
               </v-list-item>
             </v-list>
             <v-divider></v-divider>
@@ -79,35 +82,55 @@
 <script>
 import { useTheme } from 'vuetify'
 import { getSharedDatas } from '../../sharedDatas.js'
-import { useAsyncFetch } from '../../reactivefetch.js'
+import { useAuthStore } from '../../stores/auth.js'
 
 export default {
+  setup() {
+    return { authStore: useAuthStore() }
+  },
   data: () => ({
-    authItems: [
-      { title: 'Home', icon: 'mdi-home', action: 'Home' },
-      { title: 'Photos', icon: 'mdi-image', action: 'Photos' },
-      { title: 'Views', icon: 'mdi-image-multiple', action: 'Views' },
-      { title: 'Upload', icon: 'mdi-upload', action: 'Upload' },
-      { title: 'Unpublished', icon: 'mdi-folder-upload', action: 'Unpublished' },
-      { title: 'Logout', icon: 'mdi-logout', action: 'Logout' },
-    ],
     theme: useTheme(),
     menu: false,
     darkTheme: false,
     density: "default",
     sharedDatas: {},
-    isAuthenticated: false,
-    username: '',
   }),
+  computed: {
+    isAuthenticated() { return this.authStore.isAuthenticated },
+    username()        { return this.authStore.username },
+    role()            { return this.authStore.role },
+    // Build the nav menu dynamically — Upload/Unpublished hidden for members
+    authItems() {
+      const items = [
+        { title: 'Home',   icon: 'mdi-home',          action: 'Home' },
+        { title: 'Photos', icon: 'mdi-image',          action: 'Photos' },
+        { title: 'Views',  icon: 'mdi-image-multiple', action: 'Views' },
+      ]
+      if (this.authStore.canEdit) {
+        items.push({ title: 'Upload',      icon: 'mdi-upload',        action: 'Upload' })
+        items.push({ title: 'Unpublished', icon: 'mdi-folder-upload', action: 'Unpublished' })
+      }
+      if (this.role === 'admin' || this.role === 'contributor') {
+        items.push({ title: 'Admin', icon: 'mdi-shield-account', action: 'Admin' })
+      }
+      items.push({ title: 'Logout', icon: 'mdi-logout', action: 'Logout' })
+      return items
+    },
+    // Color for the role badge chip
+    roleBadgeColor() {
+      const colors = { admin: 'error', contributor: 'warning', member: 'info', unknown: 'default' }
+      return colors[this.role] || 'default'
+    },
+  },
   watch: {
     $route() {
-      this.checkAuth()
+      this.authStore.fetchAuth()
     }
   },
 
   mounted() {
     this.sharedDatas = getSharedDatas(this)
-    this.checkAuth()
+    this.authStore.fetchAuth()
 
     if (localStorage.persistentDarkTheme) {
         this.darkTheme = JSON.parse(localStorage.getItem('persistentDarkTheme'))
@@ -119,14 +142,8 @@ export default {
     }
   },
   methods: {
-    async checkAuth() {
-      const { data, error } = await useAsyncFetch('/api/is_authenticated')
-      if (!error.value && data.value && !data.value.ERROR) {
-        this.isAuthenticated = true
-        this.username = data.value.data?.username || 'Account'
-      }
-    },
     menuActionClick(action) {
+
       this.menu = false
       this.$router.push({ name: action })
     },

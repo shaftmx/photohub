@@ -5,7 +5,7 @@
     <v-sheet class="d-flex align-center mb-4">
       <span class="text-h6">Views</span>
       <v-spacer></v-spacer>
-      <v-btn color="primary" variant="tonal" density="compact" prepend-icon="mdi-plus"
+      <v-btn v-if="authStore.canEdit" color="primary" variant="tonal" density="compact" prepend-icon="mdi-plus"
         @click="$router.push({ name: 'view-create' })">New view</v-btn>
     </v-sheet>
 
@@ -18,7 +18,7 @@
     <v-sheet v-else-if="views.length === 0" class="d-flex flex-column align-center pa-12 ga-3">
       <v-icon size="64" color="grey-lighten-1">mdi-image-album</v-icon>
       <span class="text-body-1 text-medium-emphasis">No views yet</span>
-      <v-btn color="primary" variant="tonal" prepend-icon="mdi-plus"
+      <v-btn v-if="authStore.canEdit" color="primary" variant="tonal" prepend-icon="mdi-plus"
         @click="$router.push({ name: 'view-create' })">Create your first view</v-btn>
     </v-sheet>
 
@@ -53,7 +53,7 @@
             <div class="text-body-1 font-weight-medium text-truncate">{{ view.name }}</div>
             <div class="text-caption text-medium-emphasis">{{ view.photo_count }} photo{{ view.photo_count !== 1 ? 's' : '' }}</div>
           </div>
-          <div class="card-actions d-flex ga-1">
+          <div v-if="authStore.canEdit" class="card-actions d-flex ga-1">
             <v-btn icon="mdi-pencil-outline" variant="text" density="compact" size="x-small" class="action-btn"
               @click.stop="$router.push({ name: 'view-edit', params: { id: view.id } })"></v-btn>
             <v-btn icon="mdi-delete-outline" variant="text" density="compact" size="x-small" color="error" class="action-btn"
@@ -83,8 +83,10 @@
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { requireAuth } from '../authrequired.js'
 import { getSharedDatas } from '../sharedDatas.js'
+import { useAuthStore } from '../stores/auth.js'
 
 export default {
+  setup() { return { authStore: useAuthStore() } },
   data: () => ({
     views: [],
     paths: {},

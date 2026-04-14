@@ -28,7 +28,7 @@ server {
         root ${DJANGO_ADMIN_PATH};
     }
 
-    location ~ ^/(api|admin) {
+    location ~ ^/api {
         client_max_body_size 70m;
         add_header Access-Control-Allow-Origin ${HEADER_ALLOW_ORIGIN};
         proxy_pass_request_headers on;

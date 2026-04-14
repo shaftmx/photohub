@@ -56,6 +56,11 @@ const routes = [
         name: 'Unpublished',
         component: () => import('@/views/Unpublished.vue'),
       },
+      {
+        path: '/admin',
+        name: 'Admin',
+        component: () => import('@/views/Admin.vue'),
+      },
     ],
   },
 ]

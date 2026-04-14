@@ -35,3 +35,10 @@ def ErrorRequest(**kwarg):
                     "message": "Unable to decode the request"}
     final_args = {**default_args, **kwarg}
     return ErrorResponse(**final_args)
+
+def ErrorForbidden(**kwarg):
+    default_args = {"code": "Forbidden",
+                    "status": 403,
+                    "message": "Forbidden"}
+    final_args = {**default_args, **kwarg}
+    return ErrorResponse(**final_args)
