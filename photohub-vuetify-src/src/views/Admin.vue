@@ -184,7 +184,8 @@
         <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Tag groups &amp; tags</p>
         <p class="text-body-2 text-medium-emphasis mb-2">
           Edit tag groups and tags in YAML format. Save to apply.
-          Removing an entry here does <strong>not</strong> delete it from the database — existing photo associations are preserved.
+          Removing an entry <strong>deletes</strong> it from the database and removes it from all photos.
+          To <strong>rename</strong> a tag safely, change its <code>name</code> while keeping its <code>id</code> — photo associations are preserved.
         </p>
         <v-expansion-panels variant="accordion" class="mb-4" density="compact">
           <v-expansion-panel>
@@ -193,12 +194,14 @@
               <div class="text-body-2 mb-3">
                 <strong>Structure</strong>
                 <pre class="syntax-block">tag_groups:
-  - name: "Country"          # required — group name
+  - id: 1                    # set by the server — do not change (used for rename)
+    name: "Country"          # required — group name
     type: checkbox            # see below
     color: "#FFCC00"          # optional — hex (#FFCC00) or CSS name (blue, red…)
     description: "..."        # optional
     tags:
-      - name: "France"        # required
+      - id: 42               # set by the server — do not change
+        name: "France"        # rename here while keeping the id → photo tags preserved
         color: "#0055A4"      # optional — overrides group color</pre>
               </div>
               <div class="text-body-2 mb-3">
