@@ -154,7 +154,7 @@ Views, users, and other app state → handled via a separate DB dump outside the
 
 - ⬜ README — ASCII schema of docker-compose dev setup
 - ⬜ README — document how to dump DB to `db-init`
-- ⬜ **Favicon & app icon** — generate a custom icon and favicon for the site
+- ✅ **Favicon & app icon** — generate a custom icon and favicon for the site
   - Prompt for ChatGPT/DALL-E:
     Create a minimal, modern logo for a self-hosted private photo gallery web app called **PhotoHub**.
     Constraints: flat vector style, geometric, no gradients, no drop shadows. Must work as a favicon at 16×16 and 32×32px. Works on both light and dark backgrounds. Maximum 2 colors.
