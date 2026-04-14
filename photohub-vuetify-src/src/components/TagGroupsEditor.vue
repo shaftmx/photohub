@@ -53,19 +53,20 @@
         hide-details
         class="mb-4 combobox-compact"
         :color="group.color"
+        :menu-props="{ contentClass: 'combobox-menu' }"
         :items="group.tags.map(t => t.name)"
         :model-value="modelValue[group.name] || []"
         @update:model-value="onGroupUpdate(group.name, $event)"
       >
         <template v-slot:chip="{ item, index, props }">
-          <v-chip v-if="index < 2" v-bind="props"
+          <v-chip v-if="index < 1" v-bind="props"
             variant="outlined" size="small" rounded="lg"
             class="tag-chip"
             :style="{ '--chip-color': group.tags.find(t => t.name === item.title)?.color || group.color }">
             {{ item.title }}
           </v-chip>
-          <span v-else-if="index === 2" class="text-caption text-medium-emphasis align-self-center">
-            (+{{ (modelValue[group.name] || []).length - 2 }} others)
+          <span v-else-if="index === 1" class="text-caption text-medium-emphasis align-self-center">
+            +{{ (modelValue[group.name] || []).length - 1 }}
           </span>
         </template>
       </v-combobox>

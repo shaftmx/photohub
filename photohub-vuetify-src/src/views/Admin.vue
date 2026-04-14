@@ -234,9 +234,13 @@
         <div class="yaml-editor-wrap" :class="{ loading: tagsLoading }">
           <div ref="yamlEditor"></div>
         </div>
-        <div class="d-flex mt-4">
+        <div class="d-flex mt-4 mb-6">
           <v-btn color="primary" variant="flat" class="text-none" :loading="tagsSaving" @click="saveTags">Save tags</v-btn>
         </div>
+
+        <!-- Preview -->
+        <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Preview</p>
+        <TagGroupsEditor :tag-groups="tagGroups" v-model="tagsPreviewSelection" />
       </v-window-item>
 
       <!-- ─────────────── Tab: Photo quality (placeholder) ─────────────── -->
@@ -257,6 +261,7 @@
 
 <script>
 import { requireAdminOrContributor } from '../authrequired.js'
+import TagGroupsEditor from '../components/TagGroupsEditor.vue'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { useAlertStore } from '../stores/alert'
 import { EditorView, basicSetup } from 'codemirror'
@@ -266,6 +271,7 @@ import { indentWithTab } from '@codemirror/commands'
 import { keymap } from '@codemirror/view'
 
 export default {
+  components: { TagGroupsEditor },
   data: () => ({
     tab: null,
     role: '',
@@ -310,6 +316,8 @@ export default {
     tagsYaml: '',
     tagsLoading: false,
     tagsSaving: false,
+    tagGroups: [],
+    tagsPreviewSelection: {},
   }),
 
   async mounted() {
@@ -475,9 +483,15 @@ export default {
 
     async loadTags() {
       this.tagsLoading = true
-      const { data } = await useAsyncFetch('/api/admin/tags')
-      if (data.value && !data.value.ERROR) {
-        this.tagsYaml = data.value.data?.yaml || ''
+      const [yamlRes, tagsRes] = await Promise.all([
+        useAsyncFetch('/api/admin/tags'),
+        useAsyncFetch('/api/tags'),
+      ])
+      if (yamlRes.data.value && !yamlRes.data.value.ERROR) {
+        this.tagsYaml = yamlRes.data.value.data?.yaml || ''
+      }
+      if (tagsRes.data.value && !tagsRes.data.value.ERROR) {
+        this.tagGroups = tagsRes.data.value.data?.tag_groups || []
       }
       this.tagsLoading = false
       // Init editor only if the Tags tab is currently visible
