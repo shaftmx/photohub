@@ -269,10 +269,10 @@
     </v-sheet>
 
     <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" :show-favorite="!selectionMode"
-      @item-click="photo => selectionMode ? selectDeselect(photo) : $refs.displayPhoto.displayPhoto(photo.filename)"
+      @item-click="(photo, index, event) => selectionMode ? selectDeselect(photo, index, event) : $refs.displayPhoto.displayPhoto(photo.filename)"
       @toggle-favorite="toggleFavorite">
-      <template #overlay="{ photo }">
-        <div v-if="selectionMode" class="selection-overlay" :class="{ selected: selectedFilenames.includes(photo.filename) }" @click.stop="selectDeselect(photo)">
+      <template #overlay="{ photo, index }">
+        <div v-if="selectionMode" class="selection-overlay" :class="{ selected: selectedFilenames.includes(photo.filename) }" @click.stop="selectDeselect(photo, index, $event)">
           <v-icon v-if="selectedFilenames.includes(photo.filename)" color="white" size="28">mdi-check-circle</v-icon>
         </div>
       </template>
@@ -311,6 +311,7 @@ export default {
     // Selection mode
     selectionMode: false,
     selectedFilenames: [],
+    lastSelectedIndex: null, // anchor for shift+click range selection
     confirmBulkDeleteDialog: false,
     confirmBulkUnpublishDialog: false,
     // Sort
@@ -432,13 +433,29 @@ export default {
 
     toggleSelectionMode() {
       this.selectionMode = !this.selectionMode
-      if (!this.selectionMode) this.selectedFilenames = []
+      if (!this.selectionMode) { this.selectedFilenames = []; this.lastSelectedIndex = null }
     },
 
-    selectDeselect(photo) {
-      const idx = this.selectedFilenames.indexOf(photo.filename)
-      if (idx === -1) this.selectedFilenames.push(photo.filename)
-      else this.selectedFilenames.splice(idx, 1)
+    selectDeselect(photo, index, event) {
+      // Shift+click: select/deselect the range between last clicked and current
+      if (event?.shiftKey && this.lastSelectedIndex !== null) {
+        const from = Math.min(this.lastSelectedIndex, index)
+        const to = Math.max(this.lastSelectedIndex, index)
+        const rangeFilenames = this.photos.slice(from, to + 1).map(p => p.filename)
+        // If all photos in range are already selected → deselect the range, otherwise select all
+        const allSelected = rangeFilenames.every(f => this.selectedFilenames.includes(f))
+        if (allSelected) {
+          this.selectedFilenames = this.selectedFilenames.filter(f => !rangeFilenames.includes(f))
+        } else {
+          rangeFilenames.forEach(f => { if (!this.selectedFilenames.includes(f)) this.selectedFilenames.push(f) })
+        }
+      } else {
+        // Normal click: toggle single photo, remember index as anchor for next shift+click
+        const idx = this.selectedFilenames.indexOf(photo.filename)
+        if (idx === -1) this.selectedFilenames.push(photo.filename)
+        else this.selectedFilenames.splice(idx, 1)
+        this.lastSelectedIndex = index ?? null
+      }
     },
 
     selectAll() {
@@ -447,6 +464,7 @@ export default {
 
     deselectAll() {
       this.selectedFilenames = []
+      this.lastSelectedIndex = null
     },
 
     async bulkDelete() {

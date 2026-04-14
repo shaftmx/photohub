@@ -100,13 +100,13 @@
 
     <!-- Photo grid -->
     <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" show-favorite
-      @item-click="selectDeselect"
+      @item-click="(photo, index, event) => selectDeselect(photo, index, event)"
       @toggle-favorite="toggleFavorite">
-      <template #overlay="{ photo }">
+      <template #overlay="{ photo, index }">
         <v-chip v-if="Object.keys(photo.tags).length === 0" class="no-tags-chip"
           color="error" size="x-small" variant="flat">no tags</v-chip>
         <div class="selection-overlay" :class="{ selected: selectedPhotosFilenames.includes(photo.filename) }"
-          @click.stop="selectDeselect(photo)">
+          @click.stop="selectDeselect(photo, index, $event)">
           <v-icon v-if="selectedPhotosFilenames.includes(photo.filename)" color="white" size="28">mdi-check-circle</v-icon>
         </div>
         <button class="detail-btn" @click.stop="$refs.photoDetail.open(photo.filename)" title="Details">
@@ -141,6 +141,7 @@ export default {
     subtitle: "All recently uploaded photos that have not been published",
     photos: [],
     selectedPhotosFilenames: [],
+    lastSelectedIndex: null, // anchor for shift+click range selection
     paths: {},
     sharedDatas: {},
     loading: false,
@@ -166,14 +167,31 @@ export default {
       this.doGetPhotos()
     },
 
-    selectDeselect(photo) {
-      const idx = this.selectedPhotosFilenames.indexOf(photo.filename)
-      if (idx === -1) this.selectedPhotosFilenames.push(photo.filename)
-      else this.selectedPhotosFilenames.splice(idx, 1)
+    selectDeselect(photo, index, event) {
+      // Shift+click: select/deselect the range between last clicked and current
+      if (event?.shiftKey && this.lastSelectedIndex !== null) {
+        const from = Math.min(this.lastSelectedIndex, index)
+        const to = Math.max(this.lastSelectedIndex, index)
+        const rangeFilenames = this.photos.slice(from, to + 1).map(p => p.filename)
+        // If all photos in range are already selected → deselect the range, otherwise select all
+        const allSelected = rangeFilenames.every(f => this.selectedPhotosFilenames.includes(f))
+        if (allSelected) {
+          this.selectedPhotosFilenames = this.selectedPhotosFilenames.filter(f => !rangeFilenames.includes(f))
+        } else {
+          rangeFilenames.forEach(f => { if (!this.selectedPhotosFilenames.includes(f)) this.selectedPhotosFilenames.push(f) })
+        }
+      } else {
+        // Normal click: toggle single photo, remember index as anchor for next shift+click
+        const idx = this.selectedPhotosFilenames.indexOf(photo.filename)
+        if (idx === -1) this.selectedPhotosFilenames.push(photo.filename)
+        else this.selectedPhotosFilenames.splice(idx, 1)
+        this.lastSelectedIndex = index ?? null
+      }
     },
 
     deselectAll() {
       this.selectedPhotosFilenames = []
+      this.lastSelectedIndex = null
     },
 
     selectAll() {

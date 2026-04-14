@@ -15,9 +15,9 @@
       <div class="item-inner">
         <img
           :src="paths[adaptivePhotoSize] + '/' + photo.hash_path + '/' + photo.filename"
-          @click="!draggable && $emit('item-click', photo)"
+          @click="!draggable && $emit('item-click', photo, index, $event)"
         />
-        <slot name="overlay" :photo="photo"></slot>
+        <slot name="overlay" :photo="photo" :index="index"></slot>
         <button v-if="draggable" class="drag-handle" title="Drag to reorder">
           <v-icon size="18">mdi-drag</v-icon>
         </button>
