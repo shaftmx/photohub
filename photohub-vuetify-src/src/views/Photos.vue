@@ -23,7 +23,7 @@
         <div v-if="!sharedDatas.isMobile" class="d-flex align-center ga-2 mb-1">
           <h1 class="text-h4">{{ title }}</h1>
         </div>
-        <h1 v-if="!sharedDatas.isMobile" class="text-subtitle-1 mb-4">{{ subtitle }}</h1>
+        <p v-if="!sharedDatas.isMobile" class="text-body-2 text-medium-emphasis mb-4">{{ subtitle }}</p>
         <div v-if="sharedDatas.isMobile" class="d-flex align-center ga-2 mb-1">
           <h1 class="text-h6">{{ title }}</h1>
         </div>
