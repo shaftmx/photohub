@@ -45,7 +45,7 @@
 - ✅ "Define as cover" shortcut in photo detail panel when viewing from within a view
 - ✅ Public views accessible without authentication (field exists, no unauthenticated route yet)
 - ✅ **Share link** (private views): random token URL `/shared_view/<token>`, read-only access without login; regenerating invalidates previous token
-  - ⬜ **Link expiration** — optional expiry date on share links; expired links return 403; configurable at generation time (no expiry = permanent)
+  - ✅ **Link expiration** — optional expiry date on share links; expired links return 403; configurable at generation time (no expiry = permanent)
 - ✅ **Custom order** — drag & drop or manual position entry; uses ViewPhotoOrder model
 - ⬜ **Bulk selection in ViewCreate (edit mode)** — add selection + bulk actions (delete, tag edit, unpublish) in the edit view grid; ViewDetail stays read-only; useful for moderating contributor/guest uploads
   - When implementing: extract selection logic into a shared `usePhotoSelection` composable and refactor Photos + Unpublished at the same time to eliminate duplication
