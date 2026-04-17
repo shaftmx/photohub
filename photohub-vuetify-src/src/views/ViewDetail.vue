@@ -74,10 +74,12 @@
                 </template>
               </v-text-field>
 
-              <!-- Expiry picker -->
+              <!-- Expiry -->
+              <div class="text-caption text-medium-emphasis mb-1">Expiry</div>
               <ExpiryPicker v-model:preset="expiryPreset" v-model:date="expiryDate" class="mb-2"></ExpiryPicker>
-              <v-btn size="small" variant="tonal" class="text-none mb-3" :loading="savingExpiry"
-                @click="saveExpiry">Save expiry</v-btn>
+              <v-btn size="small" variant="text" density="compact" color="primary" :loading="savingExpiry" class="mb-3 px-1" @click="saveExpiry">
+                <v-icon size="14" class="mr-1">mdi-check</v-icon>Apply
+              </v-btn>
 
               <v-divider class="mb-3"></v-divider>
               <div class="d-flex ga-2">
