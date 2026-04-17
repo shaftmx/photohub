@@ -234,6 +234,16 @@
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
+        <!-- Sample banner — shown only when no tags exist yet -->
+        <v-alert v-if="tagsEmpty && !tagsLoading" type="info" variant="tonal" density="compact" class="mb-3">
+          No tags yet.
+          <template v-slot:append>
+            <v-btn size="small" variant="tonal" class="text-none ml-2" :loading="sampleLoading" @click="loadSample">
+              Load sample
+            </v-btn>
+          </template>
+        </v-alert>
+
         <div class="yaml-editor-wrap" :class="{ loading: tagsLoading }">
           <div ref="yamlEditor"></div>
         </div>
@@ -346,6 +356,7 @@ import { requireAdminOrContributor } from '../authrequired.js'
 import TagGroupsEditor from '../components/TagGroupsEditor.vue'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { useAlertStore } from '../stores/alert'
+import sampleTagsYaml from '../data/tags_sample.yml?raw'
 import { EditorView, basicSetup } from 'codemirror'
 import { yaml } from '@codemirror/lang-yaml'
 import { oneDark } from '@codemirror/theme-one-dark'
@@ -398,6 +409,8 @@ export default {
     tagsYaml: '',
     tagsLoading: false,
     tagsSaving: false,
+    tagsEmpty: false,
+    sampleLoading: false,
     tagGroups: [],
     tagsPreviewSelection: {},
 
@@ -585,6 +598,7 @@ export default {
       ])
       if (yamlRes.data.value && !yamlRes.data.value.ERROR) {
         this.tagsYaml = yamlRes.data.value.data?.yaml || ''
+        this.tagsEmpty = !this.tagsYaml.trim()
       }
       if (tagsRes.data.value && !tagsRes.data.value.ERROR) {
         this.tagGroups = tagsRes.data.value.data?.tag_groups || []
@@ -669,6 +683,12 @@ export default {
       let i = 0
       while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++ }
       return bytes.toFixed(1) + ' ' + units[i]
+    },
+
+    loadSample() {
+      this.tagsYaml = sampleTagsYaml
+      this.tagsEmpty = false
+      this._initEditor(sampleTagsYaml)
     },
 
     async saveTags() {

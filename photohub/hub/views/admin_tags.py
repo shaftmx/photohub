@@ -25,6 +25,8 @@ def tags_view(request):
         return _set_tags(request)
 
 
+
+
 def _get_tags(request):
     """Serialize current DB tags into a YAML string returned to the client."""
     tag_groups = models.TagGroup.objects.prefetch_related('tag_set').all().order_by('name')

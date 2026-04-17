@@ -336,7 +336,28 @@ tag_groups:
         description: "Île française de l’océan Indien"
         color: "#FF4500"
 
+# Customizing the sample tags
 
+When the admin Tags tab is empty (no tags in the database), a **"Load sample"** button appears.
+It prefills the YAML editor with a built-in sample so you can bootstrap your tag structure quickly.
 
+**To change the sample**, edit:
 
+```
+photohub-vuetify-src/src/data/tags_sample.yml
+```
+
+The file is a standard YAML matching the tags editor format:
+
+```yaml
+tag_groups:
+  - name: "Country"
+    type: checkbox          # checkbox | combobox
+    color: "#FFCC00"        # hex or CSS color name
+    tags:
+      - name: "France"
+        color: "#0055A4"
+```
+
+The file is bundled into the frontend at build time (`import ... ?raw` via Vite) — no backend change needed, just edit the YAML and rebuild the frontend.
 

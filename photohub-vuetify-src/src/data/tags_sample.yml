@@ -1,0 +1,36 @@
+tag_groups:
+  - name: "pays"
+    description: "Différents pays disponibles"
+    color: "#FFCC00"
+    type: "combobox"
+    tags:
+      - name: "Madere"
+        description: "Île portugaise dans l’Atlantique"
+        color: "#FFD700"
+      - name: "France"
+        description: "Pays d’Europe occidentale"
+        color: "#0055A4"
+      - name: "Reunion"
+        description: "Île française de l’océan Indien"
+        color: "#FF4500"
+
+  - name: "types"
+    description: "Catégories de paysages"
+    color: "#00CC99"
+    type: "checkbox"
+    tags:
+      - name: "Montagne"
+        description: "Zones montagneuses"
+        color: "#228B22"
+      - name: "Plage"
+        description: "Bords de mer et sable"
+        color: "#1E90FF"
+
+  - name: "villes"
+    description: "Liste de villes"
+    type: "combobox"
+    color: "#CC33FF"
+    tags:
+      - name: "Paris"
+        description: "Capitale de la France"
+        color: "#800080"
