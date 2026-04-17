@@ -9,6 +9,7 @@ from .views import admin
 from .views import admin_users
 from .views import admin_tags
 from .views import admin_config
+from .views import admin_export
 from .views import view as views_api
 
 
@@ -66,4 +67,10 @@ urlpatterns = [
     # Admin — config / photo quality (admin only)
     path("admin/config", admin_config.config_view, name="admin_config"),
     path("admin/flush-samples", admin_config.flush_samples, name="admin_flush_samples"),
+
+    # Admin — export / import (admin only)
+    path("admin/export", admin_export.export_dump, name="admin_export"),
+    path("admin/export/status", admin_export.export_status, name="admin_export_status"),
+    path("admin/import", admin_export.import_dump, name="admin_import"),
+    path("admin/import/status", admin_export.import_status, name="admin_import_status"),
 ]

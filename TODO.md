@@ -112,16 +112,16 @@
 Goal: portability of photos across PhotoHub instances or external apps.
 Views, users, and other app state → handled via a separate DB dump outside the app.
 
-- ⬜ **Export** — dump selected or all photos to `DUMP_ROOT` folder:
-  - Raw photo file
-  - `<filename>_meta.yml` — tags, favorite, rating, description
-  - `<filename>_exif.yml` — EXIF data (informational only, not used on re-import)
-  - Reuses / replaces existing `admin.dump` endpoint (currently outputs YAML per photo)
-- ⬜ **Import** — read a dump folder and ingest into PhotoHub:
-  - Photos without `_meta.yml` are accepted (raw only, no metadata)
-  - If photo already exists (same MD5): override tags, favorite, rating, description
-  - EXIF re-extracted from raw file on import (ignore `_exif.yml`)
-  - Samples regenerated via normal upload process
+- ✅ **Export** — dump all photos to `DUMP_ROOT` folder:
+  - `<filename>_meta.yml` — tags, favorite, rating, description, owner, published
+  - `<filename>_exif.yml` — EXIF data (informational only)
+  - Optional: include raw `.jpg` files (toggle in admin UI)
+  - Runs in background thread
+- ✅ **Import** — scan dump folder and ingest into PhotoHub:
+  - Photos without `_meta.yml` accepted (raw only)
+  - If photo already exists (same filename): updates metadata only
+  - New photos: EXIF re-extracted from raw, samples regenerated per GENERATE_SAMPLES_ON_UPLOAD
+  - Owner preserved from meta
 
 ## Backend / API
 

@@ -363,13 +363,154 @@
         </v-table>
       </v-window-item>
 
-      <!-- ─────────────── Tab: Backup / Export (placeholder) ─────────────── -->
+      <!-- ─────────────── Tab: Backup / Export ─────────────── -->
       <v-window-item value="backup">
-        <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Backup / Export</p>
-        <p class="text-body-2 text-medium-emphasis">Coming soon.</p>
+
+        <!-- How it works -->
+        <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">How it works</p>
+        <v-table density="compact" class="rounded storage-table mb-6" style="max-width:640px">
+          <tbody>
+            <tr>
+              <td class="text-caption text-medium-emphasis" style="width:140px">Dump folder</td>
+              <td><code class="text-body-2">{{ qualityConfig.DUMP_ROOT || '/dumps/latest' }}</code></td>
+            </tr>
+            <tr>
+              <td class="text-caption text-medium-emphasis">Raw photos</td>
+              <td><code class="text-body-2">{{ qualityConfig.MEDIA_ROOT || '/data/static' }}/raw/</code></td>
+            </tr>
+          </tbody>
+        </v-table>
+
+        <v-alert type="info" variant="tonal" density="compact" class="mb-6" style="max-width:640px">
+          <p class="text-body-2 mb-1">
+            <strong>Export with raw files</strong> — everything lands in the dump folder (<code>DUMP_ROOT</code>):
+            one <code>_meta.yml</code> + one <code>_exif.yml</code> per photo, plus the raw <code>.jpg</code> file.
+            Mount <code>DUMP_ROOT</code> as a volume to retrieve the files (e.g. <code>./dumps:/dumps</code> in docker-compose).
+          </p>
+          <p class="text-body-2 mb-0">
+            <strong>Export without raw files</strong> — only <code>_meta.yml</code> and <code>_exif.yml</code> are written to the dump folder.
+            Raw files stay in <code>MEDIA_ROOT/raw/</code> — copy them manually if needed
+            (e.g. <code>/tmp/data/photos/raw/</code> with the default docker-compose volume).
+          </p>
+        </v-alert>
+
+        <v-row>
+          <!-- Export -->
+          <v-col cols="12" md="4">
+            <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Export</p>
+            <v-switch
+              v-model="exportIncludeRaw"
+              :true-value="true"
+              :false-value="false"
+              label="Include raw photo files"
+              color="primary"
+              density="compact"
+              class="mb-3 ml-2"
+              hint="When enabled, the .jpg files are copied into the dump folder alongside the metadata."
+              persistent-hint
+            ></v-switch>
+            <v-btn color="primary" variant="flat" class="text-none mt-4"
+              :loading="exportLoading" :disabled="exportStatus && exportStatus.status === 'pending'"
+              @click="exportConfirmDialog = true">Export</v-btn>
+
+            <!-- Progress -->
+            <div v-if="exportStatus && exportStatus.status !== 'none'" class="mt-4">
+              <div class="d-flex justify-space-between text-caption text-medium-emphasis mb-1">
+                <span v-if="exportStatus.status === 'pending'">Exporting… {{ exportStatus.done }} / {{ exportStatus.total }}</span>
+                <span v-else-if="exportStatus.status === 'completed'">
+                  <v-icon size="14" color="success">mdi-check-circle-outline</v-icon>
+                  Done — {{ exportStatus.total }} photos
+                  <span v-if="exportStatus.errors && exportStatus.errors.length" class="text-error ml-1">({{ exportStatus.errors.length }} errors)</span>
+                  <span v-if="exportStatus.completed_at" class="ml-2 text-disabled">{{ formatDate(exportStatus.completed_at) }}</span>
+                </span>
+              </div>
+              <v-progress-linear
+                v-if="exportStatus.total"
+                :model-value="exportStatus.done / exportStatus.total * 100"
+                :color="exportStatus.status === 'completed' ? 'success' : 'primary'"
+                bg-color="surface-variant"
+                rounded
+                height="6"
+              ></v-progress-linear>
+            </div>
+          </v-col>
+
+          <!-- Import -->
+          <v-col cols="12" md="4">
+            <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Import</p>
+            <p class="text-body-2 text-medium-emphasis mb-4">
+              Scans the dump folder for <code>.jpg</code> files and ingests them.
+              Existing photos (same filename) have their metadata updated.
+              New photos are created with EXIF re-extracted from the raw file.
+            </p>
+            <v-btn variant="tonal" class="text-none"
+              :loading="importLoading" :disabled="importStatus && importStatus.status === 'pending'"
+              @click="importConfirmDialog = true">Import from dump folder</v-btn>
+
+            <!-- Import progress -->
+            <div v-if="importStatus && importStatus.status !== 'none'" class="mt-4">
+              <div class="d-flex justify-space-between text-caption text-medium-emphasis mb-1">
+                <span v-if="importStatus.status === 'pending'">Importing… {{ importStatus.done }} / {{ importStatus.total }}</span>
+                <span v-else-if="importStatus.status === 'completed'">
+                  <v-icon size="14" color="success">mdi-check-circle-outline</v-icon>
+                  {{ importStatus.imported }} imported, {{ importStatus.updated }} updated
+                  <span v-if="importStatus.errors && importStatus.errors.length" class="text-error ml-1">({{ importStatus.errors.length }} errors)</span>
+                  <span v-if="importStatus.completed_at" class="ml-2 text-disabled">{{ formatDate(importStatus.completed_at) }}</span>
+                </span>
+              </div>
+              <v-progress-linear
+                v-if="importStatus.total"
+                :model-value="importStatus.done / importStatus.total * 100"
+                :color="importStatus.status === 'completed' ? 'success' : 'primary'"
+                bg-color="surface-variant"
+                rounded
+                height="6"
+              ></v-progress-linear>
+              <div v-if="importStatus.status === 'completed' && importStatus.errors?.length" class="mt-2">
+                <p class="text-caption text-error" v-for="e in importStatus.errors" :key="e">{{ e }}</p>
+              </div>
+            </div>
+          </v-col>
+        </v-row>
       </v-window-item>
 
     </v-window>
+
+    <!-- Export confirm dialog -->
+    <v-dialog v-model="exportConfirmDialog" max-width="420">
+      <v-card>
+        <v-card-title class="text-body-1 font-weight-medium pt-4 px-4">Confirm export</v-card-title>
+        <v-card-text class="text-body-2 text-medium-emphasis px-4">
+          This will <strong>delete the current dump folder</strong> and start a new export.
+          Any previous dump will be lost.
+          <span v-if="exportIncludeRaw"><br><br>Raw photo files will be included — this may take a while.</span>
+        </v-card-text>
+        <v-card-actions class="px-4 pb-4">
+          <v-spacer></v-spacer>
+          <v-btn variant="text" class="text-none" @click="exportConfirmDialog = false">Cancel</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" @click="exportConfirmDialog = false; runExport()">Export</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Import confirm dialog -->
+    <v-dialog v-model="importConfirmDialog" max-width="420">
+      <v-card>
+        <v-card-title class="text-body-1 font-weight-medium pt-4 px-4">Confirm import</v-card-title>
+        <v-card-text class="text-body-2 text-medium-emphasis px-4">
+          Scans <code>{{ qualityConfig.DUMP_ROOT || 'DUMP_ROOT' }}</code> for <code>.jpg</code> files and ingests them.
+          <br><br>
+          Existing photos will have their metadata updated. New photos will be created.
+          This action cannot be undone.
+        </v-card-text>
+        <v-card-actions class="px-4 pb-4">
+          <v-spacer></v-spacer>
+          <v-btn variant="text" class="text-none" @click="importConfirmDialog = false">Cancel</v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" @click="importConfirmDialog = false; runImport()">Import</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
   </v-container>
 </template>
 
@@ -436,6 +577,17 @@ export default {
     tagGroups: [],
     tagsPreviewSelection: {},
 
+    // Backup / Export tab
+    exportIncludeRaw: false,
+    exportLoading: false,
+    exportStatus: null,
+    exportPollInterval: null,
+    exportConfirmDialog: false,
+    importLoading: false,
+    importStatus: null,
+    importPollInterval: null,
+    importConfirmDialog: false,
+
     // Photo quality tab
     qualityConfig: {},
     qualitySampleYaml: '',
@@ -465,6 +617,8 @@ export default {
   },
 
   beforeUnmount() {
+    this._stopExportPolling()
+    this._stopImportPolling()
     if (this._cmEditor) {
       this._cmEditor.destroy()
       this._cmEditor = null
@@ -597,6 +751,10 @@ export default {
 
     // ── Tags ──────────────────────────────────────────────────────────────
     async onTabChange(tab) {
+      if (tab === 'backup') {
+        await this._loadExportStatus()
+        await this._loadImportStatus()
+      }
       if (tab === 'tags') {
         await this.$nextTick()
         this._initEditor(this.tagsYaml)
@@ -711,6 +869,107 @@ export default {
       } else {
         triggerAlert('error', 'Save failed', data.value?.details || '')
       }
+    },
+
+    async runExport() {
+      const { triggerAlert } = useAlertStore()
+      this.exportLoading = true
+      this.exportStatus = null  // reset bar before new export
+      const { data } = await useAsyncPost('/api/admin/export', { include_raw: this.exportIncludeRaw })
+      this.exportLoading = false
+      if (data.value && !data.value.ERROR) {
+        this._startExportPolling()
+      } else {
+        triggerAlert('error', 'Export failed', data.value?.details || '')
+      }
+    },
+
+    async _loadImportStatus() {
+      const { data } = await useAsyncFetch('/api/admin/import/status')
+      if (data.value && !data.value.ERROR) {
+        this.importStatus = data.value.data
+        if (this.importStatus?.status === 'pending') this._startImportPolling()
+      }
+    },
+
+    async _loadExportStatus() {
+      const { data } = await useAsyncFetch('/api/admin/export/status')
+      if (data.value && !data.value.ERROR) {
+        this.exportStatus = data.value.data
+        if (this.exportStatus?.status === 'pending') this._startExportPolling()
+      }
+    },
+
+    _startExportPolling() {
+      this._stopExportPolling()
+      this.exportPollInterval = setInterval(async () => {
+        const { data } = await useAsyncFetch('/api/admin/export/status')
+        if (data.value && !data.value.ERROR) {
+          this.exportStatus = data.value.data
+          if (this.exportStatus.status === 'completed') {
+            this._stopExportPolling()
+            const { triggerAlert } = useAlertStore()
+            const errors = this.exportStatus.errors?.length || 0
+            if (errors) {
+              triggerAlert('warning', 'Export done with errors', `${this.exportStatus.total} photos, ${errors} errors`)
+            } else {
+              triggerAlert('success', 'Export complete', `${this.exportStatus.total} photos exported`)
+            }
+          }
+        }
+      }, 2000)
+    },
+
+    _stopExportPolling() {
+      if (this.exportPollInterval) {
+        clearInterval(this.exportPollInterval)
+        this.exportPollInterval = null
+      }
+    },
+
+    async runImport() {
+      const { triggerAlert } = useAlertStore()
+      this.importLoading = true
+      this.importStatus = null
+      const { data } = await useAsyncPost('/api/admin/import', {})
+      this.importLoading = false
+      if (data.value && !data.value.ERROR) {
+        this._startImportPolling()
+      } else {
+        triggerAlert('error', 'Import failed', data.value?.details || '')
+      }
+    },
+
+    _startImportPolling() {
+      this._stopImportPolling()
+      this.importPollInterval = setInterval(async () => {
+        const { data } = await useAsyncFetch('/api/admin/import/status')
+        if (data.value && !data.value.ERROR) {
+          this.importStatus = data.value.data
+          if (this.importStatus.status === 'completed') {
+            this._stopImportPolling()
+            const { triggerAlert } = useAlertStore()
+            const errors = this.importStatus.errors?.length || 0
+            if (errors) {
+              triggerAlert('warning', 'Import done with errors', `${this.importStatus.imported} imported, ${this.importStatus.updated} updated, ${errors} errors`)
+            } else {
+              triggerAlert('success', 'Import complete', `${this.importStatus.imported} imported, ${this.importStatus.updated} updated`)
+            }
+          }
+        }
+      }, 2000)
+    },
+
+    _stopImportPolling() {
+      if (this.importPollInterval) {
+        clearInterval(this.importPollInterval)
+        this.importPollInterval = null
+      }
+    },
+
+    formatDate(iso) {
+      if (!iso) return ''
+      return new Date(iso).toLocaleString()
     },
 
     async flushSamples() {
