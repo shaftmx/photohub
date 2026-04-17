@@ -264,38 +264,57 @@
 
             <v-select
               v-model="qualityConfig.RAW_PHOTOS_QUALITY"
-              :items="[75, 85, 90, 95, 100]"
-              label="JPEG quality"
+              :items="qualityPresets"
+              item-title="label"
+              item-value="value"
+              label="JPEG quality preset"
               density="compact"
               variant="outlined"
               class="mb-3"
-              hint="Quality used when converting RAW photos to JPEG (0-100)"
+              hint="RAW_PHOTOS_QUALITY — Pillow quality preset applied when re-encoding RAW photos. None = original file stored as-is."
               persistent-hint
             ></v-select>
 
             <v-text-field
-              v-model.number="qualityConfig.RAW_PHOTOS_MAX_SIZE"
+              v-model="qualityConfig.RAW_PHOTOS_MAX_SIZE"
               label="Max size (px)"
               type="number"
               density="compact"
               variant="outlined"
               class="mb-3"
-              hint="Longest edge in pixels — 0 = no resize"
+              hint="RAW_PHOTOS_MAX_SIZE — Longest edge in pixels. Leave empty = no resize."
               persistent-hint
+              clearable
             ></v-text-field>
 
             <v-switch
               v-model="qualityConfig.RAW_PHOTO_OVERRIDE_EXISTS"
-              :true-value="'True'"
-              :false-value="'False'"
+              :true-value="true"
+              :false-value="false"
               label="Override existing files"
               color="primary"
               density="compact"
-              class="mb-4"
-              hide-details
+              class="mb-2 ml-2"
+              hint="RAW_PHOTO_OVERRIDE_EXISTS — re-process and overwrite file on disk when the same photo is re-uploaded"
+              persistent-hint
             ></v-switch>
 
-            <v-btn color="primary" variant="flat" class="text-none" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none mt-4" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
+
+            <!-- Disk usage bar -->
+            <div v-if="qualityConfig.disk_usage" class="mt-5">
+              <div class="d-flex justify-space-between text-caption text-medium-emphasis mb-1">
+                <span>Disk usage</span>
+                <span>{{ formatBytes(qualityConfig.disk_usage.used) }} / {{ formatBytes(qualityConfig.disk_usage.total) }} — {{ formatBytes(qualityConfig.disk_usage.free) }} free</span>
+              </div>
+              <v-progress-linear
+                :model-value="qualityConfig.disk_usage.used / qualityConfig.disk_usage.total * 100"
+                :color="diskUsageColor"
+                bg-color="surface-variant"
+                rounded
+                height="6"
+              ></v-progress-linear>
+            </div>
           </v-col>
 
           <v-col cols="12" md="7">
@@ -307,38 +326,29 @@
             <div class="yaml-editor-wrap" :class="{ loading: qualityLoading }">
               <div ref="sampleEditor"></div>
             </div>
+            <p class="text-caption text-disabled mt-1">SAMPLE_PHOTOS_SETTINGS</p>
             <div class="d-flex align-center mt-4 mb-6 gap-3">
               <v-btn color="primary" variant="flat" class="text-none" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
-              <v-btn variant="tonal" class="text-none ml-3" :loading="resampleLoading" @click="resampleAll">Resample all photos</v-btn>
+              <v-btn variant="tonal" class="text-none ml-3" :loading="resampleLoading" @click="flushSamples">Flush samples</v-btn>
             </div>
           </v-col>
         </v-row>
 
         <!-- Read-only storage info -->
-        <v-divider class="mb-4"></v-divider>
+        <v-divider class="mb-4 mt-2"></v-divider>
         <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Storage</p>
-        <div v-if="qualityConfig.disk_usage" class="d-flex flex-wrap gap-4 mb-2">
-          <div>
-            <span class="text-caption text-medium-emphasis">MEDIA_ROOT</span><br>
-            <code class="text-body-2">{{ qualityConfig.MEDIA_ROOT }}</code>
-          </div>
-          <div>
-            <span class="text-caption text-medium-emphasis">DUMP_ROOT</span><br>
-            <code class="text-body-2">{{ qualityConfig.DUMP_ROOT }}</code>
-          </div>
-          <div>
-            <span class="text-caption text-medium-emphasis">Total</span><br>
-            <span class="text-body-2">{{ formatBytes(qualityConfig.disk_usage.total) }}</span>
-          </div>
-          <div>
-            <span class="text-caption text-medium-emphasis">Used</span><br>
-            <span class="text-body-2">{{ formatBytes(qualityConfig.disk_usage.used) }}</span>
-          </div>
-          <div>
-            <span class="text-caption text-medium-emphasis">Free</span><br>
-            <span class="text-body-2">{{ formatBytes(qualityConfig.disk_usage.free) }}</span>
-          </div>
-        </div>
+        <v-table density="compact" class="rounded storage-table" style="max-width:520px">
+          <tbody>
+            <tr>
+              <td class="text-caption text-medium-emphasis" style="width:120px">MEDIA_ROOT</td>
+              <td><code class="text-body-2">{{ qualityConfig.MEDIA_ROOT || '–' }}</code></td>
+            </tr>
+            <tr>
+              <td class="text-caption text-medium-emphasis">DUMP_ROOT</td>
+              <td><code class="text-body-2">{{ qualityConfig.DUMP_ROOT || '–' }}</code></td>
+            </tr>
+          </tbody>
+        </v-table>
       </v-window-item>
 
       <!-- ─────────────── Tab: Backup / Export (placeholder) ─────────────── -->
@@ -420,6 +430,14 @@ export default {
     qualityLoading: false,
     qualitySaving: false,
     resampleLoading: false,
+    qualityPresets: [
+      { label: 'None — original file, no re-encoding', value: null },
+      { label: 'web_low',       value: 'web_low' },
+      { label: 'web_medium',    value: 'web_medium' },
+      { label: 'web_high',      value: 'web_high' },
+      { label: 'web_very_high', value: 'web_very_high' },
+      { label: 'web_maximum',   value: 'web_maximum' },
+    ],
   }),
 
   async mounted() {
@@ -443,6 +461,16 @@ export default {
       this._cmSampleEditor.destroy()
       this._cmSampleEditor = null
     }
+  },
+
+  computed: {
+    diskUsageColor() {
+      if (!this.qualityConfig.disk_usage) return 'primary'
+      const pct = this.qualityConfig.disk_usage.used / this.qualityConfig.disk_usage.total * 100
+      if (pct > 90) return 'error'
+      if (pct > 75) return 'warning'
+      return 'primary'
+    },
   },
 
   methods: {
@@ -616,8 +644,14 @@ export default {
       this.qualityLoading = true
       const { data } = await useAsyncFetch('/api/admin/config')
       if (data.value && !data.value.ERROR) {
-        this.qualityConfig = data.value.data || {}
-        this.qualitySampleYaml = this.qualityConfig.SAMPLE_PHOTOS_SETTINGS || ''
+        const cfg = data.value.data || {}
+        // Normalize boolean (backend may return '1'/'0'/True/False/'True'/'False')
+        cfg.RAW_PHOTO_OVERRIDE_EXISTS = ['True', 'true', '1', 1, true].includes(cfg.RAW_PHOTO_OVERRIDE_EXISTS)
+        // Normalize null-ish values
+        if (!cfg.RAW_PHOTOS_QUALITY) cfg.RAW_PHOTOS_QUALITY = null
+        if (!cfg.RAW_PHOTOS_MAX_SIZE) cfg.RAW_PHOTOS_MAX_SIZE = null
+        this.qualityConfig = cfg
+        this.qualitySampleYaml = cfg.SAMPLE_PHOTOS_SETTINGS || ''
       }
       this.qualityLoading = false
       await this.$nextTick()
@@ -651,10 +685,10 @@ export default {
       const { triggerAlert } = useAlertStore()
       this.qualitySaving = true
       const payload = {
-        RAW_PHOTOS_QUALITY:      this.qualityConfig.RAW_PHOTOS_QUALITY,
-        RAW_PHOTOS_MAX_SIZE:     this.qualityConfig.RAW_PHOTOS_MAX_SIZE,
-        RAW_PHOTO_OVERRIDE_EXISTS: this.qualityConfig.RAW_PHOTO_OVERRIDE_EXISTS,
-        SAMPLE_PHOTOS_SETTINGS:  this.qualitySampleYaml,
+        RAW_PHOTOS_QUALITY:        this.qualityConfig.RAW_PHOTOS_QUALITY || '',
+        RAW_PHOTOS_MAX_SIZE:       this.qualityConfig.RAW_PHOTOS_MAX_SIZE || '',
+        RAW_PHOTO_OVERRIDE_EXISTS: this.qualityConfig.RAW_PHOTO_OVERRIDE_EXISTS ? 'True' : 'False',
+        SAMPLE_PHOTOS_SETTINGS:    this.qualitySampleYaml,
       }
       const { data } = await useAsyncPost('/api/admin/config', payload)
       this.qualitySaving = false
@@ -665,15 +699,16 @@ export default {
       }
     },
 
-    async resampleAll() {
+    async flushSamples() {
       const { triggerAlert } = useAlertStore()
       this.resampleLoading = true
-      const { data } = await useAsyncPost('/api/admin/resample', {})
+      const { data } = await useAsyncPost('/api/admin/flush-samples', {})
       this.resampleLoading = false
       if (data.value && !data.value.ERROR) {
-        triggerAlert('success', 'Resample started', 'Processing in background')
+        const n = data.value.data?.deleted ?? 0
+        triggerAlert('success', 'Samples flushed', `${n} files deleted — will regenerate on next access`)
       } else {
-        triggerAlert('error', 'Resample failed', data.value?.details || '')
+        triggerAlert('error', 'Flush failed', data.value?.details || '')
       }
     },
 
@@ -749,6 +784,12 @@ export default {
 }
 .yaml-editor-wrap :deep(.cm-scroller) {
   overflow: auto;
+}
+
+/* Storage paths table */
+.storage-table tbody td {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
 }
 
 /* Permissions table — alternate row shading */

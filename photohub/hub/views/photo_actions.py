@@ -78,7 +78,7 @@ def delete_photo(request, filename):
         LOG.info("Deleted raw file %s" % raw_path)
 
     # Delete all sample files
-    for sample in settings.SAMPLE_PHOTOS_SETTINGS:
+    for sample in get_setting('SAMPLE_PHOTOS_SETTINGS'):
         sample_path = getSamplePath(filename, sample["name"])
         if default_storage.exists(sample_path):
             default_storage.delete(sample_path)

@@ -69,6 +69,7 @@
 - ✅ Tag colors (tag and group level)
 - ⬜ Tags currently managed via YAML at app init
 - ⬜ Future: tag management UI for logged-in users (add / delete / rename tags and groups)
+- ⬜ Tag & group descriptions — display descriptions (defined in YAML) as tooltips or info text in the tag editor, filter panel, and admin preview
 
 ## Admin / Setup page
 

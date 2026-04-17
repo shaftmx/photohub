@@ -9,10 +9,10 @@ Access: admin only (is_staff).
 import json
 import yaml
 import shutil
-import threading
 from django.conf import settings
 from django.views.decorators.http import require_http_methods
-from ..utils import admin_required, json_decode, Response, generate_photo_samples, getRawPath
+from django.core.files.storage import default_storage
+from ..utils import admin_required, json_decode, Response, get_setting, getSamplePath
 from ..errors import ErrorRequest, ErrorUnexpected
 from .. import models
 
@@ -41,14 +41,6 @@ def _set_config_value(key, value):
     else:
         models.AppConfig.objects.update_or_create(key=key, defaults={'value': str(value)})
 
-
-def _get_effective_sample_settings():
-    """Return SAMPLE_PHOTOS_SETTINGS as a list (from DB or settings.py)."""
-    try:
-        raw = models.AppConfig.objects.get(key='SAMPLE_PHOTOS_SETTINGS').value
-        return yaml.safe_load(raw)
-    except models.AppConfig.DoesNotExist:
-        return settings.SAMPLE_PHOTOS_SETTINGS
 
 
 @admin_required
@@ -109,23 +101,17 @@ def _disk_usage(path):
 
 @admin_required
 @require_http_methods(["POST"])
-def resample_all(request):
-    """Regenerate all samples for all published photos using current SAMPLE_PHOTOS_SETTINGS."""
-    def _run():
-        # Patch settings at runtime with DB override if present
-        sample_settings = _get_effective_sample_settings()
-        original = settings.SAMPLE_PHOTOS_SETTINGS
-        settings.SAMPLE_PHOTOS_SETTINGS = sample_settings
-        try:
-            photos = models.Photo.objects.filter(published=True)
-            for photo in photos:
-                try:
-                    generate_photo_samples(photo.filename)
-                except Exception as e:
-                    pass
-        finally:
-            settings.SAMPLE_PHOTOS_SETTINGS = original
-
-    thread = threading.Thread(target=_run, daemon=True)
-    thread.start()
-    return Response(200, data={"message": "Resample started in background"})
+def flush_samples(request):
+    """Delete all sample files. They will be regenerated lazily on next access."""
+    from ..logger import LOG
+    sample_settings = get_setting('SAMPLE_PHOTOS_SETTINGS')
+    photos = models.Photo.objects.all()
+    deleted = 0
+    for photo in photos:
+        for sample in sample_settings:
+            path = getSamplePath(photo.filename, sample["name"])
+            if default_storage.exists(path):
+                default_storage.delete(path)
+                deleted += 1
+    LOG.info("Flush samples: deleted %d files" % deleted)
+    return Response(200, data={"deleted": deleted})

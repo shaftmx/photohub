@@ -140,7 +140,7 @@ def upload_photo(request):
 
         # If the picture/md5 already exist: override it or skip based on RAW_PHOTO_OVERRIDE_EXISTS setting
         if default_storage.exists(photo_path):
-            if settings.RAW_PHOTO_OVERRIDE_EXISTS:
+            if get_setting('RAW_PHOTO_OVERRIDE_EXISTS'):
                 # Remove to replace existing file
                 default_storage.delete(photo_path)
             else:

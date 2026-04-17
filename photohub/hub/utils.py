@@ -3,13 +3,37 @@ from .errors import *
 from django.contrib.auth import authenticate
 from django.http import JsonResponse
 import json
+import yaml
 import hashlib
 from os.path import join as p_join
 from django.conf import settings
 from PIL import Image, ExifTags, ImageCms
 from django.core.files.storage import default_storage
-from django.conf import settings
 from os.path import basename
+
+
+def get_setting(key):
+    """Return the effective value for a runtime-overridable setting.
+    Reads AppConfig (DB) first; falls back to settings.py if not set.
+    Used for: RAW_PHOTOS_QUALITY, RAW_PHOTOS_MAX_SIZE, RAW_PHOTO_OVERRIDE_EXISTS,
+    SAMPLE_PHOTOS_SETTINGS.
+    """
+    from . import models
+    try:
+        raw = models.AppConfig.objects.get(key=key).value
+        # SAMPLE_PHOTOS_SETTINGS is stored as YAML string, return parsed list
+        if key == 'SAMPLE_PHOTOS_SETTINGS':
+            return yaml.safe_load(raw)
+        # RAW_PHOTOS_MAX_SIZE is stored as string, cast to int
+        if key == 'RAW_PHOTOS_MAX_SIZE':
+            return int(raw) if raw else None
+        # RAW_PHOTO_OVERRIDE_EXISTS stored as 'True'/'False'
+        if key == 'RAW_PHOTO_OVERRIDE_EXISTS':
+            return raw in ('True', 'true', '1')
+        # RAW_PHOTOS_QUALITY: empty string means None
+        return raw or None
+    except models.AppConfig.DoesNotExist:
+        return getattr(settings, key, None)
 
 # Role helper — returns "admin" / "contributor" / "member" / "unknown"
 def get_role(user):
@@ -103,10 +127,11 @@ def get_photo_root_paths():
     # "raw": "/static/raw",
     # "xs": "/static/cache/samples/xs",
     # "_sizes": {"xs": 400, "s": 800, ...}  — max_size per sample, used by frontend to pick the right sample
+    sample_settings = get_setting('SAMPLE_PHOTOS_SETTINGS')
     paths = {"raw": p_join("/", basename(settings.MEDIA_ROOT), settings.RAW_PHOTOS_PATH)}
-    for sample in settings.SAMPLE_PHOTOS_SETTINGS:
+    for sample in sample_settings:
         paths[sample["name"]] = p_join("/", basename(settings.MEDIA_ROOT), settings.SAMPLE_PHOTOS_PATH, sample["name"])
-    paths["_sizes"] = {sample["name"]: sample["max_size"] for sample in settings.SAMPLE_PHOTOS_SETTINGS}
+    paths["_sizes"] = {sample["name"]: sample["max_size"] for sample in sample_settings}
     return paths
 
 
@@ -135,7 +160,7 @@ def generate_photo_samples(filename):
         image_raw = Image.open(default_storage.open(raw_photo_path))
         icc_profile = image_raw.info.get("icc_profile")
         # If this process is really slow, we could thing of doing the thumbnail from the previous size instead of raw each time
-        for sample in sorted(settings.SAMPLE_PHOTOS_SETTINGS, key=lambda d: d['max_size'], reverse=True):
+        for sample in sorted(get_setting('SAMPLE_PHOTOS_SETTINGS'), key=lambda d: d['max_size'], reverse=True):
             image_sample = image_raw.copy()
             max_size = (sample["max_size"], sample["max_size"])
             image_sample.thumbnail(size=max_size)
@@ -171,15 +196,16 @@ def save_photo(file, photo_path, owner):
 
 def write_raw_photo(file, photo_path):
     # If no QUALITY or MAX SIZE restriction defined, simply save the raw file
-    if settings.RAW_PHOTOS_QUALITY is not None or settings.RAW_PHOTOS_MAX_SIZE is not None:
-        quality = settings.RAW_PHOTOS_QUALITY or "keep"
+    raw_quality = get_setting('RAW_PHOTOS_QUALITY')
+    raw_max_size = get_setting('RAW_PHOTOS_MAX_SIZE')
+    if raw_quality is not None or raw_max_size is not None:
+        quality = raw_quality or "keep"
         with Image.open(file) as image_raw:
             icc_profile = image_raw.info.get("icc_profile")
             exif = image_raw.info.get("exif")
-            quality = settings.RAW_PHOTOS_QUALITY or "keep"
 
-            if settings.RAW_PHOTOS_MAX_SIZE is not None:
-                max_size = (settings.RAW_PHOTOS_MAX_SIZE,settings.RAW_PHOTOS_MAX_SIZE)
+            if raw_max_size is not None:
+                max_size = (raw_max_size, raw_max_size)
                 image_raw.thumbnail(size=max_size)
 
              # Same in Memory hack as generatePhotoSamples
@@ -280,7 +306,7 @@ from . import models
 import datetime
 def create_photo_in_db(file, filename, owner):
         # If the picture is already in db, skip
-        if not settings.RAW_PHOTO_OVERRIDE_EXISTS and models.Photo.objects.filter(filename=filename).exists():
+        if not get_setting('RAW_PHOTO_OVERRIDE_EXISTS') and models.Photo.objects.filter(filename=filename).exists():
             LOG.info("Picture already in db, skip metadatas")
             return
 

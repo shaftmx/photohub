@@ -75,5 +75,5 @@ urlpatterns = [
 
     # Admin — config / photo quality (admin only)
     path("admin/config", admin_config.config_view, name="admin_config"),
-    path("admin/resample", admin_config.resample_all, name="admin_resample"),
+    path("admin/flush-samples", admin_config.flush_samples, name="admin_flush_samples"),
 ]

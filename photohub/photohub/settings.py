@@ -167,6 +167,12 @@ SAMPLE_PHOTOS_PATH = 'cache/samples'
 
 
 # ─── Photo processing ─────────────────────────────────────────────────────────
+#
+# NOTE: RAW_PHOTOS_QUALITY, RAW_PHOTOS_MAX_SIZE, RAW_PHOTO_OVERRIDE_EXISTS and
+# SAMPLE_PHOTOS_SETTINGS can all be overridden at runtime via the Admin panel
+# (Photo quality tab). Once changed there, the value stored in AppConfig (DB)
+# takes precedence and the env var / value below is no longer read.
+# Values below are the initial defaults only.
 
 # Env: RAW_PHOTOS_QUALITY — Pillow JPEG quality preset applied when saving raw photos.
 # Any of: web_low, web_medium, web_high, web_maximum, web_very_high
@@ -203,7 +209,6 @@ RAW_PHOTO_OVERRIDE_EXISTS = strtobool(os.environ.get('RAW_PHOTO_OVERRIDE_EXISTS'
 #   m  (1200px) — fullscreen display on mobile
 #   l  (2000px) — fullscreen display on desktop
 #   xl (4000px) — commented out; if needed for downloads, generate on-the-fly from raw
-# Not overridable via env vars.
 SAMPLE_PHOTOS_SETTINGS = [
     {"name": "xs", "max_size": 400,  "quality": "web_medium"},
     {"name": "s",  "max_size": 800,  "quality": "web_medium"},
