@@ -598,7 +598,7 @@ export default {
       ])
       if (yamlRes.data.value && !yamlRes.data.value.ERROR) {
         this.tagsYaml = yamlRes.data.value.data?.yaml || ''
-        this.tagsEmpty = !this.tagsYaml.trim()
+        this.tagsEmpty = (tagsRes.data.value?.data?.tag_groups?.length ?? 0) === 0
       }
       if (tagsRes.data.value && !tagsRes.data.value.ERROR) {
         this.tagGroups = tagsRes.data.value.data?.tag_groups || []
