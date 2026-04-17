@@ -65,6 +65,7 @@ class View(models.Model):
     description = models.TextField(blank=True)
     public = models.BooleanField(default=False)
     share_link = models.CharField(max_length=512, blank=True)
+    share_link_expires_at = models.DateTimeField(null=True, blank=True)
     cover = models.ForeignKey(Photo, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
     sort_by = models.CharField(max_length=50, default='date')    # date / upload_date / rating / filename
     sort_dir = models.CharField(max_length=4, default='desc')    # asc / desc

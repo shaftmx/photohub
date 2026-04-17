@@ -51,6 +51,7 @@ urlpatterns = [
     path("views/<int:view_id>/update", views_api.update_view, name="update_view"),
     path("views/<int:view_id>/delete", views_api.delete_view, name="delete_view"),
     path("views/<int:view_id>/share-link", views_api.generate_share_link, name="generate_share_link"),
+    path("views/<int:view_id>/share-link/expiry", views_api.set_share_link_expiry, name="set_share_link_expiry"),
     path("views/<int:view_id>/share-link/revoke", views_api.revoke_share_link, name="revoke_share_link"),
     path("views/<int:view_id>/photos", views_api.get_view_photos, name="get_view_photos"),
 

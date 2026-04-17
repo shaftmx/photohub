@@ -47,14 +47,23 @@
               title="Share link"
             ></v-btn>
           </template>
-          <v-card min-width="360" class="pa-3">
-            <div class="text-body-2 font-weight-medium mb-3">Private share link</div>
+          <v-card min-width="380" class="pa-3">
+            <div class="d-flex align-center mb-3 gap-2">
+              <span class="text-body-2 font-weight-medium">Private share link</span>
+              <template v-if="view.share_link && view.share_link_expires_at">
+                <v-chip v-if="isExpired" size="x-small" color="error" variant="tonal">Expired</v-chip>
+                <v-chip v-else size="x-small" color="warning" variant="tonal">
+                  Expires {{ formatExpiry(view.share_link_expires_at) }}
+                </v-chip>
+              </template>
+            </div>
+
             <template v-if="view.share_link">
-              <!-- URL field — small font to fit UUID url -->
+              <!-- URL field -->
               <v-text-field
                 :model-value="shareUrl"
                 density="compact" variant="outlined" readonly hide-details
-                class="mb-1" style="font-size: 12px;"
+                class="mb-3" style="font-size: 12px;"
               >
                 <template v-slot:append-inner>
                   <v-btn size="x-small" variant="text" :color="copied ? 'success' : 'default'"
@@ -64,13 +73,21 @@
                   </v-btn>
                 </template>
               </v-text-field>
-              <div class="d-flex ga-2 mt-2">
+
+              <!-- Expiry picker -->
+              <ExpiryPicker v-model:preset="expiryPreset" v-model:date="expiryDate" class="mb-2"></ExpiryPicker>
+              <v-btn size="small" variant="tonal" class="text-none mb-3" :loading="savingExpiry"
+                @click="saveExpiry">Save expiry</v-btn>
+
+              <v-divider class="mb-3"></v-divider>
+              <div class="d-flex ga-2">
                 <v-btn size="small" variant="tonal" color="primary" prepend-icon="mdi-refresh"
                   :loading="generatingLink" @click="confirmRegenerate = true">Regenerate</v-btn>
                 <v-spacer></v-spacer>
                 <v-btn size="small" variant="text" color="error" prepend-icon="mdi-link-off"
                   :loading="revokingLink" @click="revokeShareLink">Revoke</v-btn>
               </div>
+
               <!-- Regenerate warning -->
               <v-expand-transition>
                 <div v-if="confirmRegenerate" class="mt-3 pa-2 rounded" style="background: rgba(var(--v-theme-warning), 0.08);">
@@ -83,10 +100,13 @@
                 </div>
               </v-expand-transition>
             </template>
+
             <template v-else>
               <p class="text-caption text-medium-emphasis mb-3">
                 Generate a link to share this private view in read-only mode.
               </p>
+              <!-- Expiry picker for new link -->
+              <ExpiryPicker v-model:preset="expiryPreset" v-model:date="expiryDate" class="mb-3"></ExpiryPicker>
               <v-btn block variant="tonal" color="primary" prepend-icon="mdi-link-plus"
                 :loading="generatingLink" @click="generateShareLink">Generate link</v-btn>
             </template>
@@ -175,6 +195,7 @@
 import SortControls from '@/components/SortControls.vue'
 import DisplayPhoto from '@/components/DisplayPhoto.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
+import ExpiryPicker from '@/components/ExpiryPicker.vue'
 import { useAuthStore } from '../stores/auth.js'
 const authStore = useAuthStore()
 </script>
@@ -206,6 +227,9 @@ export default {
     revokingLink: false,
     copied: false,
     confirmRegenerate: false,
+    expiryPreset: null,
+    expiryDate: null,
+    savingExpiry: false,
     // Delete dialog
     confirmDeleteDialog: false,
   }),
@@ -266,6 +290,11 @@ export default {
       this.paths = result.data.value.data.paths
       this.sortBy = sortBy || this.view.sort_by
       this.sortDir = this.view.sort_dir
+      if (this.view.share_link_expires_at) {
+        const d = new Date(this.view.share_link_expires_at)
+        this.expiryPreset = 'custom'
+        this.expiryDate = d.toISOString().slice(0, 10)
+      }
     },
 
     async applySort() {
@@ -315,13 +344,30 @@ export default {
     async generateShareLink() {
       this.generatingLink = true
       const id = this.$route.params.id
-      const { data, error } = await useAsyncPost(`/api/views/${id}/share-link`, {})
+      const payload = this.expiryIso ? { expires_at: this.expiryIso } : {}
+      const { data, error } = await useAsyncPost(`/api/views/${id}/share-link`, payload)
       this.generatingLink = false
       if (!error.value && !data.value?.ERROR) {
-        this.view = { ...this.view, share_link: data.value.data.share_link }
+        this.view = { ...this.view, share_link: data.value.data.share_link, share_link_expires_at: data.value.data.share_link_expires_at }
         this.copied = false
         this.confirmRegenerate = false
       }
+    },
+
+    async saveExpiry() {
+      this.savingExpiry = true
+      const id = this.$route.params.id
+      const { data, error } = await useAsyncPost(`/api/views/${id}/share-link/expiry`, { expires_at: this.expiryIso || null })
+      this.savingExpiry = false
+      if (!error.value && !data.value?.ERROR) {
+        this.view = { ...this.view, share_link_expires_at: data.value.data.share_link_expires_at }
+      }
+    },
+
+    formatExpiry(isoStr) {
+      if (!isoStr) return ''
+      const d = new Date(isoStr)
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
     },
 
     async revokeShareLink() {
@@ -347,6 +393,22 @@ export default {
       return this.view.share_link
         ? `${window.location.origin}/views/${this.view.share_link}`
         : ''
+    },
+    isExpired() {
+      if (!this.view.share_link_expires_at) return false
+      return new Date(this.view.share_link_expires_at) < new Date()
+    },
+    expiryIso() {
+      if (!this.expiryPreset) return null
+      if (this.expiryPreset === 'custom') {
+        if (!this.expiryDate) return null
+        return new Date(`${this.expiryDate}T23:59:59`).toISOString()
+      }
+      const hours = { '1h': 1, '3h': 3, '1d': 24, '1w': 168, '1m': 720 }[this.expiryPreset]
+      if (!hours) return null
+      const d = new Date()
+      d.setHours(d.getHours() + hours)
+      return d.toISOString()
     },
   },
 }

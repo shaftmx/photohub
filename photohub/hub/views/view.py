@@ -1,4 +1,5 @@
 import uuid
+from django.utils import timezone
 from ..logger import LOG
 from ..utils import *
 from django.views.decorators.http import require_http_methods
@@ -24,6 +25,7 @@ def _serialize_view(v):
         "cover_hash_path": genHasingPath(v.cover.filename) if v.cover else None,
         "has_custom_order": models.ViewPhotoOrder.objects.filter(view=v).exists(),
         "share_link": v.share_link or None,
+        "share_link_expires_at": v.share_link_expires_at.isoformat() if v.share_link_expires_at else None,
         "filter_tags": [
             {"id": t.id, "name": t.name, "color": t.color or t.tag_group.color, "group_name": t.tag_group.name}
             for t in v.filter_tags.all()
@@ -342,13 +344,50 @@ def generate_share_link(request, view_id):
     except models.View.DoesNotExist:
         return ErrorResponse("NotFound", 404, "View not found")
 
+    body, _ = json_decode(request.body)
     v.share_link = str(uuid.uuid4())
+    v.share_link_expires_at = _parse_expires_at(body.get("expires_at") if body else None)
     v.save()
-    return Response(200, data={"share_link": v.share_link})
+    return Response(200, data={"share_link": v.share_link, "share_link_expires_at": v.share_link_expires_at.isoformat() if v.share_link_expires_at else None})
+
+
+def _parse_expires_at(value):
+    """Parse an ISO datetime string to an aware datetime, or return None."""
+    if not value:
+        return None
+    from datetime import datetime
+    try:
+        dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        if dt.tzinfo is None:
+            from django.utils.timezone import make_aware
+            dt = make_aware(dt)
+        return dt
+    except (ValueError, AttributeError):
+        return None
 
 
 #
-# DELETE /api/views/<id>/share-link — revoke the share token
+# POST /api/views/<id>/share-link/expiry — update expiry without changing the token
+#
+@admin_or_contributor_required
+@require_http_methods(["POST"])
+def set_share_link_expiry(request, view_id):
+    try:
+        v = models.View.objects.get(id=view_id)
+    except models.View.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "View not found")
+
+    body, err = json_decode(request.body)
+    if err:
+        return ErrorRequest(details=err)
+
+    v.share_link_expires_at = _parse_expires_at(body.get("expires_at"))
+    v.save()
+    return Response(200, data={"share_link_expires_at": v.share_link_expires_at.isoformat() if v.share_link_expires_at else None})
+
+
+#
+# POST /api/views/<id>/share-link/revoke — revoke the share token
 #
 @admin_or_contributor_required
 @require_http_methods(["POST"])
@@ -359,8 +398,9 @@ def revoke_share_link(request, view_id):
         return ErrorResponse("NotFound", 404, "View not found")
 
     v.share_link = ''
+    v.share_link_expires_at = None
     v.save()
-    return Response(200, data={"share_link": None})
+    return Response(200, data={"share_link": None, "share_link_expires_at": None})
 
 
 #
@@ -372,5 +412,8 @@ def get_shared_view_photos(request, token):
         v = models.View.objects.get(share_link=token)
     except models.View.DoesNotExist:
         return ErrorResponse("NotFound", 404, "Shared view not found")
+
+    if v.share_link_expires_at and v.share_link_expires_at < timezone.now():
+        return ErrorResponse("Forbidden", 403, "Share link has expired")
 
     return _build_view_photos_response(request, v)
