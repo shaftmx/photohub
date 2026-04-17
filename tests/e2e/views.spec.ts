@@ -626,7 +626,7 @@ test.describe('Views — share link', () => {
     await page.goto(`/views/${viewId}`)
     await page.locator('button[title="Share link"]').click()
     await expect(page.getByText('Private share link')).toBeVisible()
-    await page.getByRole('button', { name: 'Generate link' }).click()
+    await page.getByRole('button', { name: 'Generate link', exact: true }).click()
     await page.waitForLoadState('networkidle')
     // URL field now visible with a share URL
     await expect(page.locator('input[readonly]').first()).toBeVisible()

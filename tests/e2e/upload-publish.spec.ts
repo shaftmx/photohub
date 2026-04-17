@@ -16,7 +16,7 @@ test.describe('Upload', () => {
   test('upload a single JPEG file', async ({ page }) => {
     await page.getByLabel('File input', { exact: true }).setInputFiles(FIXTURE_PHOTO)
     await expect(page.getByRole('button', { name: 'Upload' })).toBeEnabled()
-    await page.getByRole('button', { name: 'Upload' }).click()
+    await page.getByRole('button', { name: 'Upload', exact: true }).click()
     // Success alert: "N file(s) uploaded"
     await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })
     // Uploaded file appears in the list
@@ -25,7 +25,7 @@ test.describe('Upload', () => {
 
   test('upload button navigates to Unpublished', async ({ page }) => {
     await page.getByLabel('File input', { exact: true }).setInputFiles(FIXTURE_PHOTO)
-    await page.getByRole('button', { name: 'Upload' }).click()
+    await page.getByRole('button', { name: 'Upload', exact: true }).click()
     await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })
     // Navigate to unpublished via the icon button that appears after upload
     await page.locator('button .mdi-tag-arrow-right-outline').click()
@@ -34,7 +34,7 @@ test.describe('Upload', () => {
 
   test('upload multiple files at once', async ({ page }) => {
     await page.getByLabel('File input', { exact: true }).setInputFiles([FIXTURE_PHOTO, FIXTURE_PHOTO_2])
-    await page.getByRole('button', { name: 'Upload' }).click()
+    await page.getByRole('button', { name: 'Upload', exact: true }).click()
     await expect(page.getByText(/\d+ file.* uploaded/)).toBeVisible({ timeout: 20_000 })
   })
 
@@ -152,7 +152,7 @@ test.describe('Unpublished', () => {
     // Upload fresh photos first so the queue is guaranteed non-empty
     await navigateTo(page, 'Upload')
     await page.getByLabel('File input', { exact: true }).setInputFiles([FIXTURE_PHOTO, FIXTURE_PHOTO_2])
-    await page.getByRole('button', { name: 'Upload' }).click()
+    await page.getByRole('button', { name: 'Upload', exact: true }).click()
     await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })
     await navigateTo(page, 'Unpublished')
 

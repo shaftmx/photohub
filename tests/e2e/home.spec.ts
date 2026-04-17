@@ -67,7 +67,8 @@ test.describe('Home — unauthenticated', () => {
     await loginAs(authPage)
     await authPage.goto('/')
     await authPage.waitForLoadState('networkidle')
-    const hasPublic = await authPage.locator('.gallery-card').first().isVisible()
+    // Filter to cards without a lock icon — those are public views
+    const hasPublic = await authPage.locator('.gallery-card').filter({ hasNot: authPage.locator('i.mdi-lock') }).first().isVisible({ timeout: 3_000 }).catch(() => false)
     await authPage.close()
     if (!hasPublic) return
 
