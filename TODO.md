@@ -67,51 +67,42 @@
 ## Tags management
 
 - ✅ Tag colors (tag and group level)
-- ⬜ Tags currently managed via YAML at app init
-- ⬜ Future: tag management UI for logged-in users (add / delete / rename tags and groups)
+- ✅ Tags managed via YAML editor in admin panel (add / rename / delete tags and groups)
 - ⬜ Tag & group descriptions — display descriptions (defined in YAML) as tooltips or info text in the tag editor, filter panel, and admin preview
 
 ## Admin / Setup page
 
-- ⬜ Admin page accessible at any time when logged as admin (not only when empty)
+- ✅ Admin page accessible at any time when logged as admin (not only when empty)
   - Access restricted to `is_staff=True` users via `@staff_member_required`
   - Contributor access (group `"contributor"`) restricted to Tags tab only
-  - User created via `DJANGO_SUPERUSER_USERNAME` in entrypoint automatically has `is_staff=True`
-  - AppBar: add "Admin" link, visible only to `is_staff` and `contributor` users
-  - AppBar: display username + role badge next to it in the menu
-- ⬜ **Full admin panel** — tabbed UI, each tab visible only to users with the required role:
+  - AppBar: "Admin" link visible only to `is_staff` and `contributor` users
+  - AppBar: username + role badge displayed in the menu
+- ✅ **Full admin panel** — tabbed UI, each tab visible only to users with the required role:
 
-  - **Tab: Users** (admin only — `is_staff=True`):
+  - ✅ **Tab: Users** (admin only — `is_staff=True`):
     - List all users with their role
     - Create user: username + password, accounts created by admin only (no self-registration)
     - Delete user: photos/views `owner` field reassigned to the deleting admin's username
     - Force password reset: admin sets a new password for any user
     - Assign role to user (admin / contributor / member)
-    - Roles via native Django groups (no custom model):
-      - **Admin** — `is_staff=True` (via `createsuperuser` entrypoint) — full access
-      - **Contributor** — Django group `"contributor"` — full app access (upload, photos, views)
-        but admin panel restricted to Tags tab only
-      - **Member** — Django group `"member"` — read-only; sees public and private views +
-        photo detail (including EXIF) once logged in; cannot upload, edit, or access admin
+    - Roles via native Django groups (no custom model)
     - Groups `"contributor"` and `"member"` created via data migration on first run
-    - Check pattern: `is_staff` for admin, `user.groups.filter(name='contributor')` for contributor
 
-  - **Tab: Tags** (admin + contributor):
-    - YAML editor to add / rename / delete tags and tag groups
-    - App starts with no tags — admin creates them via this editor
-    - A `bootstrap/example-tags.yml` provided in the repo as a reference to copy-paste
+  - ✅ **Tab: Tags** (admin + contributor):
+    - YAML editor to add / rename / delete tags and tag groups (id-based rename-safe sync)
+    - App starts with no tags — "Load sample" banner when empty
     - Replaces the `/api/bootstrap` endpoint (to be removed)
 
-  - **Tab: Photo quality** (admin only):
+  - ✅ **Tab: Photo quality** (admin only):
     - Settings editable at runtime, stored in DB (`AppConfig` model, key/value)
     - Env vars set the initial defaults only; once changed here they are no longer read
-    - `settings.py` doc to be updated: "Initial default value — can be overridden at runtime via admin"
     - `RAW_PHOTOS_QUALITY` — select: None / web_low / web_medium / web_high / web_maximum
     - `RAW_PHOTOS_MAX_SIZE` — number input (px), empty = None
     - `RAW_PHOTO_OVERRIDE_EXISTS` — toggle
+    - `GENERATE_SAMPLES_ON_UPLOAD` — toggle (disable for bulk imports, lazy rebuild on access)
     - `SAMPLE_PHOTOS_SETTINGS` — YAML text editor (name / max_size / quality per sample)
-      + **Resample all** button to regenerate all existing samples with new settings
-    - Read-only info: `MEDIA_ROOT`, `DUMP_ROOT`, disk usage
+      + **Flush samples** button to delete all samples (lazy rebuild on next access)
+    - Read-only info: `MEDIA_ROOT`, `DUMP_ROOT`, disk usage bar
 
   - **Tab: Backup / export** (admin only):
     - See Export / Import section below
@@ -134,9 +125,9 @@ Views, users, and other app state → handled via a separate DB dump outside the
 
 ## Backend / API
 
-- ⬜ Resample — move to admin panel "Photo quality" tab (Resample all button)
-- ⬜ Remove `/api/bootstrap` endpoint — replaced by Tags YAML editor in admin panel
-- ⬜ Remove troubleshooting endpoints (`hub/views/troubleshooting.py`)
+- ✅ Resample — replaced by Flush samples in admin panel (lazy rebuild on access)
+- ✅ Remove `/api/bootstrap` endpoint — replaced by Tags YAML editor in admin panel
+- ✅ Remove troubleshooting endpoints (`hub/views/troubleshooting.py`)
 - ✅ Document all env vars in `settings.py`
 
 ## Future / Ideas

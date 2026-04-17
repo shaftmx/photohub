@@ -1,4 +1,3 @@
-from django.db import IntegrityError
 from ..logger import LOG
 from ..utils import *
 from django.http import JsonResponse
@@ -8,7 +7,7 @@ import re
 from django.http import HttpResponseNotFound, HttpResponse
 from django.core.files.storage import default_storage
 from os import makedirs, listdir
-from os.path import basename, isfile
+from os.path import basename
 from os.path import exists as p_exists
 from .. import models
 from django.forms.models import model_to_dict
@@ -125,85 +124,6 @@ def dump(request):
     #return Response(data="Dumped")
     # return JsonResponse({"status": "ok", "count": photos.count()})
 
-
-
-#
-# Bootstrap
-#
-def bootstrap(request):
-
-    yaml_file = "/bootstrap/bootstrap-tags.yml"
-    if not isfile(yaml_file):
-        return ErrorUnexpected(details="%s File does not exist" % yaml_file)
-
-    with open(yaml_file, "r") as f:
-        data = yaml.safe_load(f)
-
-    tag_groups = data.get("tag_groups", [])
-
-    try:
-        for tg in tag_groups:
-            # update_or_create pour le TagGroup
-            tag_group, _ = models.TagGroup.objects.update_or_create(
-                name=tg["name"],
-                defaults={
-                    "description": tg.get("description", ""),
-                    "color": tg.get("color"),
-                    "type": tg.get("type", "checkbox"),
-                },
-            )
-
-            # update_or_create pour chaque Tag
-            for t in tg.get("tags", []):
-                models.Tag.objects.update_or_create(
-                    name=t["name"],
-                    tag_group=tag_group,
-                    defaults={
-                        "description": t.get("description", ""),
-                        "color": t.get("color"),
-                    },
-                )
-    except IntegrityError as e:
-        return ErrorUnexpected(details="%s" % e)
-
-    return Response(data="Bootstraped")
-
-
-# LEGACY MANUAL BOOTSTRAP
-#    tgs = [models.TagGroup(name="pays", description="List des pays", color="red"),
-#            models.TagGroup(name="types", description="Types de paysages"),
-#            models.TagGroup(name="villes", color="blue", type="combobox")]
-#
-#    for i in tgs:
-#        try:
-#            i.save()
-#        except IntegrityError as e:
-#            if e.args[0] != 1062: # Duplicate entry
-#                return ErrorUnexpected(details="%s" % e)
-#
-#
-#    tg_pays = models.TagGroup.objects.get(name="pays")
-#    tg_type = models.TagGroup.objects.get(name="types")
-#    tg_ville = models.TagGroup.objects.get(name="villes")
-#    ts = [
-#        # Pays
-#        models.Tag(name="Madere", color="yellow", tag_group=tg_pays),
-#        models.Tag(name="France", tag_group=tg_pays),
-#        models.Tag(name="Reunion", description="Ile de la reunion", tag_group=tg_pays),
-#        # Types
-#        models.Tag(name="Montagne", tag_group=tg_type),
-#        models.Tag(name="Plage", tag_group=tg_type),
-#        # Villes
-#        models.Tag(name="Paris", description="france", color="green", tag_group=tg_ville),
-#
-#    ]
-#
-#    for i in ts:
-#        try:
-#            i.save()
-#        except IntegrityError as e:
-#            if e.args[0] != 1062: # Duplicate entry
-#                return ErrorUnexpected(details="%s" % e)
 
 
 

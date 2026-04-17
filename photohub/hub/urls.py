@@ -1,6 +1,5 @@
 from django.urls import path
 
-from .views import troubleshooting
 from .views import auth
 from .views import photo
 from .views import photo_actions
@@ -39,10 +38,6 @@ urlpatterns = [
     path("tags", tags.get_tags, name="tags"),
     path("apply_tags", tags.apply_tags, name="apply_tags"),
 
-    # Troubleshooting
-    path("prv", troubleshooting.index, name="index"),
-    path("", troubleshooting.public_index, name="public_index"),
-
     # Public / shared view access (no auth required)
     path("public/views", views_api.list_public_views, name="list_public_views"),
     path("public/views/<int:view_id>/photos", views_api.get_public_view_photos, name="get_public_view_photos"),
@@ -57,11 +52,6 @@ urlpatterns = [
     path("views/<int:view_id>/share-link", views_api.generate_share_link, name="generate_share_link"),
     path("views/<int:view_id>/share-link/revoke", views_api.revoke_share_link, name="revoke_share_link"),
     path("views/<int:view_id>/photos", views_api.get_view_photos, name="get_view_photos"),
-
-    # Admin — legacy endpoints (to be removed once admin panel is complete)
-    path("bootstrap", admin.bootstrap, name="bootstrap"),
-    path("dump", admin.dump, name="dump"),
-    path("restore", admin.restore, name="restore"),
 
     # Admin — users (admin only)
     path("admin/users", admin_users.list_users, name="admin_list_users"),
