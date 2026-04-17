@@ -2,10 +2,10 @@
   <v-container class="bg-black mb-7 pa-0">
   <v-app-bar flat class="bg-primary" :density="density">
     <v-app-bar-title>
-      <span class="logo-link" @click="$router.push({ name: 'Home' })">
+      <router-link class="logo-link" :to="{ name: 'Home' }">
         <img src="/icon.svg" alt="PhotoHub" class="logo-icon" />
         PhotoHub
-      </span>
+      </router-link>
     </v-app-bar-title>
 
     <!-- Right menu -->
@@ -28,7 +28,9 @@
             <v-divider></v-divider>
             <v-list nav density="compact">
               <v-list-item v-for="(item, index) in authItems" :key="index" :value="index"
-                color="primary" @click="menuActionClick(item.action)">
+                color="primary"
+                :to="item.route || undefined"
+                @click="item.route ? (menu = false) : menuActionClick(item.action)">
                 <template v-slot:prepend>
                   <v-icon :icon="item.icon"></v-icon>
                 </template>
@@ -52,7 +54,7 @@
           <!-- Not authenticated: minimal menu -->
           <template v-else>
             <v-list nav density="compact">
-              <v-list-item color="primary" @click="menuActionClick('Login')">
+              <v-list-item color="primary" :to="{ name: 'Login' }" @click="menu = false">
                 <template v-slot:prepend>
                   <v-icon icon="mdi-login-variant" color="primary"></v-icon>
                 </template>
@@ -102,18 +104,18 @@ export default {
     // Build the nav menu dynamically — Upload/Unpublished hidden for members
     authItems() {
       const items = [
-        { title: 'Home',   icon: 'mdi-home',          action: 'Home' },
-        { title: 'Photos', icon: 'mdi-image',          action: 'Photos' },
-        { title: 'Views',  icon: 'mdi-image-multiple', action: 'Views' },
+        { title: 'Home',   icon: 'mdi-home',          action: 'Home',   route: { name: 'Home' } },
+        { title: 'Photos', icon: 'mdi-image',          action: 'Photos', route: { name: 'Photos' } },
+        { title: 'Views',  icon: 'mdi-image-multiple', action: 'Views',  route: { name: 'Views' } },
       ]
       if (this.authStore.canEdit) {
-        items.push({ title: 'Upload',      icon: 'mdi-upload',        action: 'Upload' })
-        items.push({ title: 'Unpublished', icon: 'mdi-folder-upload', action: 'Unpublished' })
+        items.push({ title: 'Upload',      icon: 'mdi-upload',        action: 'Upload',      route: { name: 'Upload' } })
+        items.push({ title: 'Unpublished', icon: 'mdi-folder-upload', action: 'Unpublished', route: { name: 'Unpublished' } })
       }
       if (this.role === 'admin' || this.role === 'contributor') {
-        items.push({ title: 'Admin', icon: 'mdi-shield-account', action: 'Admin' })
+        items.push({ title: 'Admin', icon: 'mdi-shield-account', action: 'Admin', route: { name: 'Admin' } })
       }
-      items.push({ title: 'Logout', icon: 'mdi-logout', action: 'Logout' })
+      items.push({ title: 'Logout', icon: 'mdi-logout', action: 'Logout', route: null })
       return items
     },
     // Color for the role badge chip
@@ -167,6 +169,8 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  text-decoration: none;
+  color: inherit;
 }
 
 .logo-icon {

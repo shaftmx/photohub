@@ -36,7 +36,7 @@ test.describe('Home — authenticated', () => {
   test('empty state shows "Create your first view" when no views', async ({ page }) => {
     const isEmpty = await page.getByText('No views yet').isVisible()
     if (isEmpty) {
-      await expect(page.getByRole('button', { name: 'Create your first view' })).toBeVisible()
+      await expect(page.locator('.v-btn').filter({ hasText: 'Create your first view' })).toBeVisible()
     }
   })
 

@@ -11,16 +11,17 @@
       <v-icon size="64" color="grey-lighten-1">mdi-image-album</v-icon>
       <span class="text-body-1 text-medium-emphasis">No views yet</span>
       <v-btn v-if="isAuthenticated" color="primary" variant="tonal" prepend-icon="mdi-plus"
-        @click="$router.push({ name: 'view-create' })">Create your first view</v-btn>
+        :to="{ name: 'view-create' }">Create your first view</v-btn>
     </v-sheet>
 
     <!-- Gallery grid -->
     <div v-else class="gallery-grid">
-      <div
+      <a
         v-for="view in views"
         :key="view.id"
         class="gallery-card"
-        @click="$router.push({ name: 'view-detail', params: { id: view.id } })"
+        :href="$router.resolve({ name: 'view-detail', params: { id: view.id } }).href"
+        @click.prevent="$router.push({ name: 'view-detail', params: { id: view.id } })"
       >
         <!-- Cover image -->
         <div class="gallery-cover">
@@ -46,7 +47,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </a>
     </div>
 
   </v-sheet>
@@ -116,6 +117,9 @@ export default {
   border-radius: 8px;
   overflow: hidden;
   position: relative;
+  text-decoration: none;
+  display: block;
+  color: inherit;
 }
 
 .gallery-cover {

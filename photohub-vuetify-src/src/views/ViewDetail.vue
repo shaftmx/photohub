@@ -15,7 +15,7 @@
     <!-- Header row -->
     <v-sheet class="d-flex align-center mb-2 ga-2">
       <v-btn v-if="isAuthenticated" icon="mdi-arrow-left" variant="text" density="compact" size="small"
-        title="Back to views" @click="$router.push({ name: 'Views' })"></v-btn>
+        title="Back to views" :to="{ name: 'Views' }"></v-btn>
       <span class="text-h6">{{ view.name }}</span>
       <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
       <v-chip size="x-small" :color="view.public ? 'success' : 'default'" variant="tonal">
@@ -115,7 +115,7 @@
           </v-card>
         </v-menu>
         <v-btn icon="mdi-pencil-outline" variant="text" density="compact" size="small"
-          @click="$router.push({ name: 'view-edit', params: { id: $route.params.id } })"></v-btn>
+          :to="{ name: 'view-edit', params: { id: $route.params.id } }"></v-btn>
         <v-btn icon="mdi-delete-outline" variant="text" density="compact" size="small" color="error"
           @click="confirmDeleteDialog = true"></v-btn>
       </template>
@@ -185,7 +185,7 @@
   <v-sheet v-else-if="notFound" class="d-flex flex-column align-center justify-center pa-12 ga-4">
     <v-icon size="64" color="medium-emphasis">mdi-image-off-outline</v-icon>
     <span class="text-h6 text-medium-emphasis">View not found</span>
-    <v-btn variant="tonal" prepend-icon="mdi-arrow-left" @click="$router.push({ name: 'Views' })">Back to views</v-btn>
+    <v-btn variant="tonal" prepend-icon="mdi-arrow-left" :to="{ name: 'Views' }">Back to views</v-btn>
   </v-sheet>
 
   <v-sheet v-else class="d-flex justify-center pa-12">

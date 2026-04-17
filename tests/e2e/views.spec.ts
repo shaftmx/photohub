@@ -10,7 +10,7 @@ test.describe('Views — list page', () => {
 
   test('views page shows heading and New view button', async ({ page }) => {
     await expect(page.locator('.text-h6').filter({ hasText: 'Views' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'New view' })).toBeVisible()
+    await expect(page.locator('.v-btn').filter({ hasText: 'New view' })).toBeVisible()
   })
 
   test('empty state shows create button when no views exist', async ({ page }) => {
@@ -38,7 +38,7 @@ test.describe('Views — list page', () => {
   })
 
   test('New view button navigates to create page', async ({ page }) => {
-    await page.getByRole('button', { name: 'New view' }).click()
+    await page.locator('.v-btn').filter({ hasText: 'New view' }).click()
     await expect(page).toHaveURL(/views\/create/)
     await expect(page.getByText('Create view')).toBeVisible()
   })
@@ -248,7 +248,7 @@ test.describe('Views — detail', () => {
   })
 
   test('edit button navigates to edit page', async ({ page }) => {
-    await page.locator('button').filter({ has: page.locator('.mdi-pencil-outline') }).first().click()
+    await page.locator('.v-btn').filter({ has: page.locator('.mdi-pencil-outline') }).first().click()
     await expect(page).toHaveURL(new RegExp(`views/${viewId}/edit`))
     await expect(page.getByText('Edit view')).toBeVisible()
   })
@@ -349,7 +349,7 @@ test.describe('Views — edit', () => {
     await page.waitForLoadState('networkidle')
     await expect(page.locator('.text-h6').filter({ hasText: 'Renamed View' })).toBeVisible({ timeout: 10_000 })
     // Rename back for afterAll cleanup
-    await page.locator('button').filter({ has: page.locator('.mdi-pencil-outline') }).first().click()
+    await page.locator('.v-btn').filter({ has: page.locator('.mdi-pencil-outline') }).first().click()
     await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').clear()
     await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill('Edit Me View')
     await page.getByRole('button', { name: 'Save' }).click()
@@ -525,7 +525,7 @@ test.describe('Views — delete from list', () => {
     await navigateTo(page, 'Views')
     const card = page.locator('.view-card').filter({ hasText: viewName })
     await card.hover()
-    await card.locator('.card-actions button').last().click() // delete button
+    await card.locator('.v-btn').filter({ has: page.locator('.mdi-delete-outline') }).click() // delete button
     // Confirm dialog
     await expect(page.locator('.v-card-title').filter({ hasText: viewName })).toBeVisible()
     await page.getByRole('button', { name: 'Delete' }).last().click()
@@ -583,7 +583,7 @@ test.describe('Views — public access', () => {
     await loginAs(page)
     await page.goto('/views/999999')
     await expect(page.getByText('View not found')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Back to views' })).toBeVisible()
+    await expect(page.locator('.v-btn').filter({ hasText: 'Back to views' })).toBeVisible()
   })
 
 })
