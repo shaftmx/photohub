@@ -1,5 +1,9 @@
 import uuid
+import zipfile
+import io
+import os
 from django.utils import timezone
+from django.http import StreamingHttpResponse
 from ..logger import LOG
 from ..utils import *
 from django.views.decorators.http import require_http_methods
@@ -417,3 +421,38 @@ def get_shared_view_photos(request, token):
         return ErrorResponse("Forbidden", 403, "Share link has expired")
 
     return _build_view_photos_response(request, v)
+
+
+#
+# GET /api/views/<id>/download?size=<size> — stream a ZIP of all photos in the view
+#
+@login_required
+@require_http_methods(["GET"])
+def download_view_zip(request, view_id):
+    try:
+        v = models.View.objects.get(id=view_id)
+    except models.View.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "View not found")
+
+    size = request.GET.get('size', 'xs')
+    photos = list(_apply_view_filters(v))
+
+    def _get_photo_path(filename):
+        if size == 'raw':
+            return p_join(settings.MEDIA_ROOT, getRawPath(filename))
+        return p_join(settings.MEDIA_ROOT, getSamplePath(filename, size))
+
+    def zip_generator():
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, mode='w', compression=zipfile.ZIP_STORED, allowZip64=True) as zf:
+            for photo in photos:
+                path = _get_photo_path(photo.filename)
+                if os.path.exists(path):
+                    zf.write(path, arcname=photo.filename)
+        yield buf.getvalue()
+
+    safe_name = "".join(c if c.isalnum() or c in "-_ " else "_" for c in v.name).strip()
+    filename = f"{safe_name}_{size}.zip"
+    response = StreamingHttpResponse(zip_generator(), content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response

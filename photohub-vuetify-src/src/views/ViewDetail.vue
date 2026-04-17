@@ -114,6 +114,25 @@
             </template>
           </v-card>
         </v-menu>
+        <!-- Download ZIP -->
+        <v-menu v-if="isAuthenticated" v-model="downloadMenu" :close-on-content-click="true" location="bottom end">
+          <template #activator="{ props: menuProps }">
+            <v-tooltip text="Download ZIP" location="bottom">
+              <template #activator="{ props: tooltipProps }">
+                <v-btn v-bind="{ ...menuProps, ...tooltipProps }" icon="mdi-download-outline" variant="text" density="compact" size="small"></v-btn>
+              </template>
+            </v-tooltip>
+          </template>
+          <v-card min-width="180">
+            <v-list density="compact" nav>
+              <v-list-subheader>Download ZIP</v-list-subheader>
+              <v-list-item v-for="size in downloadSizes" :key="size.key" :title="size.label"
+                @click="downloadZip(size.key)">
+                <template #prepend><v-icon size="18">mdi-folder-zip-outline</v-icon></template>
+              </v-list-item>
+            </v-list>
+          </v-card>
+        </v-menu>
         <v-btn icon="mdi-pencil-outline" variant="text" density="compact" size="small"
           :to="{ name: 'view-edit', params: { id: $route.params.id } }"></v-btn>
         <v-btn icon="mdi-delete-outline" variant="text" density="compact" size="small" color="error"
@@ -234,6 +253,8 @@ export default {
     savingExpiry: false,
     // Delete dialog
     confirmDeleteDialog: false,
+    // Download
+    downloadMenu: false,
   }),
 
   mounted() {
@@ -366,6 +387,11 @@ export default {
       }
     },
 
+    downloadZip(size) {
+      const id = this.$route.params.id
+      window.location.href = `/api/views/${id}/download?size=${size}`
+    },
+
     formatExpiry(isoStr) {
       if (!isoStr) return ''
       const d = new Date(isoStr)
@@ -391,6 +417,13 @@ export default {
   },
 
   computed: {
+    downloadSizes() {
+      const sizes = Object.keys(this.paths).filter(k => k !== '_sizes' && k !== 'raw')
+      const sizeMeta = this.paths._sizes || {}
+      const items = sizes.map(k => ({ key: k, label: sizeMeta[k] ? `${k.toUpperCase()} (${sizeMeta[k]}px)` : k.toUpperCase() }))
+      items.push({ key: 'raw', label: 'RAW (original)' })
+      return items
+    },
     shareUrl() {
       return this.view.share_link
         ? `${window.location.origin}/views/${this.view.share_link}`

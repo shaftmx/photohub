@@ -54,6 +54,7 @@ urlpatterns = [
     path("views/<int:view_id>/share-link/expiry", views_api.set_share_link_expiry, name="set_share_link_expiry"),
     path("views/<int:view_id>/share-link/revoke", views_api.revoke_share_link, name="revoke_share_link"),
     path("views/<int:view_id>/photos", views_api.get_view_photos, name="get_view_photos"),
+    path("views/<int:view_id>/download", views_api.download_view_zip, name="download_view_zip"),
 
     # Admin — users (admin only)
     path("admin/users", admin_users.list_users, name="admin_list_users"),
