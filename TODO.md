@@ -162,4 +162,4 @@ Views, users, and other app state → handled via a separate DB dump outside the
     Deliverables: SVG icon (square, no text), SVG wordmark (icon + "PhotoHub" in a clean sans-serif), favicon variant (simplified for small sizes).
     Creative direction: feel free to interpret "photo" and "hub" freely — it doesn't have to be a camera or a lens. Think about concepts like collection, light, memory, connection, archive, gallery, sharing. The result should feel like a modern SaaS product icon — think Linear, Vercel, Notion level of simplicity and confidence. Surprise me.
     Do NOT use: realistic illustrations, lens flare, gradients, more than 2 colors, overly complex shapes.
-- ⬜ **Open in new tab** — most links can't be opened in a new tab via Chrome (middle-click / right-click → open in new tab); investigate: likely `@click` handlers replacing `<a href>` — convert navigation to router-link or `<a>` where possible
+- ✅ **Open in new tab** — most links can't be opened in a new tab via Chrome (middle-click / right-click → open in new tab); investigate: likely `@click` handlers replacing `<a href>` — convert navigation to router-link or `<a>` where possible
