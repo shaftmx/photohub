@@ -18,7 +18,7 @@ from .. import models
 
 
 # Keys managed via AppConfig
-CONFIG_KEYS = ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'SAMPLE_PHOTOS_SETTINGS']
+CONFIG_KEYS = ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'SAMPLE_PHOTOS_SETTINGS']
 
 
 def _get_config_value(key):
@@ -53,10 +53,11 @@ def config_view(request):
 
 def _get_config(request):
     data = {
-        "RAW_PHOTOS_QUALITY":       _get_config_value('RAW_PHOTOS_QUALITY'),
-        "RAW_PHOTOS_MAX_SIZE":      _get_config_value('RAW_PHOTOS_MAX_SIZE'),
-        "RAW_PHOTO_OVERRIDE_EXISTS": _get_config_value('RAW_PHOTO_OVERRIDE_EXISTS'),
-        "SAMPLE_PHOTOS_SETTINGS":   _get_config_value('SAMPLE_PHOTOS_SETTINGS'),
+        "RAW_PHOTOS_QUALITY":          _get_config_value('RAW_PHOTOS_QUALITY'),
+        "RAW_PHOTOS_MAX_SIZE":         _get_config_value('RAW_PHOTOS_MAX_SIZE'),
+        "RAW_PHOTO_OVERRIDE_EXISTS":   _get_config_value('RAW_PHOTO_OVERRIDE_EXISTS'),
+        "GENERATE_SAMPLES_ON_UPLOAD":  _get_config_value('GENERATE_SAMPLES_ON_UPLOAD'),
+        "SAMPLE_PHOTOS_SETTINGS":      _get_config_value('SAMPLE_PHOTOS_SETTINGS'),
         # Read-only info
         "MEDIA_ROOT": settings.MEDIA_ROOT,
         "DUMP_ROOT":  settings.DUMP_ROOT,
@@ -70,7 +71,7 @@ def _set_config(request):
     if err:
         return ErrorRequest(details=err)
 
-    for key in ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS']:
+    for key in ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD']:
         if key in body:
             _set_config_value(key, body[key])
 

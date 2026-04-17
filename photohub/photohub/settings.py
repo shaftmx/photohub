@@ -168,11 +168,11 @@ SAMPLE_PHOTOS_PATH = 'cache/samples'
 
 # ─── Photo processing ─────────────────────────────────────────────────────────
 #
-# NOTE: RAW_PHOTOS_QUALITY, RAW_PHOTOS_MAX_SIZE, RAW_PHOTO_OVERRIDE_EXISTS and
-# SAMPLE_PHOTOS_SETTINGS can all be overridden at runtime via the Admin panel
-# (Photo quality tab). Once changed there, the value stored in AppConfig (DB)
-# takes precedence and the env var / value below is no longer read.
-# Values below are the initial defaults only.
+# NOTE: RAW_PHOTOS_QUALITY, RAW_PHOTOS_MAX_SIZE, RAW_PHOTO_OVERRIDE_EXISTS,
+# GENERATE_SAMPLES_ON_UPLOAD and SAMPLE_PHOTOS_SETTINGS can all be overridden
+# at runtime via the Admin panel (Photo quality tab). Once changed there, the
+# value stored in AppConfig (DB) takes precedence and the env var / value below
+# is no longer read. Values below are the initial defaults only.
 
 # Env: RAW_PHOTOS_QUALITY — Pillow JPEG quality preset applied when saving raw photos.
 # Any of: web_low, web_medium, web_high, web_maximum, web_very_high
@@ -198,6 +198,11 @@ RAW_PHOTOS_MAX_SIZE = int(_max_size) if _max_size else None
 #   False           — skip entirely: returns HTTP 202 "Picture already exist".
 #                     Neither the file on disk nor the DB record is updated.
 RAW_PHOTO_OVERRIDE_EXISTS = strtobool(os.environ.get('RAW_PHOTO_OVERRIDE_EXISTS', 'True'))
+
+# Env: GENERATE_SAMPLES_ON_UPLOAD — whether to generate sample files immediately at upload time.
+#   True  (default) — samples generated synchronously during upload.
+#   False           — samples generated lazily on first access. Speeds up bulk imports.
+GENERATE_SAMPLES_ON_UPLOAD = strtobool(os.environ.get('GENERATE_SAMPLES_ON_UPLOAD', 'True'))
 
 # Sample (resized) versions generated for each uploaded photo.
 # The frontend picks the appropriate sample automatically based on the grid

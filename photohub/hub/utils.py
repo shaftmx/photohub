@@ -27,8 +27,8 @@ def get_setting(key):
         # RAW_PHOTOS_MAX_SIZE is stored as string, cast to int
         if key == 'RAW_PHOTOS_MAX_SIZE':
             return int(raw) if raw else None
-        # RAW_PHOTO_OVERRIDE_EXISTS stored as 'True'/'False'
-        if key == 'RAW_PHOTO_OVERRIDE_EXISTS':
+        # Boolean keys stored as 'True'/'False'
+        if key in ('RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD'):
             return raw in ('True', 'true', '1')
         # RAW_PHOTOS_QUALITY: empty string means None
         return raw or None

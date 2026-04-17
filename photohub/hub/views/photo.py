@@ -150,9 +150,10 @@ def upload_photo(request):
         if _err is not None:
             return ErrorUnexpected(details="save_photo '%s' - %s" % (file.name, _err), trace=_err)
 
-        _err = generate_photo_samples(photo_filename)
-        if _err is not None:
-            return ErrorUnexpected(details="%s" % _err, trace=_err)
+        if get_setting('GENERATE_SAMPLES_ON_UPLOAD'):
+            _err = generate_photo_samples(photo_filename)
+            if _err is not None:
+                return ErrorUnexpected(details="%s" % _err, trace=_err)
         
     # from time import sleep
     #sleep(1) # Troubleshoot slow upload to work on progressbar

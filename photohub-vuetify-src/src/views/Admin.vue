@@ -299,6 +299,18 @@
               persistent-hint
             ></v-switch>
 
+            <v-switch
+              v-model="qualityConfig.GENERATE_SAMPLES_ON_UPLOAD"
+              :true-value="true"
+              :false-value="false"
+              label="Generate samples on upload"
+              color="primary"
+              density="compact"
+              class="mb-2 ml-2"
+              hint="GENERATE_SAMPLES_ON_UPLOAD — disable to skip sample generation at upload time; samples are generated lazily on first access. Useful for bulk imports."
+              persistent-hint
+            ></v-switch>
+
             <v-btn color="primary" variant="flat" class="text-none mt-4" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
 
             <!-- Disk usage bar -->
@@ -647,6 +659,7 @@ export default {
         const cfg = data.value.data || {}
         // Normalize boolean (backend may return '1'/'0'/True/False/'True'/'False')
         cfg.RAW_PHOTO_OVERRIDE_EXISTS = ['True', 'true', '1', 1, true].includes(cfg.RAW_PHOTO_OVERRIDE_EXISTS)
+        cfg.GENERATE_SAMPLES_ON_UPLOAD = ['True', 'true', '1', 1, true].includes(cfg.GENERATE_SAMPLES_ON_UPLOAD)
         // Normalize null-ish values
         if (!cfg.RAW_PHOTOS_QUALITY) cfg.RAW_PHOTOS_QUALITY = null
         if (!cfg.RAW_PHOTOS_MAX_SIZE) cfg.RAW_PHOTOS_MAX_SIZE = null
@@ -687,7 +700,8 @@ export default {
       const payload = {
         RAW_PHOTOS_QUALITY:        this.qualityConfig.RAW_PHOTOS_QUALITY || '',
         RAW_PHOTOS_MAX_SIZE:       this.qualityConfig.RAW_PHOTOS_MAX_SIZE || '',
-        RAW_PHOTO_OVERRIDE_EXISTS: this.qualityConfig.RAW_PHOTO_OVERRIDE_EXISTS ? 'True' : 'False',
+        RAW_PHOTO_OVERRIDE_EXISTS:  this.qualityConfig.RAW_PHOTO_OVERRIDE_EXISTS ? 'True' : 'False',
+        GENERATE_SAMPLES_ON_UPLOAD: this.qualityConfig.GENERATE_SAMPLES_ON_UPLOAD ? 'True' : 'False',
         SAMPLE_PHOTOS_SETTINGS:    this.qualitySampleYaml,
       }
       const { data } = await useAsyncPost('/api/admin/config', payload)
