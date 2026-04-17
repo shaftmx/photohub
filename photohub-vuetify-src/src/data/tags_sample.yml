@@ -5,12 +5,9 @@ tag_groups:
     type: "combobox"
     tags:
       - name: "Madere"
-        description: "Île portugaise dans l’Atlantique"
         color: "red"
       - name: "France"
-        description: "Pays d’Europe occidentale"
       - name: "Reunion"
-        description: "Île française de l’océan Indien"
 
   - name: "types"
     description: "Catégories de paysages"
