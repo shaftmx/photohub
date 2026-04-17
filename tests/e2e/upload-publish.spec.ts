@@ -10,12 +10,12 @@ test.describe('Upload', () => {
 
   test('upload page is accessible', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Upload files' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Upload' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Upload', exact: true })).toBeDisabled()
   })
 
   test('upload a single JPEG file', async ({ page }) => {
     await page.getByLabel('File input', { exact: true }).setInputFiles(FIXTURE_PHOTO)
-    await expect(page.getByRole('button', { name: 'Upload' })).toBeEnabled()
+    await expect(page.getByRole('button', { name: 'Upload', exact: true })).toBeEnabled()
     await page.getByRole('button', { name: 'Upload', exact: true }).click()
     // Success alert: "N file(s) uploaded"
     await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })

@@ -9,7 +9,7 @@ test.describe('Views — list page', () => {
   })
 
   test('views page shows heading and New view button', async ({ page }) => {
-    await expect(page.getByText('Views')).toBeVisible()
+    await expect(page.locator('.text-h6').filter({ hasText: 'Views' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'New view' })).toBeVisible()
   })
 
@@ -65,7 +65,7 @@ test.describe('Views — create', () => {
 
   test('create a view with only a name', async ({ page }) => {
     const name = `Test View ${Date.now()}`
-    await page.locator('.v-text-field input').first().fill(name)
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill(name)
     await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled()
     await page.getByRole('button', { name: 'Save' }).click()
     await expect(page).toHaveURL(/views\/\d+/, { timeout: 15_000 })
@@ -77,7 +77,7 @@ test.describe('Views — create', () => {
 
   test('create a view with description, public toggle and sort', async ({ page }) => {
     const name = `Full View ${Date.now()}`
-    await page.locator('.v-text-field input').first().fill(name)
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill(name)
     await page.locator('.v-textarea textarea').first().fill('A test description with **markdown**')
     await page.locator('.v-switch input').click({ force: true }) // toggle public
     // Change sort to Upload date
@@ -93,7 +93,7 @@ test.describe('Views — create', () => {
 
   test('create a view with No tags filter mode', async ({ page }) => {
     const name = `No Tags View ${Date.now()}`
-    await page.locator('.v-text-field input').first().fill(name)
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill(name)
     await page.locator('button:has(.mdi-tag-off-outline)').first().click()
     await page.waitForLoadState('networkidle')
     await page.getByRole('button', { name: 'Save' }).click()
@@ -105,7 +105,7 @@ test.describe('Views — create', () => {
 
   test('create a view with favorite filter', async ({ page }) => {
     const name = `Favorites View ${Date.now()}`
-    await page.locator('.v-text-field input').first().fill(name)
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill(name)
     await page.locator('button[title*="avorite"]').first().click()
     await page.waitForLoadState('networkidle')
     await page.getByRole('button', { name: 'Save' }).click()
@@ -117,7 +117,7 @@ test.describe('Views — create', () => {
 
   test('create a view with No filter mode', async ({ page }) => {
     const name = `No Filter View ${Date.now()}`
-    await page.locator('.v-text-field input').first().fill(name)
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill(name)
     await page.locator('button:has(.mdi-filter-off-outline)').first().click()
     await page.waitForLoadState('networkidle')
     await page.getByRole('button', { name: 'Save' }).click()
@@ -129,7 +129,7 @@ test.describe('Views — create', () => {
 
   test('create a view with rating filter', async ({ page }) => {
     const name = `Rating View ${Date.now()}`
-    await page.locator('.v-text-field input').first().fill(name)
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill(name)
     await page.locator('button[title="3 stars"]').click()
     await page.waitForLoadState('networkidle')
     await page.getByRole('button', { name: 'Save' }).click()
@@ -180,7 +180,7 @@ test.describe('Views — detail', () => {
     const page = await browser.newPage()
     await loginAs(page)
     await page.goto('/views/create')
-    await page.locator('.v-text-field input').first().fill('Detail Test View')
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill('Detail Test View')
     await page.getByRole('button', { name: 'Save' }).click()
     await page.waitForURL(/views\/\d+/, { timeout: 15_000 })
     viewId = page.url().match(/views\/(\d+)/)?.[1] || ''
@@ -297,7 +297,7 @@ test.describe('Views — edit', () => {
     const page = await browser.newPage()
     await loginAs(page)
     await page.goto('/views/create')
-    await page.locator('.v-text-field input').first().fill('Edit Me View')
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill('Edit Me View')
     await page.getByRole('button', { name: 'Save' }).click()
     await page.waitForURL(/views\/\d+/, { timeout: 15_000 })
     viewId = page.url().match(/views\/(\d+)/)?.[1] || ''
@@ -321,7 +321,7 @@ test.describe('Views — edit', () => {
   })
 
   test('edit page pre-fills name from existing view', async ({ page }) => {
-    await expect(page.locator('.v-text-field input').first()).toHaveValue('Edit Me View')
+    await expect(page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input')).toHaveValue('Edit Me View')
   })
 
   test('edit page pre-fills filter mode', async ({ page }) => {
@@ -335,7 +335,7 @@ test.describe('Views — edit', () => {
   })
 
   test('edit name and save', async ({ page }) => {
-    const nameInput = page.locator('.v-text-field input').first()
+    const nameInput = page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input')
     await nameInput.clear()
     await nameInput.fill('Renamed View')
     await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled()
@@ -350,8 +350,8 @@ test.describe('Views — edit', () => {
     await expect(page.locator('.text-h6').filter({ hasText: 'Renamed View' })).toBeVisible({ timeout: 10_000 })
     // Rename back for afterAll cleanup
     await page.locator('button').filter({ has: page.locator('.mdi-pencil-outline') }).first().click()
-    await page.locator('.v-text-field input').first().clear()
-    await page.locator('.v-text-field input').first().fill('Edit Me View')
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').clear()
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill('Edit Me View')
     await page.getByRole('button', { name: 'Save' }).click()
     await expect(page).toHaveURL(new RegExp(`views/${viewId}$`), { timeout: 15_000 })
   })
@@ -408,7 +408,7 @@ test.describe('Views — custom order', () => {
     const page = await browser.newPage()
     await loginAs(page)
     await page.goto('/views/create')
-    await page.locator('.v-text-field input').first().fill('Custom Order View')
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill('Custom Order View')
     await page.getByRole('button', { name: 'Save' }).click()
     await page.waitForURL(/views\/\d+/, { timeout: 15_000 })
     viewId = page.url().match(/views\/(\d+)/)?.[1] || ''
@@ -517,7 +517,7 @@ test.describe('Views — delete from list', () => {
     // Use a unique name to avoid conflicts with leftover data from previous runs
     const viewName = `To Delete View ${Date.now()}`
     await page.goto('/views/create')
-    await page.locator('.v-text-field input').first().fill(viewName)
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill(viewName)
     await page.getByRole('button', { name: 'Save' }).click()
     await page.waitForURL(/views\/\d+/, { timeout: 15_000 })
 
@@ -545,7 +545,7 @@ test.describe('Views — public access', () => {
     const page = await browser.newPage()
     await loginAs(page)
     await page.goto('/views/create')
-    await page.locator('.v-text-field input').first().fill('Public Access View')
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill('Public Access View')
     // Toggle public
     await page.locator('.v-switch input[type="checkbox"]').first().check({ force: true })
     await page.getByRole('button', { name: 'Save' }).click()
@@ -598,7 +598,7 @@ test.describe('Views — share link', () => {
     const page = await browser.newPage()
     await loginAs(page)
     await page.goto('/views/create')
-    await page.locator('.v-text-field input').first().fill('Share Link View')
+    await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').fill('Share Link View')
     await page.getByRole('button', { name: 'Save' }).click()
     await page.waitForURL(/views\/\d+/, { timeout: 15_000 })
     viewId = page.url().match(/views\/(\d+)/)?.[1] || ''
@@ -638,7 +638,7 @@ test.describe('Views — share link', () => {
     await loginAs(page)
     await page.goto(`/views/${viewId}`)
     await page.locator('button[title="Share link"]').click()
-    await page.waitForLoadState('networkidle')
+    await expect(page.locator('input[readonly]').first()).toBeVisible({ timeout: 5_000 })
     const shareUrl = await page.locator('input[readonly]').first().inputValue()
     const token = shareUrl.split('/views/')[1]
 
@@ -669,9 +669,9 @@ test.describe('Views — share link', () => {
     await page.goto(`/views/${viewId}`)
     await page.locator('button[title="Share link"]').click()
     await page.waitForLoadState('networkidle')
-    await page.getByRole('button', { name: 'Regenerate' }).click()
+    await page.getByRole('button', { name: 'Regenerate', exact: true }).click()
     await expect(page.getByText('This will invalidate the current link')).toBeVisible()
-    await page.getByRole('button', { name: 'Cancel' }).click()
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(page.getByText('This will invalidate the current link')).not.toBeVisible()
   })
 
@@ -679,12 +679,12 @@ test.describe('Views — share link', () => {
     await loginAs(page)
     await page.goto(`/views/${viewId}`)
     await page.locator('button[title="Share link"]').click()
-    await page.waitForLoadState('networkidle')
+    await expect(page.locator('input[readonly]').first()).toBeVisible({ timeout: 5_000 })
     const shareUrl = await page.locator('input[readonly]').first().inputValue()
     const token = shareUrl.split('/views/')[1]
 
     // Revoke
-    await page.getByRole('button', { name: 'Revoke' }).click()
+    await page.getByRole('button', { name: 'Revoke', exact: true }).click()
     await page.waitForLoadState('networkidle')
     // Menu closes, share button back to outline (no active link)
     await expect(page.locator('button[title="Share link"]')).toBeVisible()
