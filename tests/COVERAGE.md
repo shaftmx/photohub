@@ -213,6 +213,9 @@ Total: **124 tests** across 5 spec files.
 - Tag filter in views (creating a view with specific tags, verifying filter is applied)
 - Share link expiry: setting, displaying, and enforcing expiry
 
+**Tags**
+- Tag & group description tooltips (hover on info icon in filter panel and tag editor)
+
 **Admin**
 - Admin panel tabs (Users, Tags, Photo quality, Backup)
 - Tag YAML editor

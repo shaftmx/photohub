@@ -67,7 +67,7 @@
 
 - ✅ Tag colors (tag and group level)
 - ✅ Tags managed via YAML editor in admin panel (add / rename / delete tags and groups)
-- ⬜ Tag & group descriptions — display descriptions (defined in YAML) as tooltips or info text in the tag editor, filter panel, and admin preview
+- ✅ Tag & group descriptions — display descriptions (defined in YAML) as tooltips or info text in the tag editor, filter panel, and admin preview
 
 ## Admin / Setup page
 
