@@ -23,9 +23,15 @@
       style="min-width: 18ch"
     >
       <!-- Group header with color indicator -->
-      <h4>
-        <v-icon :color="group.color || 'grey'" icon="mdi-square-rounded" size="small" class="mr-1"></v-icon>
+      <h4 class="d-flex align-center ga-1" style="line-height:1">
+        <v-icon :color="group.color || 'grey'" icon="mdi-square-rounded" size="small"></v-icon>
         {{ group.name }}
+        <v-tooltip v-if="group.description" location="right" max-width="260" content-class="tag-desc-tooltip">
+          <template #activator="{ props }">
+            <v-icon v-bind="props" size="13" class="text-medium-emphasis" style="opacity:0.55; cursor:help; vertical-align:middle">mdi-information-outline</v-icon>
+          </template>
+          {{ group.description }}
+        </v-tooltip>
       </h4>
 
       <!-- Regular tags (checkbox): chips with filter toggle -->
@@ -48,7 +54,9 @@
           variant="outlined"
           filter
           :color="tag.color"
-        >{{ tag.name }}</v-chip>
+        >{{ tag.name }}
+          <v-tooltip v-if="tag.description" activator="parent" location="top" max-width="220" content-class="tag-desc-tooltip">{{ tag.description }}</v-tooltip>
+        </v-chip>
       </v-chip-group>
 
       <!-- Dynamic tags (combobox): searchable + user can type new values -->
