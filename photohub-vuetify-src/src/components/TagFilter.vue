@@ -54,7 +54,6 @@
       <!-- Dynamic tags (combobox): searchable + user can type new values -->
       <v-autocomplete
         v-if="group.type == 'combobox'"
-        return-object
         closable-chips
         chips
         clearable
@@ -62,20 +61,23 @@
         density="compact"
         variant="outlined"
         hide-details
+        autocomplete="new-password"
         class="mb-4 combobox-compact"
         :color="group.color"
         :menu-props="{ contentClass: 'combobox-menu' }"
         item-title="name"
+        item-value="name"
         :items="group.tags"
-        :model-value="modelValue[group.name] || []"
-        @update:model-value="onGroupUpdate(group.name, $event)"
+        :model-value="(modelValue[group.name] || []).map(t => t.name || t)"
+        @update:model-value="onComboUpdate(group.name, group.tags, $event)"
       >
         <template v-slot:chip="{ item, index, props }">
-          <v-chip v-if="index < 1" v-bind="props"
+          <v-chip v-if="index < 1"
             variant="outlined" size="small" rounded="lg"
-            class="tag-chip"
-            :style="{ '--chip-color': item.raw.color || group.color }">
-            {{ item.title }}
+            closable
+            :color="item.color || group.color"
+            @click:close="props['onClick:close']?.()">
+            {{ item.name }}
           </v-chip>
           <span v-else-if="index === 1" class="text-caption text-medium-emphasis align-self-center">
             +{{ (modelValue[group.name] || []).length - 1 }}
@@ -142,6 +144,12 @@ export default {
         ...this.modelValue,
         [groupName]: selectedTags,
       })
+    },
+
+    // For combobox groups: v-autocomplete emits name strings, convert back to tag objects
+    onComboUpdate(groupName, groupTags, names) {
+      const tags = names.map(name => groupTags.find(t => t.name === name) || { name })
+      this.onGroupUpdate(groupName, tags)
     },
   },
 }

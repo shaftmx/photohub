@@ -59,11 +59,12 @@
         @update:model-value="onGroupUpdate(group.name, $event)"
       >
         <template v-slot:chip="{ item, index, props }">
-          <v-chip v-if="index < 1" v-bind="props"
+          <v-chip v-if="index < 1"
             variant="outlined" size="small" rounded="lg"
-            class="tag-chip"
-            :style="{ '--chip-color': group.tags.find(t => t.name === item.title)?.color || group.color }">
-            {{ item.title }}
+            closable
+            :color="group.tags.find(t => t.name === item)?.color || group.color"
+            @click:close="props['onClick:close']?.()">
+            {{ item }}
           </v-chip>
           <span v-else-if="index === 1" class="text-caption text-medium-emphasis align-self-center">
             +{{ (modelValue[group.name] || []).length - 1 }}

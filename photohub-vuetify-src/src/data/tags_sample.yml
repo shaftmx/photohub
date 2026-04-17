@@ -6,13 +6,11 @@ tag_groups:
     tags:
       - name: "Madere"
         description: "Île portugaise dans l’Atlantique"
-        color: "#FFD700"
+        color: "red"
       - name: "France"
         description: "Pays d’Europe occidentale"
-        color: "#0055A4"
       - name: "Reunion"
         description: "Île française de l’océan Indien"
-        color: "#FF4500"
 
   - name: "types"
     description: "Catégories de paysages"
@@ -21,7 +19,6 @@ tag_groups:
     tags:
       - name: "Montagne"
         description: "Zones montagneuses"
-        color: "#228B22"
       - name: "Plage"
         description: "Bords de mer et sable"
         color: "#1E90FF"
@@ -33,4 +30,3 @@ tag_groups:
     tags:
       - name: "Paris"
         description: "Capitale de la France"
-        color: "#800080"
