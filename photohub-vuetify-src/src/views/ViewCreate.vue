@@ -1,4 +1,8 @@
 <template>
+  <TagPhotos ref="tagPhotos" @closed="fetchPreview(); tagPhotosVisible = true"
+    :paths="paths" :allPhotos="photos" :selectedPhotosFilenames="selectedFilenames">
+  </TagPhotos>
+
   <DisplayPhoto
     ref="displayPhoto"
     :photos="photos"
@@ -9,7 +13,7 @@
     @photoUnpublished="onPhotoUnpublished"
   />
 
-  <v-sheet class="pa-4">
+  <v-sheet v-if="tagPhotosVisible" class="pa-4">
 
     <!-- Header -->
     <v-sheet class="d-flex align-center mb-4 ga-2">
@@ -243,13 +247,82 @@
       </v-card>
     </v-dialog>
 
+    <!-- Bulk selection controls (hidden in drag mode) -->
+    <v-sheet v-if="!dragMode" class="d-flex mb-2 align-center ga-2">
+      <span class="text-body-2 text-medium-emphasis">{{ selectedFilenames.length }} selected</span>
+      <v-btn
+        @click="selectedFilenames.length > 0 ? deselectAll() : selectAll()"
+        size="small" color="secondary" variant="tonal" density="compact"
+        :prepend-icon="selectedFilenames.length > 0 ? 'mdi-select-off' : 'mdi-select-all'"
+      >{{ selectedFilenames.length > 0 ? 'Deselect all' : 'Select all' }}</v-btn>
+      <v-menu>
+        <template v-slot:activator="{ props }">
+          <v-btn v-bind="props" size="small" color="primary" variant="tonal" density="compact"
+            append-icon="mdi-chevron-down" :disabled="selectedFilenames.length < 1">Actions</v-btn>
+        </template>
+        <v-list density="compact">
+          <v-list-item prepend-icon="mdi-tag-arrow-right" @click="openBulkTag">
+            <v-list-item-title>Tag</v-list-item-title>
+          </v-list-item>
+          <v-list-item prepend-icon="mdi-heart" @click="bulkSetFavorite(true)">
+            <v-list-item-title>Add to favorites</v-list-item-title>
+          </v-list-item>
+          <v-list-item prepend-icon="mdi-heart-off-outline" @click="bulkSetFavorite(false)">
+            <v-list-item-title>Remove from favorites</v-list-item-title>
+          </v-list-item>
+          <v-list-item prepend-icon="mdi-cloud-off-outline" @click="confirmBulkUnpublishDialog = true">
+            <v-list-item-title>Unpublish</v-list-item-title>
+          </v-list-item>
+          <v-divider></v-divider>
+          <v-list-item prepend-icon="mdi-delete" @click="confirmBulkDeleteDialog = true" class="text-error">
+            <v-list-item-title>Delete</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+    </v-sheet>
+
+    <!-- Confirm bulk unpublish -->
+    <v-dialog v-model="confirmBulkUnpublishDialog" persistent width="auto">
+      <v-card>
+        <v-card-title class="text-h5">Unpublish {{ selectedFilenames.length }} photo{{ selectedFilenames.length !== 1 ? 's' : '' }}?</v-card-title>
+        <v-card-text>Selected photos will be moved back to Unpublished.</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="secondary" density="compact" variant="text" @click="confirmBulkUnpublishDialog = false">Cancel</v-btn>
+          <v-btn color="primary" density="compact" variant="tonal" @click="confirmBulkUnpublishDialog = false; bulkUnpublish()">Unpublish</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Confirm bulk delete -->
+    <v-dialog v-model="confirmBulkDeleteDialog" persistent width="auto">
+      <v-card>
+        <v-card-title class="text-h5">Delete {{ selectedFilenames.length }} photo{{ selectedFilenames.length !== 1 ? 's' : '' }}?</v-card-title>
+        <v-card-text>This will <strong>permanently delete</strong> the selected photos. This cannot be undone.</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="secondary" density="compact" variant="text" @click="confirmBulkDeleteDialog = false">Cancel</v-btn>
+          <v-btn color="error" density="compact" variant="tonal" @click="confirmBulkDeleteDialog = false; bulkDelete()">Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Preview grid -->
     <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" show-favorite show-cover :cover-filename="coverFilename"
       :draggable="dragMode"
-      @item-click="onGridItemClick"
+      @item-click="(photo, index, event) => dragMode ? null : selectDeselect(photo, index, event)"
       @toggle-favorite="toggleFavorite"
       @set-cover="setCover"
       @reorder="onReorder">
+      <template #overlay="{ photo, index }">
+        <div class="selection-overlay" :class="{ selected: selectedFilenames.includes(photo.filename) }"
+          @click.stop="selectDeselect(photo, index, $event)">
+          <v-icon v-if="selectedFilenames.includes(photo.filename)" color="white" size="28">mdi-check-circle</v-icon>
+        </div>
+        <button class="detail-btn" @click.stop="$refs.displayPhoto.displayPhoto(photo.filename)" title="Details">
+          <v-icon size="16" color="white" style="opacity: 0.7;">mdi-information-outline</v-icon>
+        </button>
+      </template>
     </PhotoGrid>
 
   </v-sheet>
@@ -257,6 +330,7 @@
 
 <script setup>
 import TagFilter from '@/components/TagFilter.vue'
+import TagPhotos from '@/components/TagPhotos.vue'
 import SortControls from '@/components/SortControls.vue'
 import DisplayPhoto from '@/components/DisplayPhoto.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
@@ -308,6 +382,12 @@ export default {
     localPhotoOrder: null,      // null = untouched, [] = clear, [filenames] = custom order
     preDragPhotos: [],          // snapshot for cancel
     preDragPhotoOrder: null,    // snapshot for cancel
+    // Bulk selection
+    selectedFilenames: [],
+    lastSelectedIndex: null,
+    confirmBulkDeleteDialog: false,
+    confirmBulkUnpublishDialog: false,
+    tagPhotosVisible: true,
   }),
 
   computed: {
@@ -424,6 +504,7 @@ export default {
         this.dragMode = false
         this.localPhotoOrder = null
         this.hasCustomOrder = this.dbHasCustomOrder
+        this.deselectAll()
       }
 
       this.loading = true
@@ -453,6 +534,85 @@ export default {
 
     onGridItemClick(photo) {
       this.$refs.displayPhoto.displayPhoto(photo.filename)
+    },
+
+    selectDeselect(photo, index, event) {
+      if (event?.shiftKey && this.lastSelectedIndex !== null) {
+        const from = Math.min(this.lastSelectedIndex, index)
+        const to = Math.max(this.lastSelectedIndex, index)
+        const range = this.photos.slice(from, to + 1).map(p => p.filename)
+        const allSelected = range.every(f => this.selectedFilenames.includes(f))
+        if (allSelected) {
+          this.selectedFilenames = this.selectedFilenames.filter(f => !range.includes(f))
+        } else {
+          range.forEach(f => { if (!this.selectedFilenames.includes(f)) this.selectedFilenames.push(f) })
+        }
+      } else {
+        const idx = this.selectedFilenames.indexOf(photo.filename)
+        if (idx === -1) this.selectedFilenames.push(photo.filename)
+        else this.selectedFilenames.splice(idx, 1)
+        this.lastSelectedIndex = index ?? null
+      }
+    },
+
+    selectAll() {
+      this.selectedFilenames = this.photos.map(p => p.filename)
+    },
+
+    deselectAll() {
+      this.selectedFilenames = []
+      this.lastSelectedIndex = null
+    },
+
+    openBulkTag() {
+      this.tagPhotosVisible = false
+      this.$nextTick(() => this.$refs.tagPhotos.open())
+    },
+
+    async bulkSetFavorite(newValue) {
+      const { triggerAlert } = useAlertStore()
+      for (const filename of this.selectedFilenames) {
+        const { data, error } = await useAsyncPost(`/api/photos/${filename}/update`, { favorite: newValue })
+        if (error.value) {
+          triggerAlert('error', 'Save error', error.value)
+        } else if (data.value?.ERROR) {
+          triggerAlert('error', data.value.message, data.value.details)
+        } else {
+          const photo = this.photos.find(p => p.filename === filename)
+          if (photo) photo.favorite = newValue
+        }
+      }
+      this.deselectAll()
+    },
+
+    async bulkUnpublish() {
+      const { triggerAlert } = useAlertStore()
+      for (const filename of [...this.selectedFilenames]) {
+        const { data, error } = await useAsyncPost(`/api/photos/${filename}/unpublish`, {})
+        if (error.value) {
+          triggerAlert('error', 'Unpublish error', error.value)
+        } else if (data.value?.ERROR) {
+          triggerAlert('error', data.value.message, data.value.details)
+        } else {
+          this.photos = this.photos.filter(p => p.filename !== filename)
+        }
+      }
+      this.deselectAll()
+    },
+
+    async bulkDelete() {
+      const { triggerAlert } = useAlertStore()
+      for (const filename of [...this.selectedFilenames]) {
+        const { data, error } = await useAsyncPost(`/api/photos/${filename}/delete`, {})
+        if (error.value) {
+          triggerAlert('error', 'Delete error', error.value)
+        } else if (data.value?.ERROR) {
+          triggerAlert('error', data.value.message, data.value.details)
+        } else {
+          this.photos = this.photos.filter(p => p.filename !== filename)
+        }
+      }
+      this.deselectAll()
     },
 
     onPhotoDeleted(filename) {
@@ -618,5 +778,20 @@ export default {
 <style scoped>
 .filter-panel {
   border-left: 2px solid rgba(var(--v-theme-primary), 0.4);
+}
+
+.selection-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.selection-overlay.selected {
+  background: rgba(var(--v-theme-primary), 0.45);
 }
 </style>

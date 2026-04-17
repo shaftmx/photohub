@@ -47,11 +47,11 @@
   color: #f44336;
 }
 
-/* Cover button — to the left of favorite button */
+/* Cover button — top-left corner */
 .cover-btn {
   position: absolute;
   top: 4px;
-  right: 28px;
+  left: 4px;
   background: none;
   border: none;
   cursor: pointer;
@@ -70,7 +70,7 @@
   border-radius: 50%;
 }
 
-/* Detail button (Unpublished page) — to the left of favorite button */
+/* Detail button — to the left of favorite button */
 .detail-btn {
   position: absolute;
   top: 4px;
