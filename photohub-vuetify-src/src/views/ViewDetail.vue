@@ -3,9 +3,10 @@
     ref="displayPhoto"
     :paths="paths"
     :photos="photos"
-    :view-id="$route.params.id"
+    :view-id="isUploadMode ? undefined : $route.params.id"
     :cover-filename="view.cover_filename"
-    :readonly="!authStore.canEdit"
+    :readonly="!authStore.canEdit || isUploadMode"
+    :photo-detail-endpoint="photoDetailEndpoint"
     @photoDeleted="onPhotoDeleted"
     @photoUnpublished="onPhotoUnpublished"
   ></DisplayPhoto>
@@ -14,7 +15,7 @@
 
     <!-- Header row -->
     <v-sheet class="d-flex align-center mb-2 ga-2">
-      <v-btn v-if="isAuthenticated" icon="mdi-arrow-left" variant="text" density="compact" size="small"
+      <v-btn v-if="isAuthenticated && !isUploadMode" icon="mdi-arrow-left" variant="text" density="compact" size="small"
         title="Back to views" :to="{ name: 'Views' }"></v-btn>
       <span class="text-h6">{{ view.name }}</span>
       <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
@@ -36,7 +37,16 @@
         @click="descriptionOpen = !descriptionOpen"
       ></v-btn>
       <v-spacer></v-spacer>
-      <template v-if="authStore.canEdit">
+
+      <!-- Upload mode: Upload button -->
+      <template v-if="isUploadMode">
+        <v-btn color="primary" variant="tonal" prepend-icon="mdi-upload" @click="uploadDialog = true">
+          Upload
+        </v-btn>
+      </template>
+
+      <!-- Normal mode: auth controls -->
+      <template v-else-if="authStore.canEdit">
         <!-- Share button (private views only) -->
         <v-menu v-if="!view.public" v-model="shareMenu" :close-on-content-click="false" location="bottom end">
           <template v-slot:activator="{ props }">
@@ -59,7 +69,6 @@
             </div>
 
             <template v-if="view.share_link">
-              <!-- URL field -->
               <v-text-field
                 :model-value="shareUrl"
                 density="compact" variant="outlined" readonly hide-details
@@ -74,7 +83,6 @@
                 </template>
               </v-text-field>
 
-              <!-- Expiry -->
               <div class="text-caption text-medium-emphasis mb-1">Expiry</div>
               <ExpiryPicker v-model:preset="expiryPreset" v-model:date="expiryDate" class="mb-2"></ExpiryPicker>
               <v-btn size="small" variant="text" density="compact" color="primary" :loading="savingExpiry" class="mb-3 px-1" @click="saveExpiry">
@@ -90,7 +98,6 @@
                   :loading="revokingLink" @click="revokeShareLink">Revoke</v-btn>
               </div>
 
-              <!-- Regenerate warning -->
               <v-expand-transition>
                 <div v-if="confirmRegenerate" class="mt-3 pa-2 rounded" style="background: rgba(var(--v-theme-warning), 0.08);">
                   <p class="text-caption mb-2">This will invalidate the current link. Anyone with the old link will lose access.</p>
@@ -107,13 +114,66 @@
               <p class="text-caption text-medium-emphasis mb-3">
                 Generate a link to share this private view in read-only mode.
               </p>
-              <!-- Expiry picker for new link -->
               <ExpiryPicker v-model:preset="expiryPreset" v-model:date="expiryDate" class="mb-3"></ExpiryPicker>
               <v-btn block variant="tonal" color="primary" prepend-icon="mdi-link-plus"
                 :loading="generatingLink" @click="generateShareLink">Generate link</v-btn>
             </template>
+
+            <!-- Upload link section (collapsible, requires share link) -->
+            <v-divider class="mt-3 mb-2"></v-divider>
+            <div class="d-flex align-center" :style="view.share_link ? 'cursor: pointer' : 'opacity: 0.5'" @click="view.share_link && (uploadLinkOpen = !uploadLinkOpen)">
+              <v-icon size="16" class="mr-1" :color="view.upload_link ? 'primary' : 'default'">mdi-upload-outline</v-icon>
+              <span class="text-body-2">Upload link</span>
+              <v-chip v-if="view.upload_link" size="x-small" color="primary" variant="tonal" class="ml-2">Active</v-chip>
+              <v-spacer></v-spacer>
+              <v-icon size="18">{{ uploadLinkOpen ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+            </div>
+            <v-expand-transition>
+              <div v-if="uploadLinkOpen && view.share_link" class="mt-3">
+                <template v-if="view.upload_link">
+                  <v-text-field
+                    :model-value="uploadUrl"
+                    density="compact" variant="outlined" readonly hide-details
+                    class="mb-3" style="font-size: 12px;"
+                  >
+                    <template v-slot:append-inner>
+                      <v-btn size="x-small" variant="text" :color="uploadCopied ? 'success' : 'default'"
+                        @click="copyUploadLink">
+                        <v-icon>{{ uploadCopied ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>
+                        <v-tooltip activator="parent" location="top">{{ uploadCopied ? 'Copied!' : 'Copy link' }}</v-tooltip>
+                      </v-btn>
+                    </template>
+                  </v-text-field>
+                  <div class="d-flex ga-2">
+                    <v-btn size="small" variant="tonal" color="primary" prepend-icon="mdi-refresh"
+                      :loading="generatingUploadLink" @click="confirmRevokeUpload = true">Regenerate</v-btn>
+                    <v-spacer></v-spacer>
+                    <v-btn size="small" variant="text" color="error" prepend-icon="mdi-link-off"
+                      :loading="revokingUploadLink" @click="revokeUploadLink">Revoke</v-btn>
+                  </div>
+                  <v-expand-transition>
+                    <div v-if="confirmRevokeUpload" class="mt-3 pa-2 rounded" style="background: rgba(var(--v-theme-warning), 0.08);">
+                      <p class="text-caption mb-2">This will invalidate the current upload link.</p>
+                      <div class="d-flex ga-2">
+                        <v-btn size="x-small" variant="text" @click="confirmRevokeUpload = false">Cancel</v-btn>
+                        <v-btn size="x-small" variant="tonal" color="warning" :loading="generatingUploadLink"
+                          @click="generateUploadLink">Confirm</v-btn>
+                      </div>
+                    </div>
+                  </v-expand-transition>
+                </template>
+                <template v-else>
+                  <p class="text-caption text-medium-emphasis mb-3">
+                    Generate a link to let guests upload photos to this view. Inherits the share link expiry.
+                  </p>
+                  <v-btn block variant="tonal" color="primary" prepend-icon="mdi-link-plus"
+                    :loading="generatingUploadLink" @click="generateUploadLink">Generate upload link</v-btn>
+                </template>
+              </div>
+            </v-expand-transition>
           </v-card>
         </v-menu>
+
         <!-- Download ZIP -->
         <v-menu v-if="isAuthenticated" v-model="downloadMenu" :close-on-content-click="true" location="bottom end">
           <template #activator="{ props: menuProps }">
@@ -140,7 +200,7 @@
       </template>
     </v-sheet>
 
-    <!-- Filter chips (collapsible) -->
+    <!-- Filter chips (collapsible, normal mode only) -->
     <v-expand-transition>
       <v-sheet v-if="filtersOpen" class="d-flex flex-wrap align-center ga-1 mb-2">
         <v-chip v-if="view.filter_mode === 'notags'" size="x-small" color="primary" variant="tonal" prepend-icon="mdi-tag-off-outline">No tags</v-chip>
@@ -165,7 +225,10 @@
 
     <!-- Sort + grid size slider -->
     <v-sheet class="d-flex align-center mb-2 ga-2">
-      <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" :show-custom-order="view.has_custom_order || false" @update:sortBy="applySort()" @update:sortDir="applySort()"></SortControls>
+      <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir"
+        :show-custom-order="!isUploadMode && (view.has_custom_order || false)"
+        @update:sortBy="applySort()" @update:sortDir="applySort()">
+      </SortControls>
       <v-spacer></v-spacer>
       <v-sheet class="d-flex align-end justify-end" style="max-width: 300px; width: 50%">
         <v-slider v-model="sharedDatas.gridSize" :max="sharedDatas.gridMax" :min="sharedDatas.gridMin"
@@ -176,7 +239,7 @@
     </v-sheet>
 
     <!-- Photo grid -->
-    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" :show-favorite="authStore.canEdit"
+    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" :show-favorite="authStore.canEdit && !isUploadMode"
       @item-click="photo => $refs.displayPhoto.displayPhoto(photo.filename)"
       @toggle-favorite="toggleFavorite">
     </PhotoGrid>
@@ -194,11 +257,53 @@
       </v-card>
     </v-dialog>
 
+    <!-- Upload dialog (upload mode only) -->
+    <v-dialog v-if="isUploadMode" v-model="uploadDialog" max-width="600" persistent>
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          Upload to "{{ view.name }}"
+          <v-spacer></v-spacer>
+          <v-btn icon="mdi-close" variant="text" size="small" @click="closeUploadDialog"></v-btn>
+        </v-card-title>
+        <v-card-text>
+          <v-form ref="uploadForm" v-model="uploadFormValid" @submit.prevent="onUploadSubmit">
+            <v-file-input v-model="uploadFiles" :rules="[v => !!v?.length || 'Required']" :readonly="uploading"
+              accept="image/jpeg" multiple label="Select photos" prepend-icon="mdi-camera"
+              chips show-size counter variant="solo"></v-file-input>
+            <div v-if="uploadedCount > 0" class="mt-3">
+              <v-progress-linear :model-value="uploadProgress" color="primary" rounded height="6" class="mb-2"></v-progress-linear>
+              <span class="text-caption text-medium-emphasis">{{ uploadedCount }} / {{ uploadTotalFiles }} uploaded</span>
+            </div>
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" @click="closeUploadDialog" :disabled="uploading">Cancel</v-btn>
+          <v-btn color="primary" variant="flat" :loading="uploading" :disabled="!uploadFormValid" @click="onUploadSubmit">Upload</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Upload success dialog -->
+    <v-dialog v-if="isUploadMode" v-model="uploadSuccessDialog" max-width="380">
+      <v-card>
+        <v-card-text class="d-flex flex-column align-center pa-8 ga-3">
+          <v-icon size="48" color="success">mdi-check-circle-outline</v-icon>
+          <span class="text-body-1 font-weight-medium">{{ lastUploadedCount }} photo{{ lastUploadedCount !== 1 ? 's' : '' }} uploaded</span>
+          <span class="text-caption text-medium-emphasis">They will appear in the view once reviewed.</span>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" variant="tonal" @click="uploadSuccessDialog = false; loadView()">Go to view</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
   </v-sheet>
 
   <v-sheet v-else-if="invalidToken" class="d-flex flex-column align-center justify-center pa-12 ga-4">
     <v-icon size="64" color="medium-emphasis">mdi-link-off</v-icon>
-    <span class="text-h6 text-medium-emphasis">This shared link is no longer valid</span>
+    <span class="text-h6 text-medium-emphasis">{{ isUploadMode ? 'This upload link is invalid or has expired.' : 'This shared link is no longer valid' }}</span>
   </v-sheet>
 
   <v-sheet v-else-if="notFound" class="d-flex flex-column align-center justify-center pa-12 ga-4">
@@ -223,7 +328,7 @@ const authStore = useAuthStore()
 
 <script>
 import { marked } from 'marked'
-import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
+import { useAsyncFetch, useAsyncPost, useAsyncUploadFile } from '../reactivefetch.js'
 import { useAlertStore } from '../stores/alert'
 import { getSharedDatas } from '../sharedDatas.js'
 
@@ -255,6 +360,22 @@ export default {
     confirmDeleteDialog: false,
     // Download
     downloadMenu: false,
+    // Upload link management
+    uploadLinkOpen: false,
+    generatingUploadLink: false,
+    revokingUploadLink: false,
+    uploadCopied: false,
+    confirmRevokeUpload: false,
+    // Upload mode (guest upload)
+    uploadDialog: false,
+    uploadFormValid: false,
+    uploadFiles: [],
+    uploading: false,
+    uploadedCount: 0,
+    uploadTotalFiles: 0,
+    uploadProgress: 0,
+    uploadSuccessDialog: false,
+    lastUploadedCount: 0,
   }),
 
   mounted() {
@@ -269,39 +390,48 @@ export default {
 
     async loadView({ sortBy } = {}) {
       this.loading = true
-      const param = this.$route.params.id
       const qs = sortBy ? `?sort_by=${sortBy}` : ''
-      const isToken = isNaN(param)
       let result
 
-      if (isToken) {
-        // Shared view access via token — no auth needed
-        result = await useAsyncFetch(`/api/shared_view/${param}/photos${qs}`)
-        if (!result.error.value && !result.data.value?.ERROR) {
-          this.isAuthenticated = false
-        } else {
-          // Invalid or revoked token
+      if (this.isUploadMode) {
+        const token = this.$route.params.token
+        result = await useAsyncFetch(`/api/upload_view/${token}/photos${qs}`)
+        if (result.error.value || result.data.value?.ERROR) {
           this.loading = false
           this.invalidToken = true
           return
         }
+        this.isAuthenticated = false
       } else {
-        // Normal access by ID — try auth, fallback to public
-        result = await useAsyncFetch(`/api/views/${param}/photos${qs}`)
-        if (!result.error.value && result.data.value?.ERROR === 'AuthRequired') {
-          result = await useAsyncFetch(`/api/public/views/${param}/photos${qs}`)
+        const param = this.$route.params.id
+        const isToken = isNaN(param)
+
+        if (isToken) {
+          result = await useAsyncFetch(`/api/shared_view/${param}/photos${qs}`)
           if (!result.error.value && !result.data.value?.ERROR) {
             this.isAuthenticated = false
           } else {
-            this.$router.push({ name: 'Login', query: { next: this.$route.fullPath } })
+            this.loading = false
+            this.invalidToken = true
             return
           }
-        } else if (!result.error.value && !result.data.value?.ERROR) {
-          this.isAuthenticated = true
         } else {
-          this.loading = false
-          this.notFound = true
-          return
+          result = await useAsyncFetch(`/api/views/${param}/photos${qs}`)
+          if (!result.error.value && result.data.value?.ERROR === 'AuthRequired') {
+            result = await useAsyncFetch(`/api/public/views/${param}/photos${qs}`)
+            if (!result.error.value && !result.data.value?.ERROR) {
+              this.isAuthenticated = false
+            } else {
+              this.$router.push({ name: 'Login', query: { next: this.$route.fullPath } })
+              return
+            }
+          } else if (!result.error.value && !result.data.value?.ERROR) {
+            this.isAuthenticated = true
+          } else {
+            this.loading = false
+            this.notFound = true
+            return
+          }
         }
       }
 
@@ -322,7 +452,6 @@ export default {
 
     async applySort() {
       if (this.sortBy === 'custom') {
-        // Reload from API with sort_by=custom override to get the persisted custom order
         await this.loadView({ sortBy: 'custom' })
         return
       }
@@ -404,8 +533,9 @@ export default {
       const { data, error } = await useAsyncPost(`/api/views/${id}/share-link/revoke`, {})
       this.revokingLink = false
       if (!error.value && !data.value?.ERROR) {
-        this.view = { ...this.view, share_link: null }
+        this.view = { ...this.view, share_link: null, share_link_expires_at: null, upload_link: null }
         this.shareMenu = false
+        this.uploadLinkOpen = false
       }
     },
 
@@ -414,9 +544,88 @@ export default {
       this.copied = true
       setTimeout(() => { this.copied = false }, 2000)
     },
+
+    async generateUploadLink() {
+      this.generatingUploadLink = true
+      const id = this.$route.params.id
+      const { data, error } = await useAsyncPost(`/api/views/${id}/upload-link`, {})
+      this.generatingUploadLink = false
+      if (!error.value && !data.value?.ERROR) {
+        this.view = { ...this.view, upload_link: data.value.data.upload_link }
+        this.uploadCopied = false
+        this.confirmRevokeUpload = false
+      }
+    },
+
+    async revokeUploadLink() {
+      this.revokingUploadLink = true
+      const id = this.$route.params.id
+      const { data, error } = await useAsyncPost(`/api/views/${id}/upload-link/revoke`, {})
+      this.revokingUploadLink = false
+      if (!error.value && !data.value?.ERROR) {
+        this.view = { ...this.view, upload_link: null }
+        this.uploadLinkOpen = false
+      }
+    },
+
+    copyUploadLink() {
+      navigator.clipboard.writeText(this.uploadUrl)
+      this.uploadCopied = true
+      setTimeout(() => { this.uploadCopied = false }, 2000)
+    },
+
+    closeUploadDialog() {
+      if (this.uploading) return
+      this.uploadDialog = false
+      this.uploadFiles = []
+      this.uploadedCount = 0
+      this.uploadProgress = 0
+    },
+
+    async onUploadSubmit() {
+      if (!this.uploadFormValid || this.uploading) return
+      const { triggerAlert } = useAlertStore()
+      const token = this.$route.params.token
+      this.uploading = true
+      this.uploadedCount = 0
+      this.uploadTotalFiles = this.uploadFiles.length
+      this.uploadProgress = 0
+
+      for (let i = 0; i < this.uploadFiles.length; i++) {
+        const file = this.uploadFiles[i]
+        const formData = new FormData()
+        formData.append('picture.jpg', file)
+        const { data, error } = await useAsyncUploadFile(`/api/upload_view/${token}/upload`, formData)
+        if (error.value || data.value?.ERROR) {
+          triggerAlert('error', `Upload failed: ${file.name}`, '')
+          this.uploading = false
+          return
+        }
+        this.uploadedCount++
+        this.uploadProgress = Math.round((100 * this.uploadedCount) / this.uploadTotalFiles)
+      }
+
+      this.lastUploadedCount = this.uploadedCount
+      this.uploading = false
+      this.uploadDialog = false
+      this.uploadFiles = []
+      this.uploadedCount = 0
+      this.uploadProgress = 0
+      this.uploadSuccessDialog = true
+    },
   },
 
   computed: {
+    isUploadMode() {
+      return this.$route.name === 'upload-view'
+    },
+    photoDetailEndpoint() {
+      if (this.isUploadMode) return `/api/token/${this.$route.params.token}/photos`
+      const param = this.$route.params.id
+      if (isNaN(param)) return `/api/token/${param}/photos`         // shared view token
+      if (!this.isAuthenticated) return `/api/public/views/${param}/photos`  // public view
+      return null  // authenticated — uses default /api/photos
+    },
     downloadSizes() {
       const sizes = Object.keys(this.paths).filter(k => k !== '_sizes' && k !== 'raw')
       const sizeMeta = this.paths._sizes || {}
@@ -427,6 +636,11 @@ export default {
     shareUrl() {
       return this.view.share_link
         ? `${window.location.origin}/views/${this.view.share_link}`
+        : ''
+    },
+    uploadUrl() {
+      return this.view.upload_link
+        ? `${window.location.origin}/upload_view/${this.view.upload_link}`
         : ''
     },
     isExpired() {
@@ -460,5 +674,4 @@ export default {
 .markdown-body :deep(li) { margin: 2px 0; }
 .markdown-body :deep(code) { background: rgba(0,0,0,0.07); border-radius: 3px; padding: 1px 4px; font-size: 0.85em; }
 .markdown-body :deep(a) { color: rgb(var(--v-theme-primary)); }
-
 </style>

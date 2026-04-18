@@ -141,6 +141,7 @@ export default defineComponent({
     viewId: { type: [String, Number], default: null },
     coverFilename: { type: String, default: null },
     readonly: { type: Boolean, default: false },
+    photoDetailEndpoint: { type: String, default: null },
   },
 
   emits: ['closed', 'deleted', 'unpublished'],
@@ -194,7 +195,8 @@ export default defineComponent({
       this.loading = true
 
       const { triggerAlert } = useAlertStore()
-      const { data, error } = await useAsyncFetch(`/api/photos/${filename}`)
+      const base = this.photoDetailEndpoint || '/api/photos'
+      const { data, error } = await useAsyncFetch(`${base}/${filename}`)
       if (error.value) {
         triggerAlert('error', 'Loading error', error.value)
       } else if (data.value.ERROR) {

@@ -37,6 +37,11 @@ const routes = [
         component: () => import('@/views/ViewDetail.vue'),
       },
       {
+        path: '/upload_view/:token',
+        name: 'upload-view',
+        component: () => import('@/views/ViewDetail.vue'),
+      },
+      {
         path: '/upload',
         name: 'Upload',
         component: () => import('@/views/Upload.vue'),

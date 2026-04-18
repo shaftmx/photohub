@@ -42,7 +42,11 @@ urlpatterns = [
     # Public / shared view access (no auth required)
     path("public/views", views_api.list_public_views, name="list_public_views"),
     path("public/views/<int:view_id>/photos", views_api.get_public_view_photos, name="get_public_view_photos"),
-    path("shared_view/<str:token>/photos", views_api.get_shared_view_photos, name="get_shared_view_photos"),
+    path("public/views/<int:view_id>/photos/<str:filename>", views_api.get_public_view_photo_detail, name="get_public_view_photo_detail"),
+    path("shared_view/<str:token>/photos", views_api.get_view_photos_by_token, name="get_shared_view_photos"),
+    path("upload_view/<str:token>/photos", views_api.get_view_photos_by_token, name="get_upload_view_photos"),
+    path("upload_view/<str:token>/upload", views_api.upload_view_photo, name="upload_view_photo"),
+    path("token/<str:token>/photos/<str:filename>", views_api.get_photo_detail_by_token, name="get_photo_detail_by_token"),
 
     # Views
     path("views", views_api.list_views, name="list_views"),
@@ -50,6 +54,8 @@ urlpatterns = [
     path("views/<int:view_id>", views_api.get_view, name="get_view"),
     path("views/<int:view_id>/update", views_api.update_view, name="update_view"),
     path("views/<int:view_id>/delete", views_api.delete_view, name="delete_view"),
+    path("views/<int:view_id>/upload-link", views_api.generate_upload_link, name="generate_upload_link"),
+    path("views/<int:view_id>/upload-link/revoke", views_api.revoke_upload_link, name="revoke_upload_link"),
     path("views/<int:view_id>/share-link", views_api.generate_share_link, name="generate_share_link"),
     path("views/<int:view_id>/share-link/expiry", views_api.set_share_link_expiry, name="set_share_link_expiry"),
     path("views/<int:view_id>/share-link/revoke", views_api.revoke_share_link, name="revoke_share_link"),

@@ -120,7 +120,7 @@
 
 <script setup>
 import TagPhotos from '@/components/TagPhotos.vue'
-import PhotoDetail from '@/views/PhotoDetail.vue'
+import PhotoDetail from '@/views/PhotoDetailPanel.vue'
 import SortControls from '@/components/SortControls.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
 </script>

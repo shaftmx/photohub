@@ -59,6 +59,7 @@
                 :view-id="viewId"
                 :cover-filename="coverFilename"
                 :readonly="readonly"
+                :photo-detail-endpoint="photoDetailEndpoint"
                 @deleted="onDeleted"
                 @unpublished="onUnpublished"
               />
@@ -76,7 +77,7 @@
 import { defineComponent, computed } from 'vue'
 import { useTheme } from 'vuetify'
 import { getSharedDatas } from '../sharedDatas.js'
-import PhotoDetail from '../views/PhotoDetail.vue'
+import PhotoDetail from '../views/PhotoDetailPanel.vue'
 
 export default defineComponent({
   components: { PhotoDetail },
@@ -93,6 +94,7 @@ export default defineComponent({
     viewId: { type: [String, Number], default: null },
     coverFilename: { type: String, default: null },
     readonly: { type: Boolean, default: false },
+    photoDetailEndpoint: { type: String, default: null },
   },
 
   emits: ['photoDeleted', 'photoUnpublished'],

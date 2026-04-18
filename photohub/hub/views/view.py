@@ -30,6 +30,7 @@ def _serialize_view(v):
         "has_custom_order": models.ViewPhotoOrder.objects.filter(view=v).exists(),
         "share_link": v.share_link or None,
         "share_link_expires_at": v.share_link_expires_at.isoformat() if v.share_link_expires_at else None,
+        "upload_link": v.upload_link or None,
         "filter_tags": [
             {"id": t.id, "name": t.name, "color": t.color or t.tag_group.color, "group_name": t.tag_group.name}
             for t in v.filter_tags.all()
@@ -76,6 +77,23 @@ def _apply_view_filters(v):
             photos_query = photos_query.filter(rating__lte=v.filter_rating_value, rating__gt=0)
 
     return apply_sort(photos_query, v.sort_by, v.sort_dir).distinct()
+
+
+def _resolve_token(token):
+    """Return (view, error_response) for a share or upload token.
+    Checks existence and expiry. Returns (view, None) on success."""
+    v = (
+        models.View.objects.filter(share_link=token).first() or
+        models.View.objects.filter(upload_link=token).first()
+    )
+    if not v:
+        return None, ErrorResponse("InvalidToken", 403, "Invalid or revoked token")
+    if v.share_link_expires_at and v.share_link_expires_at < timezone.now():
+        return None, ErrorResponse("Expired", 403, "Token has expired")
+    # Upload tokens also require the share_link to still be active
+    if models.View.objects.filter(upload_link=token).exists() and not v.share_link:
+        return None, ErrorResponse("Expired", 403, "Upload link has expired")
+    return v, None
 
 
 def _serialize_photo(p):
@@ -403,23 +421,20 @@ def revoke_share_link(request, view_id):
 
     v.share_link = ''
     v.share_link_expires_at = None
+    v.upload_link = ''
     v.save()
-    return Response(200, data={"share_link": None, "share_link_expires_at": None})
+    return Response(200, data={"share_link": None, "share_link_expires_at": None, "upload_link": None})
 
 
 #
-# GET /api/shared_view/<token>/photos — read-only access via share token
+# GET /api/shared_view/<token>/photos
+# GET /api/upload_view/<token>/photos
 #
 @require_http_methods(["GET"])
-def get_shared_view_photos(request, token):
-    try:
-        v = models.View.objects.get(share_link=token)
-    except models.View.DoesNotExist:
-        return ErrorResponse("NotFound", 404, "Shared view not found")
-
-    if v.share_link_expires_at and v.share_link_expires_at < timezone.now():
-        return ErrorResponse("Forbidden", 403, "Share link has expired")
-
+def get_view_photos_by_token(request, token):
+    v, err = _resolve_token(token)
+    if err:
+        return err
     return _build_view_photos_response(request, v)
 
 
@@ -456,3 +471,114 @@ def download_view_zip(request, view_id):
     response = StreamingHttpResponse(zip_generator(), content_type='application/zip')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+#
+# POST /api/views/<id>/upload-link — generate or regenerate upload token
+#
+@admin_or_contributor_required
+@require_http_methods(["POST"])
+def generate_upload_link(request, view_id):
+    try:
+        v = models.View.objects.get(id=view_id)
+    except models.View.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "View not found")
+
+    if not v.share_link:
+        return ErrorResponse("NoShareLink", 400, "A share link must exist before generating an upload link")
+
+    v.upload_link = str(uuid.uuid4())
+    v.save()
+    return Response(200, data={"upload_link": v.upload_link})
+
+
+#
+# POST /api/views/<id>/upload-link/revoke — revoke upload token
+#
+@admin_or_contributor_required
+@require_http_methods(["POST"])
+def revoke_upload_link(request, view_id):
+    try:
+        v = models.View.objects.get(id=view_id)
+    except models.View.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "View not found")
+
+    v.upload_link = ''
+    v.save()
+    return Response(200, data={"upload_link": None})
+
+
+#
+# POST /api/upload_view/<token>/upload — upload a photo in the view context
+#
+@require_http_methods(["POST"])
+def upload_view_photo(request, token):
+    v, err = _resolve_token(token)
+    if err:
+        return err
+
+    uploaded = []
+    for field_name, file in request.FILES.items():
+        photo_filename = "%s.jpg" % getMd5(file)
+        photo_path = getRawPath(photo_filename)
+
+        if default_storage.exists(photo_path):
+            if not get_setting('RAW_PHOTO_OVERRIDE_EXISTS'):
+                uploaded.append(photo_filename)
+                continue
+            default_storage.delete(photo_path)
+
+        err = save_photo(file, photo_path, owner="guest")
+        if err is not None:
+            return ErrorUnexpected(details="save_photo '%s' - %s" % (file.name, err), trace=err)
+
+        if get_setting('GENERATE_SAMPLES_ON_UPLOAD'):
+            generate_photo_samples(photo_filename)
+
+        # Auto-apply view filter tags and publish
+        photo = models.Photo.objects.get(filename=photo_filename)
+        photo.published = True
+        photo.save()
+        for tag in v.filter_tags.all():
+            photo.tags.add(tag)
+
+        uploaded.append(photo_filename)
+
+    return Response(201, data={"uploaded": len(uploaded)})
+
+
+#
+# GET /api/public/views/<view_id>/photos/<filename> — photo detail for public views
+#
+@require_http_methods(["GET"])
+def get_public_view_photo_detail(request, view_id, filename):
+    from .photo_actions import _serialize_photo_detail
+    try:
+        v = models.View.objects.get(id=view_id, public=True)
+    except models.View.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "View not found")
+    if not _apply_view_filters(v).filter(filename=filename).exists():
+        return ErrorResponse("NotFound", 404, "Photo not found in this view")
+    try:
+        p = models.Photo.objects.get(filename=filename)
+    except models.Photo.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "Photo not found")
+    return _serialize_photo_detail(p)
+
+
+#
+# GET /api/token/<token>/photos/<filename> — photo detail via share or upload token
+#
+@require_http_methods(["GET"])
+def get_photo_detail_by_token(request, token, filename):
+    from .photo_actions import _serialize_photo_detail
+    v, err = _resolve_token(token)
+    if err:
+        return err
+    if not _apply_view_filters(v).filter(filename=filename).exists():
+        return ErrorResponse("NotFound", 404, "Photo not found in this view")
+    try:
+        p = models.Photo.objects.get(filename=filename)
+    except models.Photo.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "Photo not found")
+    return _serialize_photo_detail(p)

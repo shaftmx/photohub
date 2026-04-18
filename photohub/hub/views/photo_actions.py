@@ -10,7 +10,7 @@ from django.forms.models import model_to_dict
 
 
 #
-# Get single photo detail (metadata + exif + tags)
+# Get single photo detail (metadata + exif + tags) — auth required
 #
 @login_required
 @require_http_methods(["GET"])
@@ -19,14 +19,16 @@ def get_photo(request, filename):
         p = models.Photo.objects.get(filename=filename)
     except models.Photo.DoesNotExist:
         return ErrorResponse("NotFound", 404, "Photo not found")
+    return _serialize_photo_detail(p)
 
+
+def _serialize_photo_detail(p):
     fields = ["filename", "date", "owner", "height", "width", "description", "published", "origin_filename", "favorite", "rating"]
     _p = model_to_dict(p, fields=fields)
     _p["upload_date"] = p.upload_date.isoformat() if p.upload_date else ""
     _p["date"] = p.date.isoformat() if p.date else ""
     _p["hash_path"] = genHasingPath(_p["filename"])
 
-    # Tags
     _p["tags"] = {}
     for t in p.tags.all():
         _group = t.tag_group.name
@@ -34,13 +36,11 @@ def get_photo(request, filename):
             _p["tags"][_group] = {"color": t.tag_group.color, "tags": []}
         _p["tags"][_group]["tags"].append({"name": t.name, "color": t.color})
 
-    # Exif
     _p["exif"] = {}
     for e in models.Exif.objects.filter(photo=p):
         _p["exif"][e.name] = e.value
 
-    data = {"photo": _p, "paths": get_photo_root_paths()}
-    return Response(200, data=data)
+    return Response(200, data={"photo": _p, "paths": get_photo_root_paths()})
 
 
 #
