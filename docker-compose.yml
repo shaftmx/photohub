@@ -55,6 +55,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    cpus: "1.0"
     command: python /photohub/manage.py transcode_pending
     #volumes:
     #  # Same media volume as web

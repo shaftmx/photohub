@@ -24,9 +24,15 @@ def _transcode_video(filename):
     abs_path = _get_absolute_path(raw_path)
     tmp_path = abs_path + '.transcoding.mp4'
 
+    threads = get_setting('TRANSCODE_THREADS') or 0
+    preset  = get_setting('TRANSCODE_PRESET') or 'fast'
+    crf     = get_setting('TRANSCODE_CRF') or 23
+
     result = subprocess.run(
         ['ffmpeg', '-y', '-i', abs_path,
-         '-c:v', 'libx264', '-preset', 'fast', '-movflags', '+faststart',
+         '-c:v', 'libx264', '-preset', preset, '-crf', str(crf),
+         '-threads', str(threads),
+         '-movflags', '+faststart',
          '-c:a', 'aac', '-b:a', '128k',
          tmp_path],
         capture_output=True, timeout=3600,

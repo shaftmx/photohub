@@ -18,7 +18,7 @@ from .. import models
 
 
 # Keys managed via AppConfig
-CONFIG_KEYS = ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'SAMPLE_PHOTOS_SETTINGS', 'ALLOW_VIDEO_UPLOAD', 'TRANSCODE_POLL_INTERVAL']
+CONFIG_KEYS = ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'SAMPLE_PHOTOS_SETTINGS', 'ALLOW_VIDEO_UPLOAD', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF']
 
 
 def _get_config_value(key):
@@ -60,6 +60,9 @@ def _get_config(request):
         "SAMPLE_PHOTOS_SETTINGS":      _get_config_value('SAMPLE_PHOTOS_SETTINGS'),
         "ALLOW_VIDEO_UPLOAD":          _get_config_value('ALLOW_VIDEO_UPLOAD'),
         "TRANSCODE_POLL_INTERVAL":     _get_config_value('TRANSCODE_POLL_INTERVAL'),
+        "TRANSCODE_THREADS":           _get_config_value('TRANSCODE_THREADS'),
+        "TRANSCODE_PRESET":            _get_config_value('TRANSCODE_PRESET'),
+        "TRANSCODE_CRF":               _get_config_value('TRANSCODE_CRF'),
         # Read-only info
         "MEDIA_ROOT": settings.MEDIA_ROOT,
         "DUMP_ROOT":  settings.DUMP_ROOT,
@@ -97,7 +100,7 @@ def _set_config(request):
     if err:
         return ErrorRequest(details=err)
 
-    for key in ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD', 'TRANSCODE_POLL_INTERVAL']:
+    for key in ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF']:
         if key in body:
             _set_config_value(key, body[key])
 

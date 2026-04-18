@@ -386,14 +386,35 @@
 
             <v-text-field
               v-model="qualityConfig.TRANSCODE_POLL_INTERVAL"
-              type="number"
-              label="Poll interval (seconds)"
-              density="compact"
-              variant="outlined"
-              class="mb-3"
-              hint="TRANSCODE_POLL_INTERVAL — how often the worker checks for pending videos. Default: 10"
-              persistent-hint
-              clearable
+              type="number" label="Poll interval (seconds)"
+              density="compact" variant="outlined" class="mb-3"
+              hint="How often the worker checks for pending videos. Default: 10"
+              persistent-hint clearable
+            ></v-text-field>
+
+            <v-text-field
+              v-model="qualityConfig.TRANSCODE_THREADS"
+              type="number" label="ffmpeg threads (0 = auto)"
+              density="compact" variant="outlined" class="mb-3"
+              hint="Number of CPU threads for encoding. 0 lets ffmpeg decide. Default: 0"
+              persistent-hint clearable
+            ></v-text-field>
+
+            <v-select
+              v-model="qualityConfig.TRANSCODE_PRESET"
+              :items="['ultrafast','superfast','veryfast','faster','fast','medium','slow','slower','veryslow']"
+              label="Encoding preset"
+              density="compact" variant="outlined" class="mb-3"
+              hint="Slower preset = better compression, more CPU. Default: fast"
+              persistent-hint clearable
+            ></v-select>
+
+            <v-text-field
+              v-model="qualityConfig.TRANSCODE_CRF"
+              type="number" label="CRF quality (0–51, lower = better)"
+              density="compact" variant="outlined" class="mb-3"
+              hint="Quality factor — 18 high quality, 23 default, 28 smaller files"
+              persistent-hint clearable
             ></v-text-field>
 
             <v-btn color="primary" variant="flat" class="text-none" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
@@ -1020,6 +1041,9 @@ export default {
         GENERATE_SAMPLES_ON_UPLOAD: this.qualityConfig.GENERATE_SAMPLES_ON_UPLOAD ? 'True' : 'False',
         ALLOW_VIDEO_UPLOAD:         this.qualityConfig.ALLOW_VIDEO_UPLOAD ? 'True' : 'False',
         TRANSCODE_POLL_INTERVAL:    this.qualityConfig.TRANSCODE_POLL_INTERVAL || '',
+        TRANSCODE_THREADS:          this.qualityConfig.TRANSCODE_THREADS || '',
+        TRANSCODE_PRESET:           this.qualityConfig.TRANSCODE_PRESET || '',
+        TRANSCODE_CRF:              this.qualityConfig.TRANSCODE_CRF || '',
         SAMPLE_PHOTOS_SETTINGS:    this.qualitySampleYaml,
       }
       const { data } = await useAsyncPost('/api/admin/config', payload)

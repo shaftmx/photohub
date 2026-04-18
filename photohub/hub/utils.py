@@ -22,7 +22,7 @@ def get_setting(key):
         raw = models.AppConfig.objects.get(key=key).value
         if key == 'SAMPLE_PHOTOS_SETTINGS':
             return yaml.safe_load(raw)
-        if key in ('RAW_PHOTOS_MAX_SIZE', 'TRANSCODE_POLL_INTERVAL'):
+        if key in ('RAW_PHOTOS_MAX_SIZE', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_CRF'):
             return int(raw) if raw else None
         if key in ('RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD'):
             return raw in ('True', 'true', '1')
