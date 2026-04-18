@@ -30,7 +30,7 @@
           <div class="view-card-cover">
             <img
               v-if="view.cover_filename"
-              :src="paths[coverSize] + '/' + view.cover_hash_path + '/' + view.cover_filename"
+              :src="paths[coverSize] + '/' + view.cover_hash_path + '/' + (view.cover_filename && view.cover_filename.endsWith('.mp4') ? view.cover_filename.replace('.mp4', '.jpg') : view.cover_filename)"
               class="cover-img"
             />
             <div v-else class="cover-placeholder">

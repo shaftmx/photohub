@@ -97,7 +97,8 @@ export default {
         const latlng = [photo.lat, photo.lng]
         bounds.push(latlng)
 
-        const thumbUrl = `${thumbBase}/${photo.hash_path}/${photo.filename}`
+        const thumbFile = photo.type === 'video' ? photo.filename.replace('.mp4', '.jpg') : photo.filename
+        const thumbUrl = `${thumbBase}/${photo.hash_path}/${thumbFile}`
         const popupHtml = `
           <div style="text-align:center; cursor:pointer;" data-filename="${photo.filename}">
             <img src="${thumbUrl}" style="width:120px; height:80px; object-fit:cover; border-radius:4px; display:block; margin-bottom:4px;">

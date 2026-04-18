@@ -772,7 +772,8 @@ export default {
         const sec = Math.round((Date.now() - new Date(ws.encoding_since).getTime()) / 1000)
         return `Encoding — ${sec}s`
       }
-      return 'Worker online'
+      const sec = Math.round(elapsed / 1000)
+      return `Worker online — ${sec}s ago`
     },
   },
 

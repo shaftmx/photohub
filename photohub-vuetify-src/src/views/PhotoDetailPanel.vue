@@ -179,7 +179,8 @@ export default defineComponent({
       if (!this.photo || !this.paths) return ''
       const size = this.sharedDatas.isMobile ? 'xs' : 's'
       const basePath = this.paths[size] || Object.values(this.paths)[0] || ''
-      return `${basePath}/${this.photo.hash_path}/${this.photo.filename}`
+      const thumbFilename = this.photo.type === 'video' ? this.photo.filename.replace('.mp4', '.jpg') : this.photo.filename
+      return `${basePath}/${this.photo.hash_path}/${thumbFilename}`
     },
   },
 

@@ -14,7 +14,7 @@
     >
       <div class="item-inner">
         <img
-          :src="paths[adaptivePhotoSize] + '/' + photo.hash_path + '/' + photo.filename"
+          :src="paths[adaptivePhotoSize] + '/' + photo.hash_path + '/' + (photo.type === 'video' ? photo.filename.replace('.mp4', '.jpg') : photo.filename)"
           @click="!draggable && $emit('item-click', photo, index, $event)"
         />
         <div v-if="photo.type === 'video'" class="video-overlay" @click="!draggable && $emit('item-click', photo, index, $event)">

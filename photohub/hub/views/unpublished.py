@@ -27,7 +27,7 @@ def get_unpublished(request):
     
     # excludes = ["id", "description", "published"]
     # data = [ model_to_dict(i, exclude=excludes) for i in photos ]
-    fields = ["filename", "date", "owner", "height", "width", "tags", "origin_filename", "favorite", "rating"]
+    fields = ["filename", "date", "owner", "height", "width", "tags", "origin_filename", "favorite", "rating", "type", "transcode_status", "duration"]
     
     data_photos = []
     for p in photos:

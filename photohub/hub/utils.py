@@ -157,7 +157,7 @@ def _ffprobe_video(abs_path):
     """Run ffprobe and return (width, height, duration) or raise on error."""
     result = subprocess.run(
         ['ffprobe', '-v', 'error', '-select_streams', 'v:0',
-         '-show_entries', 'stream=width,height,duration',
+         '-show_entries', 'stream=width,height,duration,tags',
          '-of', 'json', abs_path],
         capture_output=True, text=True, timeout=60,
     )
@@ -174,13 +174,19 @@ def _ffprobe_video(abs_path):
     duration = float(s.get('duration', 0) or 0)
     if not width or not height:
         raise Exception("ffprobe: could not determine video dimensions")
+    # Phone videos often have a rotate tag; swap dimensions to match display orientation
+    rotate = int(s.get('tags', {}).get('rotate', 0))
+    if rotate in (90, 270, -90, -270):
+        width, height = height, width
     return width, height, duration
 
 
 def generate_video_poster(filename):
-    """Extract a frame from a raw video and generate thumbnail samples from it."""
+    """Extract a frame from a raw video, save it as a JPG poster in raw/, then generate samples."""
     raw_path = getRawPath(filename)
     abs_raw = _get_absolute_path(raw_path)
+    poster_filename = filename.rsplit('.', 1)[0] + '.jpg'
+    poster_raw_path = getRawPath(poster_filename)
     try:
         result = subprocess.run(
             ['ffmpeg', '-y', '-i', abs_raw, '-ss', '0', '-vframes', '1',
@@ -191,32 +197,28 @@ def generate_video_poster(filename):
             raise Exception("ffmpeg poster extraction failed: %s" % result.stderr.decode())
         from io import BytesIO
         image_raw = Image.open(BytesIO(result.stdout))
-        image_raw = image_raw.convert('RGB')  # ensure JPEG-compatible mode
-        icc_profile = image_raw.info.get("icc_profile")
-        for sample in sorted(get_setting('SAMPLE_PHOTOS_SETTINGS'), key=lambda d: d['max_size'], reverse=True):
-            image_sample = image_raw.copy()
-            image_sample.thumbnail(size=(sample["max_size"], sample["max_size"]))
-            sample_path = getSamplePath(filename, sample["name"])
-            sample_file = File(BytesIO(), name=sample_path)
-            image_sample.save(sample_file, format='JPEG', quality=sample["quality"], icc_profile=icc_profile)
-            if default_storage.exists(sample_path):
-                default_storage.delete(sample_path)
-            default_storage.save(sample_path, sample_file)
-        return
+        image_raw = image_raw.convert('RGB')
+        # Update DB dimensions from the actual poster (rotation already applied by ffmpeg)
+        from . import models as _models
+        _models.Photo.objects.filter(filename=filename).update(width=image_raw.width, height=image_raw.height)
+        # Save poster JPG to raw/ so samples can be regenerated lazily like photos
+        poster_file = File(BytesIO(), name=poster_raw_path)
+        image_raw.save(poster_file, format='JPEG', quality=95)
+        if default_storage.exists(poster_raw_path):
+            default_storage.delete(poster_raw_path)
+        default_storage.save(poster_raw_path, poster_file)
+        return generate_photo_samples(filename)
     except Exception as e:
         return e
 
 
 def generate_photo_samples(filename):
     "Generate all photo samples from a raw file path"
-    from . import models as _models
-    try:
-        p = _models.Photo.objects.get(filename=filename)
-        if p.type == 'video':
-            return generate_video_poster(filename)
-    except _models.Photo.DoesNotExist:
-        pass
-    raw_photo_path =  getRawPath(filename)
+    # For videos, use the poster JPG as the source image (same sample keys, transparent to callers)
+    if filename.endswith('.mp4'):
+        raw_photo_path = getRawPath(filename.rsplit('.', 1)[0] + '.jpg')
+    else:
+        raw_photo_path = getRawPath(filename)
     try:
         image_raw = Image.open(default_storage.open(raw_photo_path))
         icc_profile = image_raw.info.get("icc_profile")
@@ -225,7 +227,9 @@ def generate_photo_samples(filename):
             image_sample = image_raw.copy()
             max_size = (sample["max_size"], sample["max_size"])
             image_sample.thumbnail(size=max_size)
-            sample_path = getSamplePath(filename, sample["name"])
+            # Video samples stored as .jpg so browsers serve them with correct content-type
+            sample_key = filename.rsplit('.', 1)[0] + '.jpg' if filename.endswith('.mp4') else filename
+            sample_path = getSamplePath(sample_key, sample["name"])
             
             # PIL .save require a file. But the file is not created yet.
             # First implementation to give a file was done with default_storage.open(sample_path, "w+"). But

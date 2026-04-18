@@ -77,6 +77,13 @@ def delete_photo(request, filename):
         default_storage.delete(raw_path)
         LOG.info("Deleted raw file %s" % raw_path)
 
+    # Delete video poster JPG from raw/ if applicable
+    if filename.endswith('.mp4'):
+        poster_path = getRawPath(filename.rsplit('.', 1)[0] + '.jpg')
+        if default_storage.exists(poster_path):
+            default_storage.delete(poster_path)
+            LOG.info("Deleted video poster %s" % poster_path)
+
     # Delete all sample files
     for sample in get_setting('SAMPLE_PHOTOS_SETTINGS'):
         sample_path = getSamplePath(filename, sample["name"])
