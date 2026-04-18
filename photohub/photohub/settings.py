@@ -204,6 +204,12 @@ RAW_PHOTO_OVERRIDE_EXISTS = strtobool(os.environ.get('RAW_PHOTO_OVERRIDE_EXISTS'
 #   False           — samples generated lazily on first access. Speeds up bulk imports.
 GENERATE_SAMPLES_ON_UPLOAD = strtobool(os.environ.get('GENERATE_SAMPLES_ON_UPLOAD', 'False'))
 
+ALLOW_VIDEO_UPLOAD      = strtobool(os.environ.get('ALLOW_VIDEO_UPLOAD', 'False'))
+TRANSCODE_POLL_INTERVAL = int(os.environ.get('TRANSCODE_POLL_INTERVAL', '10'))
+TRANSCODE_THREADS       = int(os.environ.get('TRANSCODE_THREADS', '0'))
+TRANSCODE_PRESET        = os.environ.get('TRANSCODE_PRESET', 'fast')
+TRANSCODE_CRF           = int(os.environ.get('TRANSCODE_CRF', '23'))
+
 # Sample (resized) versions generated for each uploaded photo.
 # The frontend picks the appropriate sample automatically based on the grid
 # slider value (PhotoGrid.vue computed adaptivePhotoSize), using the max_size
