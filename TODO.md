@@ -130,7 +130,7 @@ Views, users, and other app state → handled via a separate DB dump outside the
 - ✅ Document all env vars in `settings.py`
 
 ## Future / Ideas
-- ⬜ Panoramic photo handling — special resize/display if ratio > 1/3 ?
+- ✅ Panoramic photo handling — handled naturally by the flex grid (item width scales with aspect ratio)
 - ⬜ Non-JPEG support — `save_photo` in `hub/utils.py` only handles JPEG
 - ✅ **Video support** — `Photo.type` field already in model
   - **Formats**: MP4, MOV and others accepted via ffmpeg; re-encoded to MP4/H264 web-optimised (`-movflags +faststart`) at ingestion

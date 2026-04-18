@@ -531,12 +531,20 @@ export default {
         params.set('rating_mode', this.filterRatingMode)
       }
       if (this.filterMediaType !== 'all') params.set('media_type', this.filterMediaType)
-      // Use 'date' as sort for the preview API (custom order is view-specific)
-      const sortByParam = this.sortBy === 'custom' ? 'date' : this.sortBy
-      params.set('sort_by', sortByParam)
-      params.set('sort_dir', this.sortDir)
 
-      const { data, error } = await useAsyncFetch('/api/photos?' + params.toString())
+      // In edit mode with an existing custom order selected, load from the view endpoint
+      // so the preview reflects the saved order (the photos API doesn't know about ViewPhotoOrder).
+      const id = this.$route.params.id
+      let fetchUrl
+      if (this.isEditMode && this.dbHasCustomOrder && this.sortBy === 'custom') {
+        fetchUrl = `/api/views/${id}/photos?sort_by=custom`
+      } else {
+        params.set('sort_by', this.sortBy)
+        params.set('sort_dir', this.sortDir)
+        fetchUrl = '/api/photos?' + params.toString()
+      }
+
+      const { data, error } = await useAsyncFetch(fetchUrl)
       this.loading = false
       if (error.value) return
       this.photos = data.value.data.photos
@@ -663,12 +671,9 @@ export default {
     },
 
     onSortByChange() {
-      if (this.sortBy !== 'custom') {
-        this.dragMode = false
-        this.localPhotoOrder = null
-        this.fetchPreview()
-      }
-      // Switching TO 'custom': no fetch needed, photos already loaded; show State B
+      this.dragMode = false
+      this.localPhotoOrder = null
+      this.fetchPreview()
     },
 
     createCustomOrder() {
