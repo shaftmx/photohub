@@ -24,9 +24,9 @@ def _transcode_video(filename):
     abs_path = _get_absolute_path(raw_path)
     tmp_path = abs_path + '.transcoding.mp4'
 
-    threads = get_setting('TRANSCODE_THREADS') or 0
-    preset  = get_setting('TRANSCODE_PRESET') or 'fast'
-    crf     = get_setting('TRANSCODE_CRF') or 23
+    threads = get_setting('TRANSCODE_THREADS')
+    preset  = get_setting('TRANSCODE_PRESET')
+    crf     = get_setting('TRANSCODE_CRF')
 
     result = subprocess.run(
         ['ffmpeg', '-y', '-i', abs_path,
@@ -78,5 +78,5 @@ class Command(BaseCommand):
                 process_pending()
             except Exception as e:
                 print("[transcode] Unexpected error: %s" % e)
-            interval = get_setting('TRANSCODE_POLL_INTERVAL') or 10
+            interval = get_setting('TRANSCODE_POLL_INTERVAL')
             time.sleep(interval)
