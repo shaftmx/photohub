@@ -30,6 +30,7 @@
               <v-list-item v-for="(item, index) in authItems" :key="index" :value="index"
                 color="primary"
                 :to="item.route || undefined"
+                :exact="item.route && item.route.name === 'Home'"
                 @click="item.route ? (menu = false) : menuActionClick(item.action)">
                 <template v-slot:prepend>
                   <v-icon :icon="item.icon"></v-icon>

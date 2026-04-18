@@ -37,22 +37,18 @@ def restore(request):
             errors.append(f"Photo {data['filename']} not found in DB")
             continue
 
+        # --- Restaurer champs scalaires ---
+        for field in ("origin_filename", "description", "favorite", "rating", "owner", "published"):
+            if field in data and data[field] is not None:
+                setattr(photo, field, data[field])
+
         # --- Restaurer TAGS ---
         tags_dict = data.get("tags", {})
         for group_name, tags in tags_dict.items():
-            # retrouve ou crée le groupe
             group, _ = models.TagGroup.objects.get_or_create(name=group_name)
             for tag_name in tags:
                 tag, _ = models.Tag.objects.get_or_create(name=tag_name, tag_group=group)
                 photo.tags.add(tag)
-
-        ## --- Restaurer EXIFS ---
-        #exifs_dict = data.get("exifs", {})
-        #for exif_name, exif_value in exifs_dict.items():
-        #    models.Exif.objects.update_or_create(
-        #        photo=photo, name=exif_name,
-        #        defaults={"value": exif_value}
-        #    )
 
         photo.save()
         restored.append(photo.filename)

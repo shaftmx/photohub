@@ -420,8 +420,12 @@
                 <span v-else-if="exportStatus.status === 'completed'">
                   <v-icon size="14" color="success">mdi-check-circle-outline</v-icon>
                   Done — {{ exportStatus.total }} photos
+                  <v-chip size="x-small" variant="tonal" :color="exportStatus.include_raw ? 'primary' : 'default'" class="ml-1">
+                    {{ exportStatus.include_raw ? 'with raw files' : 'metadata only' }}
+                  </v-chip>
                   <span v-if="exportStatus.errors && exportStatus.errors.length" class="text-error ml-1">({{ exportStatus.errors.length }} errors)</span>
-                  <span v-if="exportStatus.completed_at" class="ml-2 text-disabled">{{ formatDate(exportStatus.completed_at) }}</span>
+                  <br v-if="exportStatus.completed_at">
+                  <span v-if="exportStatus.completed_at" class="text-disabled" style="font-size: 11px;">{{ formatDate(exportStatus.completed_at) }}</span>
                 </span>
               </div>
               <v-progress-linear
@@ -455,7 +459,8 @@
                   <v-icon size="14" color="success">mdi-check-circle-outline</v-icon>
                   {{ importStatus.imported }} imported, {{ importStatus.updated }} updated
                   <span v-if="importStatus.errors && importStatus.errors.length" class="text-error ml-1">({{ importStatus.errors.length }} errors)</span>
-                  <span v-if="importStatus.completed_at" class="ml-2 text-disabled">{{ formatDate(importStatus.completed_at) }}</span>
+                  <br v-if="importStatus.completed_at">
+                  <span v-if="importStatus.completed_at" class="text-disabled" style="font-size: 11px;">{{ formatDate(importStatus.completed_at) }}</span>
                 </span>
               </div>
               <v-progress-linear
@@ -578,7 +583,7 @@ export default {
     tagsPreviewSelection: {},
 
     // Backup / Export tab
-    exportIncludeRaw: false,
+    exportIncludeRaw: true,
     exportLoading: false,
     exportStatus: null,
     exportPollInterval: null,

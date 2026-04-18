@@ -125,13 +125,14 @@ def _export_photo(photo, dump_root, include_raw):
         tags.setdefault(group, []).append(t.name)
 
     meta = {
-        "filename":    photo.filename,
-        "owner":       photo.owner,
-        "published":   photo.published,
-        "description": photo.description,
-        "favorite":    photo.favorite,
-        "rating":      photo.rating,
-        "tags":        tags,
+        "filename":         photo.filename,
+        "origin_filename":  photo.origin_filename,
+        "owner":            photo.owner,
+        "published":        photo.published,
+        "description":      photo.description,
+        "favorite":         photo.favorite,
+        "rating":           photo.rating,
+        "tags":             tags,
     }
     meta_path = os.path.join(dump_root, "%s_meta.yml" % photo.filename)
     with open(meta_path, "w", encoding="utf-8") as f:
@@ -221,6 +222,8 @@ def import_dump(request):
 
 def _update_photo_meta(photo, meta):
     """Update metadata on an existing photo from a meta dict."""
+    if "origin_filename" in meta:
+        photo.origin_filename = meta["origin_filename"]
     if "description" in meta:
         photo.description = meta["description"]
     if "favorite" in meta:
@@ -259,7 +262,7 @@ def _create_photo_from_dump(filename, raw_path, meta):
         rating=rating,
         published=published,
         type="photo",
-        origin_filename=filename,
+        origin_filename=meta.get("origin_filename") or filename,
         width=int(exifs.get("Width", 0)),
         height=int(exifs.get("Height", 0)),
     )
