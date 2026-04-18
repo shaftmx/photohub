@@ -146,7 +146,7 @@ Views, users, and other app state → handled via a separate DB dump outside the
 - ⬜ **View map** — Google Maps page for a specific view: show all photos that have GPS data as markers on a map, clicking a marker opens the photo detail
 - ⬜ **Filter by owner** — photos and views have an `owner` field (username); future UI to filter/isolate content by owner; currently ignored — all authenticated users see all content
 - ⬜ Pagination or infinite scroll — TBD based on performance and UX
-- ⬜ **Upload link** — second shareable link on a view (write access), separate from the existing read-only share link:
+- ✅ **Upload link** — second shareable link on a view (write access), separate from the existing read-only share link:
   - Two independent links per view: **read link** (existing `share_link`) and **write/upload link** (new `upload_link` UUID token)
   - The upload link page (`/upload_view/<token>`) shows the view in read mode + an Upload button
   - Upload flow: same UI as the current Upload page, in the context of the view; after upload shows "X photos uploaded" + "Go to view" button
