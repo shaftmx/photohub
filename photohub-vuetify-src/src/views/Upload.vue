@@ -32,7 +32,7 @@
           </v-btn>
         </div>
 
-        <!-- File list — most recent first, with thumbnail preview -->
+        <!-- File list — most recent first, no preview -->
         <v-list density="compact" class="pa-0">
           <v-list-item
             v-for="item in [...uploaded_files].reverse()"
@@ -41,14 +41,9 @@
             style="background: rgba(0,0,0,0.04);"
           >
             <template v-slot:prepend>
-              <video v-if="item.type && item.type.startsWith('video/')"
-                :src="item._objectUrl" width="40" height="40"
-                class="rounded mr-3" style="flex-shrink:0;object-fit:cover;"></video>
-              <v-img v-else
-                :src="item._objectUrl"
-                width="40" height="40" cover
-                class="rounded mr-3" style="flex-shrink: 0;"
-              ></v-img>
+              <v-icon size="20" class="mr-2" :color="item.type && item.type.startsWith('video/') ? 'primary' : 'medium-emphasis'">
+                {{ item.type && item.type.startsWith('video/') ? 'mdi-video' : 'mdi-image' }}
+              </v-icon>
             </template>
             <v-list-item-title class="text-caption text-truncate">{{ item.name }}</v-list-item-title>
             <v-list-item-subtitle class="text-caption text-medium-emphasis">{{ (item.size / 1024).toFixed(0) }} KB</v-list-item-subtitle>

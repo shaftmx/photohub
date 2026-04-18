@@ -143,7 +143,7 @@ Views, users, and other app state → handled via a separate DB dump outside the
   - **Admin panel — Video tab**: ALLOW_VIDEO_UPLOAD, poll interval, CRF, preset, threads; worker status chip (online/encoding/offline + elapsed time); transcode queue stats table; retry errors button
   - **Grid filter**: All / Photos / Videos toggle in Photos, ViewDetail, ViewCreate; `filter_media_type` persisted on View model
   - **Backup/restore**: export includes .mp4 + poster JPG + type/duration/dimensions in meta; import handles .mp4 files
-  - ⬜ **KEEP_ORIGINAL_VIDEO** — optional setting to preserve the source file before transcoding:
+  - ✅ **KEEP_ORIGINAL_VIDEO** — optional setting to preserve the source file before transcoding:
     - `KEEP_ORIGINAL_VIDEO` AppConfig key (bool, default `False`); configurable live in Admin → Video tab with a disk usage warning
     - When enabled at upload time: source file saved as `<md5>_original.<ext>` in `raw/`; extension stored in new `Photo.original_ext` DB field
     - Setting is per-upload: toggling it off later does not affect videos already uploaded with originals (field `original_ext` drives behaviour, not the current setting)
@@ -179,6 +179,12 @@ Views, users, and other app state → handled via a separate DB dump outside the
 - ⬜ **Multi-view group link** — a shareable link that bundles multiple private views into a single public page; create/edit/delete the group, select which views to include, regenerate/revoke the link; displayed folded at the bottom of the Views page
   - **Link expiration** — optional expiry date (same concept as above)
 - ✅ **ZIP download** — download button in ViewDetail; size picker (all samples + raw); streams a ZIP of all view photos at the selected size
+
+## Code quality / Audit
+
+- ⬜ **Code review — duplication & simplification**: scan frontend and backend for duplicated logic (e.g. serialization, URL construction, filter handling) and opportunities to simplify or extract shared helpers
+- ⬜ **Dead code & security audit**: identify unused code (views, endpoints, components, CSS); verify all API endpoints require appropriate authentication — no unexpected unauthenticated access; check for obvious security issues (missing auth decorators, exposed sensitive data)
+- ⬜ **Test coverage review**: cross-check COVERAGE.md against actual features; identify gaps, especially around video, upload link, map, and admin flows; add missing E2E tests
 
 ## Infra / Dev
 

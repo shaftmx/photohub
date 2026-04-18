@@ -1,4 +1,5 @@
 import time
+import threading
 import subprocess
 import os
 from django.core.management.base import BaseCommand
@@ -34,6 +35,13 @@ def _transcode_video(photo):
 
     timeout = get_setting('TRANSCODE_TIMEOUT') or 3600
 
+    # Keep heartbeat alive during long transcodes
+    stop_heartbeat = threading.Event()
+    def _keep_alive():
+        while not stop_heartbeat.wait(30):
+            AppConfig.objects.update_or_create(key='WORKER_LAST_SEEN', defaults={'value': timezone.now().isoformat()})
+    threading.Thread(target=_keep_alive, daemon=True).start()
+
     result = subprocess.run(
         ['ffmpeg', '-y', '-i', abs_path,
          '-c:v', 'libx264', '-preset', preset, '-crf', str(crf),
@@ -43,6 +51,7 @@ def _transcode_video(photo):
          tmp_path],
         capture_output=True, timeout=timeout,
     )
+    stop_heartbeat.set()
     if result.returncode != 0:
         raise Exception("ffmpeg transcode failed: %s" % result.stderr.decode())
 
@@ -85,6 +94,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         LOG.info("[transcode] Worker started")
+        # Reset any stuck 'processing' videos from a previous crashed run
+        stuck = Photo.objects.filter(type='video', transcode_status='processing').update(transcode_status='pending')
+        if stuck:
+            LOG.info("[transcode] Reset %d stuck processing video(s) to pending" % stuck)
         while True:
             _heartbeat()
             try:
