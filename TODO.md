@@ -142,8 +142,15 @@ Views, users, and other app state → handled via a separate DB dump outside the
   - **Infra**: ffmpeg + ffprobe added to Dockerfile
   - **Admin panel — Photo quality tab**: toggle `ALLOW_VIDEO_UPLOAD` (default off); when off, video files are rejected at upload with a clear error message
   - **Grid filter**: image / video / all toggle in Photos page, ViewDetail, and ViewCreate
-- ⬜ Map view — display all photos with GPS data on a global map
-- ⬜ **View map** — Google Maps page for a specific view: show all photos that have GPS data as markers on a map, clicking a marker opens the photo detail
+- ⬜ **Map view** — Leaflet + OpenStreetMap map accessible from Photos page and ViewDetail; shows a pin for each photo that has GPS EXIF data:
+  - **Entry points**: map icon button in Photos toolbar and ViewDetail toolbar (only visible if at least one photo has GPS data)
+  - **Display**: fullscreen dialog (same pattern as DisplayPhoto), map fills the space
+  - **Pins**: each photo with GPS coords gets a marker; marker popup shows a small thumbnail (xs sample) + filename
+  - **Click on popup / pin**: opens the photo in DisplayPhoto (fullscreen viewer)
+  - **Library**: Leaflet + OpenStreetMap tiles (no API key required)
+  - **Backend**: reuse existing EXIF data already stored in DB (`Exif` model, keys `GPSLatitude`, `GPSLongitude` or similar); new endpoint `GET /api/views/<id>/photos/map` and `GET /api/photos/map` returning only photos with GPS coords + their coordinates parsed to decimal degrees
+  - **GPS parsing**: EXIF GPS values are stored as DMS strings (e.g. `51/1, 30/1, 0/1`) — backend converts to decimal on the fly
+  - **Auth**: same access rules as the parent context (public view = accessible without login, shared/upload token = token validated)
 - ⬜ **Filter by owner** — photos and views have an `owner` field (username); future UI to filter/isolate content by owner; currently ignored — all authenticated users see all content
 - ⬜ Pagination or infinite scroll — TBD based on performance and UX
 - ✅ **Upload link** — second shareable link on a view (write access), separate from the existing read-only share link:
