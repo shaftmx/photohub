@@ -133,6 +133,10 @@ def _export_photo(photo, dump_root, include_raw):
         "favorite":         photo.favorite,
         "rating":           photo.rating,
         "tags":             tags,
+        "type":             photo.type,
+        "width":            photo.width,
+        "height":           photo.height,
+        "duration":         photo.duration,
     }
     meta_path = os.path.join(dump_root, "%s_meta.yml" % photo.filename)
     with open(meta_path, "w", encoding="utf-8") as f:
@@ -145,7 +149,7 @@ def _export_photo(photo, dump_root, include_raw):
         with open(exif_path, "w", encoding="utf-8") as f:
             yaml.safe_dump(exif_data, f, allow_unicode=True, sort_keys=False)
 
-    # --- raw file (optional) ---
+    # --- raw file(s) (optional) ---
     if include_raw:
         raw_storage_path = getRawPath(photo.filename)
         if default_storage.exists(raw_storage_path):
@@ -153,6 +157,15 @@ def _export_photo(photo, dump_root, include_raw):
             with default_storage.open(raw_storage_path, "rb") as src:
                 with open(dest, "wb") as dst:
                     shutil.copyfileobj(src, dst)
+        # For videos, also export the poster JPG so samples can regenerate on import
+        if photo.type == 'video':
+            poster_filename = photo.filename.rsplit('.', 1)[0] + '.jpg'
+            poster_storage_path = getRawPath(poster_filename)
+            if default_storage.exists(poster_storage_path):
+                dest = os.path.join(dump_root, poster_filename)
+                with default_storage.open(poster_storage_path, "rb") as src:
+                    with open(dest, "wb") as dst:
+                        shutil.copyfileobj(src, dst)
 
 
 @admin_required
@@ -163,11 +176,16 @@ def import_dump(request):
     if not os.path.exists(dump_root):
         return ErrorRequest(details="DUMP_ROOT does not exist: %s" % dump_root)
 
-    jpg_files = [f for f in os.listdir(dump_root)
-                 if f.endswith(".jpg") and not f.endswith("_meta.yml") and not f.endswith("_exif.yml")]
+    all_files = os.listdir(dump_root)
+    media_files = [f for f in all_files
+                   if (f.endswith(".jpg") or f.endswith(".mp4"))
+                   and not f.endswith("_meta.yml") and not f.endswith("_exif.yml")]
+    # Exclude poster JPGs that are video companions (same stem as an .mp4)
+    mp4_stems = {f[:-4] for f in media_files if f.endswith(".mp4")}
+    media_files = [f for f in media_files if not (f.endswith(".jpg") and f[:-4] in mp4_stems)]
 
-    if not jpg_files:
-        return Response(200, data={"message": "No .jpg files found in %s" % dump_root})
+    if not media_files:
+        return Response(200, data={"message": "No media files found in %s" % dump_root})
 
     def _run():
         total = len(jpg_files)
@@ -180,7 +198,7 @@ def import_dump(request):
             "imported": 0, "updated": 0, "started_at": started_at,
         })
 
-        for i, filename in enumerate(jpg_files, 1):
+        for i, filename in enumerate(media_files, 1):
             raw_path = os.path.join(dump_root, filename)
             meta_path = os.path.join(dump_root, "%s_meta.yml" % filename)
             meta = {}
@@ -244,15 +262,34 @@ def _create_photo_from_dump(filename, raw_path, meta):
     rating = int(meta.get("rating", 0))
     published = bool(meta.get("published", False))
 
+    is_video = filename.endswith(".mp4")
+    media_type = meta.get("type", "video" if is_video else "photo")
+
     # Copy raw file into storage
     storage_path = getRawPath(filename)
     if not default_storage.exists(storage_path):
         with open(raw_path, "rb") as f:
             default_storage.save(storage_path, File(f, name=filename))
 
-    # Extract EXIF from the raw file in storage
-    with default_storage.open(storage_path, "rb") as f:
-        exifs = get_exif(f)
+    # For videos, also restore the poster JPG if present in dump
+    if is_video:
+        poster_filename = filename.rsplit('.', 1)[0] + '.jpg'
+        poster_dump_path = os.path.join(os.path.dirname(raw_path), poster_filename)
+        if os.path.exists(poster_dump_path):
+            poster_storage_path = getRawPath(poster_filename)
+            if not default_storage.exists(poster_storage_path):
+                with open(poster_dump_path, "rb") as f:
+                    default_storage.save(poster_storage_path, File(f, name=poster_filename))
+
+    # Extract dimensions — from meta if available, else EXIF for photos
+    width  = int(meta.get("width") or 0)
+    height = int(meta.get("height") or 0)
+    exifs  = {}
+    if not is_video:
+        with default_storage.open(storage_path, "rb") as f:
+            exifs = get_exif(f)
+        if not width:  width  = int(exifs.get("Width", 0))
+        if not height: height = int(exifs.get("Height", 0))
 
     photo = models.Photo(
         filename=filename,
@@ -261,14 +298,16 @@ def _create_photo_from_dump(filename, raw_path, meta):
         favorite=favorite,
         rating=rating,
         published=published,
-        type="photo",
+        type=media_type,
+        transcode_status='done' if not is_video else 'pending',
+        duration=meta.get("duration"),
         origin_filename=meta.get("origin_filename") or filename,
-        width=int(exifs.get("Width", 0)),
-        height=int(exifs.get("Height", 0)),
+        width=width,
+        height=height,
     )
     photo.save()
 
-    # Save EXIF records
+    # Save EXIF records (photos only)
     for name, value in exifs.items():
         if name not in ("Width", "Height"):
             models.Exif.objects.update_or_create(photo=photo, name=name, defaults={"value": str(value)})
@@ -276,9 +315,14 @@ def _create_photo_from_dump(filename, raw_path, meta):
     if "tags" in meta:
         _apply_tags(photo, meta["tags"])
 
-    # Generate samples
-    if get_setting("GENERATE_SAMPLES_ON_UPLOAD"):
+    # Generate samples for photos; videos will be handled by the worker
+    if not is_video and get_setting("GENERATE_SAMPLES_ON_UPLOAD"):
         generate_photo_samples(filename)
+    elif is_video and os.path.exists(os.path.join(os.path.dirname(raw_path), filename.rsplit('.', 1)[0] + '.jpg')):
+        # Poster available — generate samples immediately, mark done
+        generate_photo_samples(filename)
+        photo.transcode_status = 'done'
+        photo.save(update_fields=['transcode_status'])
 
 
 def _apply_tags(photo, tags_dict):
