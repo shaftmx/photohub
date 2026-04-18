@@ -186,6 +186,18 @@ Total: **124 tests** across 5 spec files.
 - Regenerate shows confirmation warning; Cancel aborts without regenerating
 - Revoke share link: URL field disappears, share icon outline restored
 
+### Views — upload link (0 tests — TODO)
+- Upload link section is collapsed by default in share menu
+- Upload link section is disabled (greyed out) when no share link exists
+- Generate upload link requires an active share link
+- Generate upload link: URL field appears with a copyable link
+- Upload link page shows same layout as shared view + Upload button
+- Upload via valid token: file picker → progress → success dialog
+- Revoking share link also revokes upload link (section shows inactive)
+- Upload via revoked token shows invalid/expired error
+- Upload via expired token shows invalid/expired error
+- Photo detail panel accessible on upload view (info button opens panel)
+
 ---
 
 ## What is NOT tested
@@ -212,6 +224,9 @@ Total: **124 tests** across 5 spec files.
 - Custom order: save persists and is restored on reload
 - Tag filter in views (creating a view with specific tags, verifying filter is applied)
 - Share link expiry: setting, displaying, and enforcing expiry
+- Photo detail panel in shared view context (token-based endpoint validation)
+- Photo detail panel in public view context
+- Upload link: photo outside the view's filters not accessible via token endpoint
 
 **Tags**
 - Tag & group description tooltips (hover on info icon in filter panel and tag editor)
