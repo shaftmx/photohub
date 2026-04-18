@@ -582,3 +582,62 @@ def get_photo_detail_by_token(request, token, filename):
     except models.Photo.DoesNotExist:
         return ErrorResponse("NotFound", 404, "Photo not found")
     return _serialize_photo_detail(p)
+
+
+def _photos_with_gps(photos_qs):
+    result = []
+    for p in photos_qs:
+        gps = models.Exif.objects.filter(photo=p, name='GPSDDFormat').first()
+        if not gps:
+            continue
+        parts = gps.value.split()
+        if len(parts) != 2:
+            continue
+        try:
+            lat, lng = float(parts[0]), float(parts[1])
+        except ValueError:
+            continue
+        result.append({
+            "filename": p.filename,
+            "hash_path": genHasingPath(p.filename),
+            "origin_filename": p.origin_filename,
+            "lat": lat,
+            "lng": lng,
+        })
+    return result
+
+
+#
+# GET /api/views/<id>/map — photos with GPS for a view (auth required)
+#
+@login_required
+@require_http_methods(["GET"])
+def get_view_map(request, view_id):
+    try:
+        v = models.View.objects.get(id=view_id)
+    except models.View.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "View not found")
+    return Response(200, data={"photos": _photos_with_gps(_apply_view_filters(v)), "paths": get_photo_root_paths()})
+
+
+#
+# GET /api/public/views/<id>/map — photos with GPS for a public view
+#
+@require_http_methods(["GET"])
+def get_public_view_map(request, view_id):
+    try:
+        v = models.View.objects.get(id=view_id, public=True)
+    except models.View.DoesNotExist:
+        return ErrorResponse("NotFound", 404, "View not found")
+    return Response(200, data={"photos": _photos_with_gps(_apply_view_filters(v)), "paths": get_photo_root_paths()})
+
+
+#
+# GET /api/token/<token>/map — photos with GPS via share or upload token
+#
+@require_http_methods(["GET"])
+def get_token_view_map(request, token):
+    v, err = _resolve_token(token)
+    if err:
+        return err
+    return Response(200, data={"photos": _photos_with_gps(_apply_view_filters(v)), "paths": get_photo_root_paths()})

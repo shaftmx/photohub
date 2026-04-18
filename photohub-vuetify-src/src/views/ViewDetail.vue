@@ -38,6 +38,14 @@
       ></v-btn>
       <v-spacer></v-spacer>
 
+      <!-- Map button (all modes) -->
+      <v-tooltip text="Map view" location="bottom">
+        <template #activator="{ props: tp }">
+          <v-btn v-bind="tp" icon="mdi-map-outline" variant="text" density="compact" size="small"
+            @click="$refs.viewMap.open()"></v-btn>
+        </template>
+      </v-tooltip>
+
       <!-- Upload mode: Upload button -->
       <template v-if="isUploadMode">
         <v-btn color="primary" variant="tonal" prepend-icon="mdi-upload" @click="uploadDialog = true">
@@ -315,6 +323,8 @@
   <v-sheet v-else class="d-flex justify-center pa-12">
     <v-progress-circular indeterminate color="primary"></v-progress-circular>
   </v-sheet>
+
+  <ViewMap ref="viewMap" :map-endpoint="mapEndpoint" :photo-detail-endpoint="photoDetailEndpoint"></ViewMap>
 </template>
 
 <script setup>
@@ -322,6 +332,7 @@ import SortControls from '@/components/SortControls.vue'
 import DisplayPhoto from '@/components/DisplayPhoto.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
 import ExpiryPicker from '@/components/ExpiryPicker.vue'
+import ViewMap from '@/components/ViewMap.vue'
 import { useAuthStore } from '../stores/auth.js'
 const authStore = useAuthStore()
 </script>
@@ -622,9 +633,16 @@ export default {
     photoDetailEndpoint() {
       if (this.isUploadMode) return `/api/token/${this.$route.params.token}/photos`
       const param = this.$route.params.id
-      if (isNaN(param)) return `/api/token/${param}/photos`         // shared view token
-      if (!this.isAuthenticated) return `/api/public/views/${param}/photos`  // public view
-      return null  // authenticated — uses default /api/photos
+      if (isNaN(param)) return `/api/token/${param}/photos`
+      if (!this.isAuthenticated) return `/api/public/views/${param}/photos`
+      return null
+    },
+    mapEndpoint() {
+      if (this.isUploadMode) return `/api/token/${this.$route.params.token}/map`
+      const param = this.$route.params.id
+      if (isNaN(param)) return `/api/token/${param}/map`
+      if (!this.isAuthenticated) return `/api/public/views/${param}/map`
+      return `/api/views/${param}/map`
     },
     downloadSizes() {
       const sizes = Object.keys(this.paths).filter(k => k !== '_sizes' && k !== 'raw')

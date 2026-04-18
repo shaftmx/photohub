@@ -43,6 +43,8 @@ urlpatterns = [
     path("public/views", views_api.list_public_views, name="list_public_views"),
     path("public/views/<int:view_id>/photos", views_api.get_public_view_photos, name="get_public_view_photos"),
     path("public/views/<int:view_id>/photos/<str:filename>", views_api.get_public_view_photo_detail, name="get_public_view_photo_detail"),
+    path("public/views/<int:view_id>/map", views_api.get_public_view_map, name="get_public_view_map"),
+    path("token/<str:token>/map", views_api.get_token_view_map, name="get_token_view_map"),
     path("shared_view/<str:token>/photos", views_api.get_view_photos_by_token, name="get_shared_view_photos"),
     path("upload_view/<str:token>/photos", views_api.get_view_photos_by_token, name="get_upload_view_photos"),
     path("upload_view/<str:token>/upload", views_api.upload_view_photo, name="upload_view_photo"),
@@ -59,6 +61,7 @@ urlpatterns = [
     path("views/<int:view_id>/share-link", views_api.generate_share_link, name="generate_share_link"),
     path("views/<int:view_id>/share-link/expiry", views_api.set_share_link_expiry, name="set_share_link_expiry"),
     path("views/<int:view_id>/share-link/revoke", views_api.revoke_share_link, name="revoke_share_link"),
+    path("views/<int:view_id>/map", views_api.get_view_map, name="get_view_map"),
     path("views/<int:view_id>/photos", views_api.get_view_photos, name="get_view_photos"),
     path("views/<int:view_id>/download", views_api.download_view_zip, name="download_view_zip"),
 
