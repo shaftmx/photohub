@@ -186,6 +186,18 @@ Total: **124 tests** across 5 spec files.
 - Regenerate shows confirmation warning; Cancel aborts without regenerating
 - Revoke share link: URL field disappears, share icon outline restored
 
+### Views — map (0 tests — TODO)
+- Map button visible in ViewDetail toolbar
+- Map button not visible when no photos have GPS data
+- Map opens as fullscreen dialog with OSM tiles loaded
+- Pins appear for photos with GPS data
+- Click on pin opens popup with thumbnail
+- Click on thumbnail opens photo in fullscreen viewer
+- Closing photo viewer returns to map (map stays open)
+- Map accessible in shared view context (token validated)
+- Map accessible in public view context
+- Map button visible in upload view context
+
 ### Views — upload link (0 tests — TODO)
 - Upload link section is collapsed by default in share menu
 - Upload link section is disabled (greyed out) when no share link exists

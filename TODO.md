@@ -142,7 +142,8 @@ Views, users, and other app state → handled via a separate DB dump outside the
   - **Infra**: ffmpeg + ffprobe added to Dockerfile
   - **Admin panel — Photo quality tab**: toggle `ALLOW_VIDEO_UPLOAD` (default off); when off, video files are rejected at upload with a clear error message
   - **Grid filter**: image / video / all toggle in Photos page, ViewDetail, and ViewCreate
-- ⬜ **Map view** — Leaflet + OpenStreetMap map accessible from Photos page and ViewDetail; shows a pin for each photo that has GPS EXIF data:
+- ✅ **Map view** — Leaflet + OpenStreetMap map accessible from ViewDetail; shows a pin for each photo that has GPS EXIF data (Photos page map: future)
+ shows a pin for each photo that has GPS EXIF data:
   - **Entry points**: map icon button in Photos toolbar and ViewDetail toolbar (only visible if at least one photo has GPS data)
   - **Display**: fullscreen dialog (same pattern as DisplayPhoto), map fills the space
   - **Pins**: each photo with GPS coords gets a marker; marker popup shows a small thumbnail (xs sample) + filename
