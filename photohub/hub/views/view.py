@@ -465,8 +465,11 @@ def download_view_zip(request, view_id):
     size = request.GET.get('size', 'xs')
     photos = list(_apply_view_filters(v))
 
+    photo_map = {p.filename: p for p in photos}
+
     def _get_photo_path(filename):
-        if size == 'raw':
+        photo = photo_map.get(filename)
+        if size == 'raw' or (photo and photo.type == 'video'):
             return p_join(settings.MEDIA_ROOT, getRawPath(filename))
         return p_join(settings.MEDIA_ROOT, getSamplePath(filename, size))
 
