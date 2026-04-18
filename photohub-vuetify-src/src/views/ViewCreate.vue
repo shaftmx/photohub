@@ -45,7 +45,7 @@
       <div v-if="isEditMode && coverFilename" class="d-inline-flex align-center ga-2 pa-1 rounded border" style="width: fit-content">
         <v-img
           v-if="paths[sharedDatas.gridPhotoSize]"
-          :src="paths[sharedDatas.gridPhotoSize] + '/' + coverHashPath + '/' + (coverFilename && coverFilename.endsWith('.mp4') ? coverFilename.replace('.mp4', '.jpg') : coverFilename)"
+          :src="paths[sharedDatas.gridPhotoSize] + '/' + coverHashPath + '/' + coverFilename.replace(/\.[^.]+$/, '.jpg')"
           width="40" height="40" cover class="rounded flex-shrink-0"
         ></v-img>
         <span class="text-caption text-medium-emphasis">Cover</span>

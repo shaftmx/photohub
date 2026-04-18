@@ -14,7 +14,7 @@
     >
       <div class="item-inner">
         <img
-          :src="paths[adaptivePhotoSize] + '/' + photo.hash_path + '/' + (photo.type === 'video' ? photo.filename.replace('.mp4', '.jpg') : photo.filename)"
+          :src="paths[adaptivePhotoSize] + '/' + photo.hash_path + '/' + thumbFilename(photo)"
           @click="!draggable && $emit('item-click', photo, index, $event)"
         />
         <div v-if="photo.type === 'video'" class="video-overlay" @click="!draggable && $emit('item-click', photo, index, $event)">
@@ -44,6 +44,7 @@
 <script>
 import '../styles/galleryGrid.css'
 import { defineComponent } from 'vue'
+import { thumbFilename } from '../photoUtils.js'
 
 export default defineComponent({
   props: {
@@ -88,6 +89,7 @@ export default defineComponent({
     },
   },
   methods: {
+    thumbFilename,
     onDragStart(index) {
       this.dragIndex = index
     },

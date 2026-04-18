@@ -27,6 +27,7 @@
 
 <script>
 import L from 'leaflet'
+import { thumbFilename } from '../photoUtils.js'
 import 'leaflet/dist/leaflet.css'
 import { useAsyncFetch } from '../reactivefetch.js'
 import DisplayPhoto from './DisplayPhoto.vue'
@@ -97,8 +98,7 @@ export default {
         const latlng = [photo.lat, photo.lng]
         bounds.push(latlng)
 
-        const thumbFile = photo.type === 'video' ? photo.filename.replace('.mp4', '.jpg') : photo.filename
-        const thumbUrl = `${thumbBase}/${photo.hash_path}/${thumbFile}`
+        const thumbUrl = `${thumbBase}/${photo.hash_path}/${thumbFilename(photo)}`
         const popupHtml = `
           <div style="text-align:center; cursor:pointer;" data-filename="${photo.filename}">
             <img src="${thumbUrl}" style="width:120px; height:80px; object-fit:cover; border-radius:4px; display:block; margin-bottom:4px;">

@@ -133,6 +133,7 @@
 
 <script>
 import { defineComponent } from 'vue'
+import { thumbFilename } from '../photoUtils.js'
 import { getSharedDatas } from '../sharedDatas.js'
 import { useAlertStore } from '../stores/alert'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
@@ -179,8 +180,7 @@ export default defineComponent({
       if (!this.photo || !this.paths) return ''
       const size = this.sharedDatas.isMobile ? 'xs' : 's'
       const basePath = this.paths[size] || Object.values(this.paths)[0] || ''
-      const thumbFilename = this.photo.type === 'video' ? this.photo.filename.replace('.mp4', '.jpg') : this.photo.filename
-      return `${basePath}/${this.photo.hash_path}/${thumbFilename}`
+      return `${basePath}/${this.photo.hash_path}/${thumbFilename(this.photo)}`
     },
   },
 
