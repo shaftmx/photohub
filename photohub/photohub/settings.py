@@ -197,12 +197,12 @@ RAW_PHOTOS_MAX_SIZE = int(_max_size) if _max_size else None
 #                     Useful after changing compression settings to re-process existing files.
 #   False           — skip entirely: returns HTTP 202 "Picture already exist".
 #                     Neither the file on disk nor the DB record is updated.
-RAW_PHOTO_OVERRIDE_EXISTS = strtobool(os.environ.get('RAW_PHOTO_OVERRIDE_EXISTS', 'True'))
+RAW_PHOTO_OVERRIDE_EXISTS = strtobool(os.environ.get('RAW_PHOTO_OVERRIDE_EXISTS', 'False'))
 
 # Env: GENERATE_SAMPLES_ON_UPLOAD — whether to generate sample files immediately at upload time.
 #   True  (default) — samples generated synchronously during upload.
 #   False           — samples generated lazily on first access. Speeds up bulk imports.
-GENERATE_SAMPLES_ON_UPLOAD = strtobool(os.environ.get('GENERATE_SAMPLES_ON_UPLOAD', 'True'))
+GENERATE_SAMPLES_ON_UPLOAD = strtobool(os.environ.get('GENERATE_SAMPLES_ON_UPLOAD', 'False'))
 
 # Sample (resized) versions generated for each uploaded photo.
 # The frontend picks the appropriate sample automatically based on the grid
