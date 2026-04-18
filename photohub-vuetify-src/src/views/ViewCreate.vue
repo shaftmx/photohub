@@ -81,7 +81,7 @@
         @update:sortDir="fetchPreview()"
       ></SortControls>
 
-      <v-spacer></v-spacer>
+      <v-divider vertical class="mx-1"></v-divider>
 
       <!-- State A / A': "Custom order" button -->
       <v-btn v-if="sortBy !== 'custom' && !dragMode"
@@ -107,11 +107,11 @@
           @click="enterDragMode"
         >Reorder</v-btn>
         <v-btn
-          icon="mdi-delete-outline"
+          icon="mdi-sort-variant-remove"
           variant="text"
           density="compact"
           size="small"
-          color="error"
+          color="primary"
           title="Delete custom order"
           @click="deleteCustomOrder"
         ></v-btn>

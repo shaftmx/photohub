@@ -210,7 +210,7 @@ def generate_video_poster(filename):
         if default_storage.exists(poster_raw_path):
             default_storage.delete(poster_raw_path)
         default_storage.save(poster_raw_path, poster_file)
-        return generate_photo_samples(filename)
+        return None
     except Exception as e:
         return e
 

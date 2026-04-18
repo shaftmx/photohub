@@ -4,7 +4,7 @@ import os
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from hub.models import Photo, AppConfig
-from hub.utils import getRawPath, generate_video_poster, get_setting, _get_absolute_path
+from hub.utils import getRawPath, get_setting, _get_absolute_path
 from hub.logger import LOG
 
 
@@ -53,9 +53,6 @@ def process_pending():
         _heartbeat(encoding_filename=photo.filename)
         try:
             _transcode_video(photo.filename)
-            err = generate_video_poster(photo.filename)
-            if err:
-                raise err
             photo.transcode_status = 'done'
             photo.save(update_fields=['transcode_status'])
             print("[transcode] Done: %s" % photo.filename)

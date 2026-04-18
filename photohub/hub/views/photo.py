@@ -165,7 +165,9 @@ def upload_photo(request):
         if _err is not None:
             return ErrorUnexpected(details="save_photo '%s' - %s" % (file.name, _err), trace=_err)
 
-        if not is_video and get_setting('GENERATE_SAMPLES_ON_UPLOAD'):
+        if is_video:
+            generate_video_poster(photo_filename)
+        if get_setting('GENERATE_SAMPLES_ON_UPLOAD'):
             _err = generate_photo_samples(photo_filename)
             if _err is not None:
                 return ErrorUnexpected(details="%s" % _err, trace=_err)
