@@ -338,7 +338,7 @@ def get_exif(file):
         exif = image.getexif()
         exif_ifd = exif.get_ifd(ExifTags.IFD.Exif)
 
-        exifs["DPI"] = image.info.get("dpi")[0]
+        exifs["DPI"] = (image.info.get("dpi") or (None,))[0]
         exifs["Width"] = image.width
         exifs["Height"] = image.height
 
