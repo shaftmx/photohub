@@ -96,6 +96,10 @@ def get_photos(request):
         
         # Manually add this filed because auto_now_add=True and ManyToMany are ignored by model_to_dict by default
         _p["upload_date"] = p.upload_date.isoformat() if p.upload_date else ""
+        # Strip video-only fields from photo entries to reduce payload size
+        if p.type != 'video':
+            _p.pop('transcode_status', None)
+            _p.pop('duration', None)
 
         # TAGS Generate
         for t in p.tags.all():

@@ -44,6 +44,9 @@ def get_unpublished(request):
 
         # _p["tags"] = model_to_dict( _p["tags"], fields=["name"])
         _p["hash_path"] = genHasingPath(_p["filename"])
+        if p.type != 'video':
+            _p.pop('transcode_status', None)
+            _p.pop('duration', None)
 
         data_photos.append(_p)
     data = { "photos": data_photos,
