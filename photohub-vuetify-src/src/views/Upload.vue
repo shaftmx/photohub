@@ -7,11 +7,11 @@
 
         <!-- <v-file-input @change="handleFilesUpload($event)" v-model="files" :rules="[required]" :readonly="loading" -->
 
-        <v-file-input v-model="files" :rules="[required]" :readonly="loading" accept="image/jpeg" multiple
-          label="File input" prepend-icon="mdi-camera" chips show-size counter variant="solo"></v-file-input>
+        <v-file-input v-model="files" :rules="[required]" :readonly="loading" :accept="acceptedTypes" multiple
+          label="File input" prepend-icon="mdi-upload" chips show-size counter variant="solo"></v-file-input>
 
-        <p>You can <strong class="text-primary">drag and drop</strong> files to upload. <strong
-            class="text-primary">JPEG</strong> file type only.</p>
+        <p>You can <strong class="text-primary">drag and drop</strong> files to upload.
+          <strong class="text-primary">JPEG</strong> photos<template v-if="allowVideoUpload"> and <strong class="text-primary">MP4/MOV</strong> videos</template> accepted.</p>
         <v-btn color="primary" class="mb-4 mt-4" :disabled="!form" :loading="loading" type="submit">
           Upload
         </v-btn>
@@ -41,13 +41,13 @@
             style="background: rgba(0,0,0,0.04);"
           >
             <template v-slot:prepend>
-              <v-img
+              <video v-if="item.type && item.type.startsWith('video/')"
+                :src="item._objectUrl" width="40" height="40"
+                class="rounded mr-3" style="flex-shrink:0;object-fit:cover;"></video>
+              <v-img v-else
                 :src="item._objectUrl"
-                width="40"
-                height="40"
-                cover
-                class="rounded mr-3"
-                style="flex-shrink: 0;"
+                width="40" height="40" cover
+                class="rounded mr-3" style="flex-shrink: 0;"
               ></v-img>
             </template>
             <v-list-item-title class="text-caption text-truncate">{{ item.name }}</v-list-item-title>
@@ -67,7 +67,7 @@
 <script>
 
 
-import { useAsyncUploadFile } from '../reactivefetch.js'
+import { useAsyncUploadFile, useAsyncFetch } from '../reactivefetch.js'
 import { requireAuth } from '../authrequired.js'
 import { useAlertStore } from '../stores/alert'
 
@@ -80,9 +80,22 @@ export default {
     loading: false,
     progress: 0,
     currentFile: "",
+    allowVideoUpload: false,
   }),
-  mounted() {
+  computed: {
+    acceptedTypes() {
+      return this.allowVideoUpload
+        ? 'image/jpeg,video/mp4,video/quicktime,video/webm'
+        : 'image/jpeg'
+    },
+  },
+  async mounted() {
     requireAuth(this)
+    const { data } = await useAsyncFetch('/api/admin/config')
+    if (data.value && !data.value.ERROR) {
+      const val = data.value.data.ALLOW_VIDEO_UPLOAD
+      this.allowVideoUpload = val === 'True' || val === true || val === '1'
+    }
   },
   beforeUnmount() {
     // Revoke object URLs to free memory
@@ -128,7 +141,7 @@ export default {
 
         // Single file upload
         formData = new FormData();
-        formData.append('picture.jpg', file);
+        formData.append(file.name, file);
         const { data, error } = await useAsyncUploadFile('/api/upload', formData)
         if (error.value) {
           this.loading = false

@@ -194,6 +194,13 @@
           @click="filterFavorite = !filterFavorite"
         ></v-btn>
 
+        <!-- Media type filter -->
+        <v-btn-toggle v-model="mediaType" mandatory density="compact" rounded="lg" style="height:28px;">
+          <v-btn value="all" size="x-small" variant="text">All</v-btn>
+          <v-btn value="photo" size="x-small" variant="text"><v-icon size="14">mdi-image</v-icon></v-btn>
+          <v-btn value="video" size="x-small" variant="text"><v-icon size="14">mdi-video</v-icon></v-btn>
+        </v-btn-toggle>
+
         <!-- Rating filter: stars + operator toggle -->
         <div class="d-flex align-center">
           <v-btn
@@ -330,6 +337,7 @@ export default {
     filterFavorite: false, // If true, only show favorite photos
     filterRating: 0,       // 0 = no filter, 1-5 = filter by rating
     filterRatingMode: "lte", // lte = <= rating, eq = strictly equal
+    mediaType: 'all',      // 'all' | 'photo' | 'video'
   }),
 
   computed: {
@@ -415,6 +423,11 @@ export default {
       this.syncUrl()
       this.doGetPhotos()
     },
+
+    "mediaType"() {
+      this.syncUrl()
+      this.doGetPhotos()
+    },
   },
 
   methods: {
@@ -429,6 +442,7 @@ export default {
             filter_favorite: this.filterFavorite ? true : null,
             filter_rating_value: this.filterRating,
             filter_rating_mode: this.filterRatingMode,
+            filter_media_type: this.mediaType,
           },
         },
       })
@@ -579,6 +593,8 @@ export default {
         this.filterRating = parseInt(q.rating) || 0
         if (q.rating_mode) this.filterRatingMode = q.rating_mode
       }
+      // Media type
+      if (q.media_type && ['photo', 'video'].includes(q.media_type)) this.mediaType = q.media_type
       // Filter mode
       if (q.filter_mode) {
         const modeMap = { basic: 'quick', smart: 'detail', notags: 'notags', none: 'none' }
@@ -621,6 +637,8 @@ export default {
       // Sort (omit defaults)
       if (this.sortBy !== 'date') q.sort_by = this.sortBy
       if (this.sortDir !== 'desc') q.sort_dir = this.sortDir
+      // Media type (omit default 'all')
+      if (this.mediaType !== 'all') q.media_type = this.mediaType
       this.$router.replace({ query: q })
     },
 
@@ -675,6 +693,7 @@ export default {
 
       params.sort_by = this.sortBy
       params.sort_dir = this.sortDir
+      if (this.mediaType !== 'all') params.media_type = this.mediaType
 
       const queryFilter = Object.keys(params).length > 0 ? "?" + new URLSearchParams(params) : ""
 

@@ -29,6 +29,11 @@ def get_photos(request):
 
     photos_query = models.Photo.objects.filter(published=True)
 
+    # Media type filter
+    media_type = request.GET.get('media_type', 'all')
+    if media_type in ('photo', 'video'):
+        photos_query = photos_query.filter(type=media_type)
+
     # Get all tags entities
     filter_tags = {}
     for tag_name in filter_tag_names:
@@ -83,7 +88,7 @@ def get_photos(request):
 
     # excludes = ["id", "description", "published"]
     # data = [ model_to_dict(i, exclude=excludes) for i in photos ]
-    fields = ["filename", "date", "owner", "height", "width", "tags", "favorite", "rating", "origin_filename"]
+    fields = ["filename", "date", "owner", "height", "width", "tags", "favorite", "rating", "origin_filename", "type", "transcode_status", "duration"]
     data_photos = []
     for p in photos:
         _p = model_to_dict(p, fields=fields)
@@ -132,32 +137,36 @@ def get_photos(request):
 def upload_photo(request):
     LOG.debug("--upload_photo")
     for field_name, file in request.FILES.items():
-        photo_filename = "%s.jpg" % getMd5(file)
-        # Doing some consistent hashing on file paths
+        mime = getattr(file, 'content_type', '') or ''
+        is_video = mime.startswith('video/')
+
+        if is_video and not get_setting('ALLOW_VIDEO_UPLOAD'):
+            return Response(400, data="Video upload is disabled")
+
+        if is_video:
+            photo_filename = "%s.mp4" % getMd5(file)
+        else:
+            photo_filename = "%s.jpg" % getMd5(file)
         photo_path = getRawPath(photo_filename)
 
-        LOG.warning("Uploading new picture %s - %s" % (file.name, photo_path))
+        LOG.warning("Uploading new file %s - %s" % (file.name, photo_path))
 
-        # If the picture/md5 already exist: override it or skip based on RAW_PHOTO_OVERRIDE_EXISTS setting
         if default_storage.exists(photo_path):
             if get_setting('RAW_PHOTO_OVERRIDE_EXISTS'):
-                # Remove to replace existing file
                 default_storage.delete(photo_path)
             else:
-                return Response(202, data="Picture already exist")
+                return Response(202, data="File already exist")
 
         _err = save_photo(file, photo_path, owner=request.user.username)
         if _err is not None:
             return ErrorUnexpected(details="save_photo '%s' - %s" % (file.name, _err), trace=_err)
 
-        if get_setting('GENERATE_SAMPLES_ON_UPLOAD'):
+        if not is_video and get_setting('GENERATE_SAMPLES_ON_UPLOAD'):
             _err = generate_photo_samples(photo_filename)
             if _err is not None:
                 return ErrorUnexpected(details="%s" % _err, trace=_err)
-        
-    # from time import sleep
-    #sleep(1) # Troubleshoot slow upload to work on progressbar
-    return Response(201, data="Picture uploaded")
+
+    return Response(201, data="File uploaded")
 
 # This view is a Nginx callback url for photo without sample in the cache (if someone removed it).
 # If the raw image file exist, it will regenerate the sample and serve it.

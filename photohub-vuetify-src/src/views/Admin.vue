@@ -12,6 +12,7 @@
       <v-tab v-if="role === 'admin'" value="users" class="text-none">Users</v-tab>
       <v-tab v-if="role === 'admin' || role === 'contributor'" value="tags" class="text-none">Tags</v-tab>
       <v-tab v-if="role === 'admin'" value="quality" class="text-none">Photo quality</v-tab>
+      <v-tab v-if="role === 'admin'" value="video" class="text-none">Video</v-tab>
       <v-tab v-if="role === 'admin'" value="backup" class="text-none">Backup / Export</v-tab>
     </v-tabs>
 
@@ -311,8 +312,6 @@
               persistent-hint
             ></v-switch>
 
-            <v-btn color="primary" variant="flat" class="text-none mt-4" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
-
             <!-- Disk usage bar -->
             <div v-if="qualityConfig.disk_usage" class="mt-5">
               <div class="d-flex justify-space-between text-caption text-medium-emphasis mb-1">
@@ -361,6 +360,102 @@
             </tr>
           </tbody>
         </v-table>
+      </v-window-item>
+
+      <!-- ─────────────── Tab: Video ─────────────── -->
+      <v-window-item value="video">
+        <v-row>
+          <v-col cols="12" md="5">
+            <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-4" style="letter-spacing:.08em">Upload</p>
+
+            <v-switch
+              v-model="qualityConfig.ALLOW_VIDEO_UPLOAD"
+              :true-value="true"
+              :false-value="false"
+              label="Allow video upload"
+              color="primary"
+              density="compact"
+              class="mb-2 ml-2"
+              hint="ALLOW_VIDEO_UPLOAD — enable MP4/MOV/WebM video upload. Requires ffmpeg in the container."
+              persistent-hint
+            ></v-switch>
+
+            <v-divider class="my-4"></v-divider>
+            <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-4" style="letter-spacing:.08em">Transcoding worker</p>
+
+            <v-text-field
+              v-model="qualityConfig.TRANSCODE_POLL_INTERVAL"
+              type="number"
+              label="Poll interval (seconds)"
+              density="compact"
+              variant="outlined"
+              class="mb-3"
+              hint="TRANSCODE_POLL_INTERVAL — how often the worker checks for pending videos. Default: 10"
+              persistent-hint
+              clearable
+            ></v-text-field>
+
+            <v-btn color="primary" variant="flat" class="text-none mb-6" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
+
+            <v-divider class="my-4"></v-divider>
+            <div class="d-flex align-center mb-3">
+              <p class="text-subtitle-2 text-medium-emphasis text-uppercase ma-0" style="letter-spacing:.08em">Worker status</p>
+              <v-spacer></v-spacer>
+              <v-btn icon size="x-small" variant="text" :loading="videoStatusLoading" @click="refreshVideoStatus" title="Refresh">
+                <v-icon size="16">mdi-refresh</v-icon>
+              </v-btn>
+            </div>
+
+            <!-- Worker online/offline chip -->
+            <div v-if="qualityConfig.worker_status" class="mb-4 d-flex ga-2 flex-wrap align-center">
+              <v-chip size="small" :color="workerStatusColor" :prepend-icon="workerStatusIcon" variant="tonal">
+                {{ workerStatusLabel }}
+              </v-chip>
+              <span v-if="qualityConfig.worker_status.encoding_since" class="text-caption text-medium-emphasis">
+                {{ qualityConfig.worker_status.encoding_file }}
+              </span>
+            </div>
+
+            <!-- Transcode queue stats table -->
+            <v-table v-if="qualityConfig.video_transcode_stats" density="compact" class="rounded" style="max-width:360px">
+              <thead>
+                <tr>
+                  <th class="text-caption text-medium-emphasis">State</th>
+                  <th class="text-caption text-medium-emphasis">Count</th>
+                  <th class="text-caption text-medium-emphasis">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><v-chip size="x-small" color="warning" variant="tonal">pending</v-chip></td>
+                  <td class="text-body-2">{{ qualityConfig.video_transcode_stats.pending }}</td>
+                  <td class="text-caption text-medium-emphasis">Uploaded, waiting for worker</td>
+                </tr>
+                <tr>
+                  <td><v-chip size="x-small" color="primary" variant="tonal">processing</v-chip></td>
+                  <td class="text-body-2">{{ qualityConfig.video_transcode_stats.processing }}</td>
+                  <td class="text-caption text-medium-emphasis">Currently encoding</td>
+                </tr>
+                <tr>
+                  <td><v-chip size="x-small" color="error" variant="tonal">error</v-chip></td>
+                  <td class="text-body-2">{{ qualityConfig.video_transcode_stats.error }}</td>
+                  <td class="text-caption text-medium-emphasis">
+                    ffmpeg failed —
+                    <v-btn v-if="qualityConfig.video_transcode_stats.error > 0"
+                      size="x-small" variant="text" color="error" :loading="retryLoading"
+                      class="text-none pa-0" style="height:auto; min-width:0"
+                      @click="retryErrors">retry</v-btn>
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+
+            <p class="text-caption text-medium-emphasis mt-3" style="max-width:420px">
+              Transcoding errors are logged to stdout of the worker container.
+              Run <code>docker compose logs worker</code> to investigate.
+            </p>
+          </v-col>
+        </v-row>
       </v-window-item>
 
       <!-- ─────────────── Tab: Backup / Export ─────────────── -->
@@ -593,6 +688,10 @@ export default {
     importPollInterval: null,
     importConfirmDialog: false,
 
+    // Video tab
+    videoStatusLoading: false,
+    retryLoading: false,
+
     // Photo quality tab
     qualityConfig: {},
     qualitySampleYaml: '',
@@ -641,6 +740,39 @@ export default {
       if (pct > 90) return 'error'
       if (pct > 75) return 'warning'
       return 'primary'
+    },
+
+    workerStatusColor() {
+      const ws = this.qualityConfig.worker_status
+      if (!ws || !ws.last_seen) return 'default'
+      const interval = (parseInt(this.qualityConfig.TRANSCODE_POLL_INTERVAL) || 10) * 1000
+      const elapsed = Date.now() - new Date(ws.last_seen).getTime()
+      if (elapsed > interval * 3) return 'error'
+      if (ws.encoding_since) return 'primary'
+      return 'success'
+    },
+
+    workerStatusIcon() {
+      const ws = this.qualityConfig.worker_status
+      if (!ws || !ws.last_seen) return 'mdi-circle-off-outline'
+      const interval = (parseInt(this.qualityConfig.TRANSCODE_POLL_INTERVAL) || 10) * 1000
+      const elapsed = Date.now() - new Date(ws.last_seen).getTime()
+      if (elapsed > interval * 3) return 'mdi-circle-off-outline'
+      if (ws.encoding_since) return 'mdi-cog-sync-outline'
+      return 'mdi-circle-outline'
+    },
+
+    workerStatusLabel() {
+      const ws = this.qualityConfig.worker_status
+      if (!ws || !ws.last_seen) return 'Worker offline'
+      const interval = (parseInt(this.qualityConfig.TRANSCODE_POLL_INTERVAL) || 10) * 1000
+      const elapsed = Date.now() - new Date(ws.last_seen).getTime()
+      if (elapsed > interval * 3) return 'Worker offline'
+      if (ws.encoding_since) {
+        const sec = Math.round((Date.now() - new Date(ws.encoding_since).getTime()) / 1000)
+        return `Encoding — ${sec}s`
+      }
+      return 'Worker online'
     },
   },
 
@@ -764,7 +896,7 @@ export default {
         await this.$nextTick()
         this._initEditor(this.tagsYaml)
       }
-      if (tab === 'quality') {
+      if (tab === 'quality' || tab === 'video') {
         await this.loadConfig()
       }
     },
@@ -814,6 +946,20 @@ export default {
       }
     },
 
+    // ── Video tab ─────────────────────────────────────────────────────────
+    async refreshVideoStatus() {
+      this.videoStatusLoading = true
+      await this.loadConfig()
+      this.videoStatusLoading = false
+    },
+
+    async retryErrors() {
+      this.retryLoading = true
+      await useAsyncFetch('/api/admin/retry-errors', { method: 'POST' })
+      await this.loadConfig()
+      this.retryLoading = false
+    },
+
     // ── Photo quality ─────────────────────────────────────────────────────
     async loadConfig() {
       this.qualityLoading = true
@@ -823,6 +969,7 @@ export default {
         // Normalize boolean (backend may return '1'/'0'/True/False/'True'/'False')
         cfg.RAW_PHOTO_OVERRIDE_EXISTS = ['True', 'true', '1', 1, true].includes(cfg.RAW_PHOTO_OVERRIDE_EXISTS)
         cfg.GENERATE_SAMPLES_ON_UPLOAD = ['True', 'true', '1', 1, true].includes(cfg.GENERATE_SAMPLES_ON_UPLOAD)
+        cfg.ALLOW_VIDEO_UPLOAD = ['True', 'true', '1', 1, true].includes(cfg.ALLOW_VIDEO_UPLOAD)
         // Normalize null-ish values
         if (!cfg.RAW_PHOTOS_QUALITY) cfg.RAW_PHOTOS_QUALITY = null
         if (!cfg.RAW_PHOTOS_MAX_SIZE) cfg.RAW_PHOTOS_MAX_SIZE = null
@@ -865,6 +1012,8 @@ export default {
         RAW_PHOTOS_MAX_SIZE:       this.qualityConfig.RAW_PHOTOS_MAX_SIZE || '',
         RAW_PHOTO_OVERRIDE_EXISTS:  this.qualityConfig.RAW_PHOTO_OVERRIDE_EXISTS ? 'True' : 'False',
         GENERATE_SAMPLES_ON_UPLOAD: this.qualityConfig.GENERATE_SAMPLES_ON_UPLOAD ? 'True' : 'False',
+        ALLOW_VIDEO_UPLOAD:         this.qualityConfig.ALLOW_VIDEO_UPLOAD ? 'True' : 'False',
+        TRANSCODE_POLL_INTERVAL:    this.qualityConfig.TRANSCODE_POLL_INTERVAL || '',
         SAMPLE_PHOTOS_SETTINGS:    this.qualitySampleYaml,
       }
       const { data } = await useAsyncPost('/api/admin/config', payload)

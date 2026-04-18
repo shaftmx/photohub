@@ -33,6 +33,7 @@ services:
     #  # Make the database persistent
     #  - "/tmp/data/photos:/data"
     environment:
+      NGINX_MAX_UPLOAD_SIZE: "10240m"
       DJANGO_SUPERUSER_PASSWORD: admin
       DJANGO_SUPERUSER_USERNAME: admin
       DJANGO_SUPERUSER_EMAIL: admin@admin.admin
@@ -47,3 +48,21 @@ services:
       DB_PASSWORD: secret
     network_mode: bridge
 
+
+  worker:
+    image: shaftmx/photohub
+    links: [db]
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python /photohub/manage.py transcode_pending
+    #volumes:
+    #  # Same media volume as web
+    #  - "/tmp/data/photos:/data"
+    environment:
+      DJANGO_SECRET_KEY: 'django-insecure-51=qtuhifsb)&!!gdps^rkn2^re7_#nqp62pcq7fi^d*015+)6'
+      DB_NAME: photohub
+      DB_HOST: db
+      DB_USER: photohub
+      DB_PASSWORD: secret
+    network_mode: bridge

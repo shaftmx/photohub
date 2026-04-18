@@ -23,7 +23,7 @@ def get_photo(request, filename):
 
 
 def _serialize_photo_detail(p):
-    fields = ["filename", "date", "owner", "height", "width", "description", "published", "origin_filename", "favorite", "rating"]
+    fields = ["filename", "date", "owner", "height", "width", "description", "published", "origin_filename", "favorite", "rating", "type", "transcode_status", "duration"]
     _p = model_to_dict(p, fields=fields)
     _p["upload_date"] = p.upload_date.isoformat() if p.upload_date else ""
     _p["date"] = p.date.isoformat() if p.date else ""

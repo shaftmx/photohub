@@ -219,6 +219,8 @@
         <v-chip v-if="view.filter_rating_value > 0" size="x-small" color="amber" variant="tonal" prepend-icon="mdi-star">
           {{ view.filter_rating_mode === 'eq' ? '=' : '≤' }}{{ view.filter_rating_value }}★
         </v-chip>
+        <v-chip v-if="view.filter_media_type === 'photo'" size="x-small" variant="tonal" prepend-icon="mdi-image">Photos only</v-chip>
+        <v-chip v-if="view.filter_media_type === 'video'" size="x-small" variant="tonal" prepend-icon="mdi-video">Videos only</v-chip>
       </v-sheet>
     </v-expand-transition>
 

@@ -18,7 +18,7 @@ from .. import models
 
 
 # Keys managed via AppConfig
-CONFIG_KEYS = ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'SAMPLE_PHOTOS_SETTINGS']
+CONFIG_KEYS = ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'SAMPLE_PHOTOS_SETTINGS', 'ALLOW_VIDEO_UPLOAD', 'TRANSCODE_POLL_INTERVAL']
 
 
 def _get_config_value(key):
@@ -58,12 +58,38 @@ def _get_config(request):
         "RAW_PHOTO_OVERRIDE_EXISTS":   _get_config_value('RAW_PHOTO_OVERRIDE_EXISTS'),
         "GENERATE_SAMPLES_ON_UPLOAD":  _get_config_value('GENERATE_SAMPLES_ON_UPLOAD'),
         "SAMPLE_PHOTOS_SETTINGS":      _get_config_value('SAMPLE_PHOTOS_SETTINGS'),
+        "ALLOW_VIDEO_UPLOAD":          _get_config_value('ALLOW_VIDEO_UPLOAD'),
+        "TRANSCODE_POLL_INTERVAL":     _get_config_value('TRANSCODE_POLL_INTERVAL'),
         # Read-only info
         "MEDIA_ROOT": settings.MEDIA_ROOT,
         "DUMP_ROOT":  settings.DUMP_ROOT,
         "disk_usage": _disk_usage(settings.MEDIA_ROOT),
+        "video_transcode_stats": _video_transcode_stats(),
+        "worker_status": _worker_status(),
     }
     return Response(200, data=data)
+
+
+def _worker_status():
+    def _get(key):
+        try:
+            return models.AppConfig.objects.get(key=key).value
+        except models.AppConfig.DoesNotExist:
+            return None
+
+    return {
+        "last_seen": _get('WORKER_LAST_SEEN'),
+        "encoding_since": _get('WORKER_ENCODING_SINCE'),
+        "encoding_file": _get('WORKER_ENCODING_FILE'),
+    }
+
+
+def _video_transcode_stats():
+    return {
+        "pending":    models.Photo.objects.filter(type='video', transcode_status='pending').count(),
+        "processing": models.Photo.objects.filter(type='video', transcode_status='processing').count(),
+        "error":      models.Photo.objects.filter(type='video', transcode_status='error').count(),
+    }
 
 
 def _set_config(request):
@@ -71,7 +97,7 @@ def _set_config(request):
     if err:
         return ErrorRequest(details=err)
 
-    for key in ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD']:
+    for key in ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD', 'TRANSCODE_POLL_INTERVAL']:
         if key in body:
             _set_config_value(key, body[key])
 
@@ -98,6 +124,14 @@ def _disk_usage(path):
         }
     except Exception:
         return None
+
+
+@admin_required
+@require_http_methods(["POST"])
+def retry_errors(request):
+    """Reset all error videos to pending so the worker retries them."""
+    count = models.Photo.objects.filter(type='video', transcode_status='error').update(transcode_status='pending')
+    return Response(200, data={"retried": count})
 
 
 @admin_required

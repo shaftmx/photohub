@@ -147,6 +147,13 @@
 
         <v-divider vertical style="height: 24px; align-self: center;"></v-divider>
 
+        <!-- Media type filter -->
+        <v-btn-toggle v-model="filterMediaType" mandatory density="compact" rounded="lg" style="height:28px;" @update:modelValue="fetchPreview()">
+          <v-btn value="all" size="x-small" variant="text">All</v-btn>
+          <v-btn value="photo" size="x-small" variant="text"><v-icon size="14">mdi-image</v-icon></v-btn>
+          <v-btn value="video" size="x-small" variant="text"><v-icon size="14">mdi-video</v-icon></v-btn>
+        </v-btn-toggle>
+
         <!-- Favorite filter toggle -->
         <v-btn
           :icon="filterFavorite ? 'mdi-heart' : 'mdi-heart-outline'"
@@ -365,6 +372,7 @@ export default {
     filterFavorite: false,
     filterRating: 0,
     filterRatingMode: 'lte',
+    filterMediaType: 'all',
     // Preview
     photos: [],
     loading: false,
@@ -448,6 +456,7 @@ export default {
       this.filterFavorite = !!state.filter_favorite
       this.filterRating = state.filter_rating_value || 0
       this.filterRatingMode = state.filter_rating_mode || 'lte'
+      this.filterMediaType = state.filter_media_type || 'all'
       if (state.filter_tag_names?.length) {
         const nameSet = new Set(state.filter_tag_names)
         const matched = this.allTagsFlat.filter(t => nameSet.has(t.name))
@@ -480,6 +489,7 @@ export default {
         filter_favorite: v.filter_favorite,
         filter_rating_value: v.filter_rating_value,
         filter_rating_mode: v.filter_rating_mode,
+        filter_media_type: v.filter_media_type || 'all',
       })
     },
 
@@ -520,6 +530,7 @@ export default {
         params.set('rating', this.filterRating)
         params.set('rating_mode', this.filterRatingMode)
       }
+      if (this.filterMediaType !== 'all') params.set('media_type', this.filterMediaType)
       // Use 'date' as sort for the preview API (custom order is view-specific)
       const sortByParam = this.sortBy === 'custom' ? 'date' : this.sortBy
       params.set('sort_by', sortByParam)
@@ -750,6 +761,7 @@ export default {
         filter_favorite: this.filterFavorite ? true : null,
         filter_rating_value: this.filterRating,
         filter_rating_mode: this.filterRatingMode,
+        filter_media_type: this.filterMediaType,
         sort_by: this.sortBy,
         sort_dir: this.sortDir,
       }

@@ -5,6 +5,7 @@ from django.http import JsonResponse
 import json
 import yaml
 import hashlib
+import subprocess
 from os.path import join as p_join
 from django.conf import settings
 from PIL import Image, ExifTags, ImageCms
@@ -15,22 +16,16 @@ from os.path import basename
 def get_setting(key):
     """Return the effective value for a runtime-overridable setting.
     Reads AppConfig (DB) first; falls back to settings.py if not set.
-    Used for: RAW_PHOTOS_QUALITY, RAW_PHOTOS_MAX_SIZE, RAW_PHOTO_OVERRIDE_EXISTS,
-    SAMPLE_PHOTOS_SETTINGS.
     """
     from . import models
     try:
         raw = models.AppConfig.objects.get(key=key).value
-        # SAMPLE_PHOTOS_SETTINGS is stored as YAML string, return parsed list
         if key == 'SAMPLE_PHOTOS_SETTINGS':
             return yaml.safe_load(raw)
-        # RAW_PHOTOS_MAX_SIZE is stored as string, cast to int
-        if key == 'RAW_PHOTOS_MAX_SIZE':
+        if key in ('RAW_PHOTOS_MAX_SIZE', 'TRANSCODE_POLL_INTERVAL'):
             return int(raw) if raw else None
-        # Boolean keys stored as 'True'/'False'
-        if key in ('RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD'):
+        if key in ('RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD'):
             return raw in ('True', 'true', '1')
-        # RAW_PHOTOS_QUALITY: empty string means None
         return raw or None
     except models.AppConfig.DoesNotExist:
         return getattr(settings, key, None)
@@ -153,8 +148,74 @@ from django.core.files.base import File
 from io import BytesIO
 
 
+def _get_absolute_path(storage_path):
+    """Return the absolute filesystem path for a storage-relative path."""
+    return default_storage.path(storage_path)
+
+
+def _ffprobe_video(abs_path):
+    """Run ffprobe and return (width, height, duration) or raise on error."""
+    result = subprocess.run(
+        ['ffprobe', '-v', 'error', '-select_streams', 'v:0',
+         '-show_entries', 'stream=width,height,duration',
+         '-of', 'json', abs_path],
+        capture_output=True, text=True, timeout=60,
+    )
+    if result.returncode != 0:
+        raise Exception("ffprobe failed: %s" % result.stderr)
+    import json as _json
+    info = _json.loads(result.stdout)
+    streams = info.get('streams', [])
+    if not streams:
+        raise Exception("ffprobe: no video stream found")
+    s = streams[0]
+    width = int(s.get('width', 0))
+    height = int(s.get('height', 0))
+    duration = float(s.get('duration', 0) or 0)
+    if not width or not height:
+        raise Exception("ffprobe: could not determine video dimensions")
+    return width, height, duration
+
+
+def generate_video_poster(filename):
+    """Extract a frame from a raw video and generate thumbnail samples from it."""
+    raw_path = getRawPath(filename)
+    abs_raw = _get_absolute_path(raw_path)
+    try:
+        result = subprocess.run(
+            ['ffmpeg', '-y', '-i', abs_raw, '-ss', '0', '-vframes', '1',
+             '-f', 'image2', '-vcodec', 'mjpeg', 'pipe:1'],
+            capture_output=True, timeout=120,
+        )
+        if result.returncode != 0:
+            raise Exception("ffmpeg poster extraction failed: %s" % result.stderr.decode())
+        from io import BytesIO
+        image_raw = Image.open(BytesIO(result.stdout))
+        image_raw = image_raw.convert('RGB')  # ensure JPEG-compatible mode
+        icc_profile = image_raw.info.get("icc_profile")
+        for sample in sorted(get_setting('SAMPLE_PHOTOS_SETTINGS'), key=lambda d: d['max_size'], reverse=True):
+            image_sample = image_raw.copy()
+            image_sample.thumbnail(size=(sample["max_size"], sample["max_size"]))
+            sample_path = getSamplePath(filename, sample["name"])
+            sample_file = File(BytesIO(), name=sample_path)
+            image_sample.save(sample_file, format='JPEG', quality=sample["quality"], icc_profile=icc_profile)
+            if default_storage.exists(sample_path):
+                default_storage.delete(sample_path)
+            default_storage.save(sample_path, sample_file)
+        return
+    except Exception as e:
+        return e
+
+
 def generate_photo_samples(filename):
     "Generate all photo samples from a raw file path"
+    from . import models as _models
+    try:
+        p = _models.Photo.objects.get(filename=filename)
+        if p.type == 'video':
+            return generate_video_poster(filename)
+    except _models.Photo.DoesNotExist:
+        pass
     raw_photo_path =  getRawPath(filename)
     try:
         image_raw = Image.open(default_storage.open(raw_photo_path))
@@ -183,6 +244,9 @@ def generate_photo_samples(filename):
 
 
 def save_photo(file, photo_path, owner):
+    mime = getattr(file, 'content_type', '') or ''
+    if mime.startswith('video/') or photo_path.endswith('.mp4'):
+        return save_video(file, photo_path, owner)
     try:
         with Image.open(file) as image_raw:
             if image_raw.format != "JPEG":
@@ -190,6 +254,17 @@ def save_photo(file, photo_path, owner):
 
         write_raw_photo(file, photo_path)
         create_photo_in_db(file, basename(photo_path), owner)
+        return
+    except Exception as e:
+        return e
+
+
+def save_video(file, photo_path, owner):
+    try:
+        write_raw_photo(file, photo_path)
+        abs_path = _get_absolute_path(photo_path)
+        width, height, duration = _ffprobe_video(abs_path)
+        create_video_in_db(file, basename(photo_path), owner, width, height, duration)
         return
     except Exception as e:
         return e
@@ -304,6 +379,23 @@ def get_exif(file):
 from django.utils import timezone
 from . import models
 import datetime
+def create_video_in_db(file, filename, owner, width, height, duration):
+    if not get_setting('RAW_PHOTO_OVERRIDE_EXISTS') and models.Photo.objects.filter(filename=filename).exists():
+        LOG.info("Video already in db, skip")
+        return
+    defaults = {
+        "owner": owner,
+        "published": False,
+        "type": "video",
+        "transcode_status": "pending",
+        "origin_filename": file.name,
+        "width": width,
+        "height": height,
+        "duration": duration or None,
+    }
+    p, _ = models.Photo.objects.update_or_create(filename=filename, defaults=defaults)
+
+
 def create_photo_in_db(file, filename, owner):
         # If the picture is already in db, skip
         if not get_setting('RAW_PHOTO_OVERRIDE_EXISTS') and models.Photo.objects.filter(filename=filename).exists():
@@ -316,6 +408,7 @@ def create_photo_in_db(file, filename, owner):
             "owner": owner,
             "published": False,
             "type": "photo",
+            "transcode_status": "done",
             "origin_filename": file.name,
             "width": exifs["Width"],
             "height": exifs["Height"],

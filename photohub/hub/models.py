@@ -26,7 +26,9 @@ class Tag(models.Model):
     
 class Photo(models.Model):
     owner = models.CharField(max_length=250)
-    type =  models.CharField(max_length=150, default="photo") # TODO This could potentially be later used for videos
+    type = models.CharField(max_length=150, default="photo")  # 'photo' | 'video'
+    transcode_status = models.CharField(max_length=20, default='done')  # 'pending' | 'processing' | 'done' | 'error'
+    duration = models.FloatField(null=True, blank=True)  # seconds, videos only
     description = models.TextField(blank=True)
     width = models.IntegerField()
     height = models.IntegerField()
@@ -35,7 +37,7 @@ class Photo(models.Model):
     rating = models.IntegerField(default=0)  # 0 = not rated, 1-5 stars
     filename = models.CharField(max_length=250, unique=True)
     origin_filename = models.TextField(blank=True)
-    date = models.DateTimeField(default=datetime.now) # By default same as upload. Buf if we got a date in exif, we put the more specific one
+    date = models.DateTimeField(default=datetime.now)
     upload_date = models.DateTimeField(auto_now_add=True)
     tags = models.ManyToManyField(Tag)
 
@@ -76,6 +78,7 @@ class View(models.Model):
     filter_favorite = models.BooleanField(null=True, blank=True)    # null=all, True=fav only
     filter_rating_value = models.IntegerField(default=0)
     filter_rating_mode = models.CharField(max_length=4, default='gte')  # lte / gte / eq
+    filter_media_type = models.CharField(max_length=10, default='all')  # all / photo / video
 
 
 class AppConfig(models.Model):

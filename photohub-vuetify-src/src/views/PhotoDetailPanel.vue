@@ -30,7 +30,7 @@
 
     <div v-if="!loading && photo" class="pa-4">
       <!-- Thumbnail -->
-      <v-card rounded="lg" elevation="2" class="mb-4 overflow-hidden">
+      <v-card rounded="lg" elevation="2" class="mb-4 overflow-hidden" style="position:relative;">
         <v-img :src="photoThumbUrl" :aspect-ratio="photo.width / photo.height" cover max-height="260">
           <template v-slot:placeholder>
             <div class="d-flex align-center justify-center fill-height">
@@ -38,6 +38,9 @@
             </div>
           </template>
         </v-img>
+        <div v-if="photo.type === 'video'" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+          <v-icon size="56" color="white" style="opacity:0.85">mdi-play-circle</v-icon>
+        </div>
       </v-card>
 
       <!-- Status chips -->
@@ -47,6 +50,8 @@
           {{ photo.published ? 'Published' : 'Unpublished' }}
         </v-chip>
         <v-chip size="small" variant="outlined" class="ml-1">{{ photo.width }}×{{ photo.height }}</v-chip>
+        <v-chip v-if="photo.type === 'video' && photo.duration" size="small" variant="outlined" prepend-icon="mdi-clock-outline">{{ formatDuration(photo.duration) }}</v-chip>
+        <v-chip v-if="photo.type === 'video' && photo.transcode_status !== 'done'" size="small" :color="photo.transcode_status === 'error' ? 'error' : 'warning'" variant="tonal" prepend-icon="mdi-cog-outline">{{ photo.transcode_status }}</v-chip>
       </div>
 
       <PhotoDetailBody
@@ -84,6 +89,8 @@
           {{ photo.published ? 'Published' : 'Unpublished' }}
         </v-chip>
         <v-chip size="small" variant="outlined">{{ photo.width }}×{{ photo.height }}</v-chip>
+        <v-chip v-if="photo.type === 'video' && photo.duration" size="small" variant="outlined" prepend-icon="mdi-clock-outline">{{ formatDuration(photo.duration) }}</v-chip>
+        <v-chip v-if="photo.type === 'video' && photo.transcode_status !== 'done'" size="small" :color="photo.transcode_status === 'error' ? 'error' : 'warning'" variant="tonal" prepend-icon="mdi-cog-outline">{{ photo.transcode_status }}</v-chip>
         <v-spacer></v-spacer>
         <template v-if="!readonly">
           <v-btn v-if="viewId" icon size="small" variant="text" :color="isCover ? 'primary' : undefined"
@@ -188,6 +195,13 @@ export default defineComponent({
   },
 
   methods: {
+    formatDuration(seconds) {
+      if (!seconds) return ''
+      const m = Math.floor(seconds / 60)
+      const s = Math.floor(seconds % 60)
+      return `${m}:${s.toString().padStart(2, '0')}`
+    },
+
     async open(filename) {
       if (!this.embedded) this.displayed = true
       this.photo = null

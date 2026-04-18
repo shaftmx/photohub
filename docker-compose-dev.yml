@@ -25,11 +25,19 @@ services:
     #command: sleep 3600
     volumes:
       - "./photohub:/photohub"
-      - "./bootstrap:/bootstrap" # for Troubleshooting
       - "/tmp/photohub-vuetify:/photohub-vuetify" # dist output of the build from web-vue
       # Make the data persistent
       - "/tmp/data/photos:/data"
       - "./dumps:/dumps"
+
+  worker:
+    extends:
+      file: docker-compose.yml
+      service: worker
+    build: .
+    volumes:
+      - "./photohub:/photohub"
+      - "/tmp/data/photos:/data"
 
   web-vue: # Split this web in order to be able to use node command to run yarn dev
     image: node:lts-alpine3.21
@@ -52,5 +60,7 @@ services:
     command: [nginx-debug, '-g', 'daemon off;']
     ports:
       - "8080:8080"
+    environment:
+      NGINX_MAX_UPLOAD_SIZE: "10240m"
     network_mode: bridge
 

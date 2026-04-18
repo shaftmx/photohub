@@ -25,6 +25,7 @@ def _serialize_view(v):
         "filter_favorite": v.filter_favorite,
         "filter_rating_value": v.filter_rating_value,
         "filter_rating_mode": v.filter_rating_mode,
+        "filter_media_type": v.filter_media_type,
         "cover_filename": v.cover.filename if v.cover else None,
         "cover_hash_path": genHasingPath(v.cover.filename) if v.cover else None,
         "has_custom_order": models.ViewPhotoOrder.objects.filter(view=v).exists(),
@@ -68,6 +69,9 @@ def _apply_view_filters(v):
     if v.filter_favorite is True:
         photos_query = photos_query.filter(favorite=True)
 
+    if v.filter_media_type in ('photo', 'video'):
+        photos_query = photos_query.filter(type=v.filter_media_type)
+
     if v.filter_rating_value and v.filter_rating_value > 0:
         if v.filter_rating_mode == 'eq':
             photos_query = photos_query.filter(rating=v.filter_rating_value)
@@ -97,7 +101,7 @@ def _resolve_token(token):
 
 
 def _serialize_photo(p):
-    fields = ["filename", "date", "owner", "height", "width", "tags", "favorite", "rating", "origin_filename"]
+    fields = ["filename", "date", "owner", "height", "width", "tags", "favorite", "rating", "origin_filename", "type", "transcode_status", "duration"]
     _p = model_to_dict(p, fields=fields)
     _p["upload_date"] = p.upload_date.isoformat() if p.upload_date else ""
     _p["tags"] = {}
@@ -156,6 +160,7 @@ def create_view(request):
         filter_favorite=post.get("filter_favorite"),  # None / True
         filter_rating_value=int(post.get("filter_rating_value", 0)),
         filter_rating_mode=post.get("filter_rating_mode", "gte"),
+        filter_media_type=post.get("filter_media_type", "all"),
     )
     v.save()
 
@@ -224,6 +229,8 @@ def update_view(request, view_id):
         v.filter_rating_value = int(post["filter_rating_value"])
     if "filter_rating_mode" in post:
         v.filter_rating_mode = post["filter_rating_mode"]
+    if "filter_media_type" in post:
+        v.filter_media_type = post["filter_media_type"]
 
     # Cover photo
     if "cover_filename" in post:
@@ -324,6 +331,12 @@ def get_view_photos(request, view_id):
 
 def _build_view_photos_response(request, v):
     filtered_qs = _apply_view_filters(v)
+
+    # Allow overriding media_type via URL param (UI toggle, does not change saved view)
+    media_type_override = request.GET.get('media_type')
+    if media_type_override in ('photo', 'video'):
+        filtered_qs = filtered_qs.filter(type=media_type_override)
+
     v_data = _serialize_view(v)
 
     # Custom order: if sort_by == 'custom' (view default or overridden by query param) AND records exist

@@ -39,8 +39,19 @@
                 v-for="(photo) in photos"
                 :key="photo.filename"
                 :value="photo.filename"
-                :src="paths[sharedDatas.displayPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']"
-              ></v-carousel-item>
+              >
+                <video
+                  v-if="photo.type === 'video'"
+                  :src="(paths.raw || paths[sharedDatas.displayPhotoSize]) + '/' + photo['hash_path'] + '/' + photo['filename']"
+                  controls
+                  style="width:100%; height:100%; object-fit:contain; background:#000;"
+                ></video>
+                <img
+                  v-else
+                  :src="paths[sharedDatas.displayPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']"
+                  style="width:100%; height:100%; object-fit:contain;"
+                />
+              </v-carousel-item>
             </v-carousel>
           </div>
 

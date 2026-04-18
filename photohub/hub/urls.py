@@ -78,6 +78,7 @@ urlpatterns = [
     # Admin — config / photo quality (admin only)
     path("admin/config", admin_config.config_view, name="admin_config"),
     path("admin/flush-samples", admin_config.flush_samples, name="admin_flush_samples"),
+    path("admin/retry-errors", admin_config.retry_errors, name="admin_retry_errors"),
 
     # Admin — export / import (admin only)
     path("admin/export", admin_export.export_dump, name="admin_export"),

@@ -29,7 +29,7 @@ server {
     }
 
     location ~ ^/api {
-        client_max_body_size 70m;
+        client_max_body_size ${NGINX_MAX_UPLOAD_SIZE};
         add_header Access-Control-Allow-Origin ${HEADER_ALLOW_ORIGIN};
         proxy_pass_request_headers on;
         proxy_set_header   X-Real-IP         $remote_addr;

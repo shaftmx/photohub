@@ -17,6 +17,10 @@
           :src="paths[adaptivePhotoSize] + '/' + photo.hash_path + '/' + photo.filename"
           @click="!draggable && $emit('item-click', photo, index, $event)"
         />
+        <div v-if="photo.type === 'video'" class="video-overlay" @click="!draggable && $emit('item-click', photo, index, $event)">
+          <v-progress-circular v-if="photo.transcode_status !== 'done'" indeterminate color="white" size="40"></v-progress-circular>
+          <v-icon v-else size="48" color="white" style="opacity:0.85">mdi-play-circle</v-icon>
+        </div>
         <slot name="overlay" :photo="photo" :index="index"></slot>
         <button v-if="draggable" class="drag-handle" title="Drag to reorder">
           <v-icon size="18">mdi-drag</v-icon>

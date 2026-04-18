@@ -4,7 +4,7 @@ RUN cd /photohub-vuetify-src/ && yarn install --frozen-lockfile && yarn build --
 
 FROM python:3
 
-RUN apt-get update && apt-get install -y gettext-base nginx && apt-get clean
+RUN apt-get update && apt-get install -y gettext-base nginx ffmpeg && apt-get clean
 RUN unlink /etc/nginx/sites-enabled/default
 COPY ./requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
