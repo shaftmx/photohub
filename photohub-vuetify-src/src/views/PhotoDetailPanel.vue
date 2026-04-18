@@ -133,7 +133,7 @@
 
 <script>
 import { defineComponent } from 'vue'
-import { thumbFilename } from '../photoUtils.js'
+import { thumbFilename, formatDuration } from '../photoUtils.js'
 import { getSharedDatas } from '../sharedDatas.js'
 import { useAlertStore } from '../stores/alert'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
@@ -196,12 +196,7 @@ export default defineComponent({
   },
 
   methods: {
-    formatDuration(seconds) {
-      if (!seconds) return ''
-      const m = Math.floor(seconds / 60)
-      const s = Math.floor(seconds % 60)
-      return `${m}:${s.toString().padStart(2, '0')}`
-    },
+    formatDuration,
 
     async open(filename) {
       if (!this.embedded) this.displayed = true

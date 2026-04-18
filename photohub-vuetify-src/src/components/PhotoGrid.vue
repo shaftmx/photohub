@@ -20,6 +20,7 @@
         <div v-if="photo.type === 'video'" class="video-overlay" @click="!draggable && $emit('item-click', photo, index, $event)">
           <v-progress-circular v-if="photo.transcode_status !== 'done'" indeterminate color="white" size="40"></v-progress-circular>
           <v-icon v-else size="48" color="white" style="opacity:0.85">mdi-play-circle</v-icon>
+          <span v-if="photo.duration" class="video-duration">{{ formatDuration(photo.duration) }}</span>
         </div>
         <slot name="overlay" :photo="photo" :index="index"></slot>
         <button v-if="draggable" class="drag-handle" title="Drag to reorder">
@@ -44,7 +45,7 @@
 <script>
 import '../styles/galleryGrid.css'
 import { defineComponent } from 'vue'
-import { thumbFilename } from '../photoUtils.js'
+import { thumbFilename, formatDuration } from '../photoUtils.js'
 
 export default defineComponent({
   props: {
@@ -90,6 +91,7 @@ export default defineComponent({
   },
   methods: {
     thumbFilename,
+    formatDuration,
     onDragStart(index) {
       this.dragIndex = index
     },

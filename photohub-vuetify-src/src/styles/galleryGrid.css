@@ -132,6 +132,21 @@
   opacity: 0.85;
 }
 
+/* Video duration badge */
+.video-duration {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 3px;
+  pointer-events: none;
+  line-height: 1.6;
+}
+
 /* Video play/loading overlay */
 .video-overlay {
   position: absolute;
