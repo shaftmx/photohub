@@ -18,7 +18,7 @@
           <h1 class="text-h6">{{ title }}</h1>
           <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
         </div>
-        <h1 v-if="sharedDatas.isMobile" class="text-body-2 mb-4">{{ subtitle }}</h1>
+        <p v-if="sharedDatas.isMobile" class="text-caption text-medium-emphasis mb-4">{{ subtitle }}</p>
       </v-sheet>
 
       <!-- Row 1: selection controls + bulk actions menu -->
