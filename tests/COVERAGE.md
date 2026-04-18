@@ -250,5 +250,23 @@ Total: **124 tests** across 5 spec files.
 - Photo quality settings
 - Export/Import
 
+**Video**
+- Upload an MP4 file when `ALLOW_VIDEO_UPLOAD=true` → appears in Unpublished with spinner overlay
+- Upload rejected when `ALLOW_VIDEO_UPLOAD=false`
+- Worker transcodes video → `transcode_status` becomes `done`, play icon overlay appears in grid
+- Duration badge visible on video thumbnail in grid
+- Click on video in grid → `<video>` player renders in DisplayPhoto carousel
+- Video playback controls visible and functional
+- Media type filter (All / Photos / Videos) in Photos page filters correctly
+- Media type filter in ViewDetail filters correctly
+- `filter_media_type` persisted on View: creating a "videos only" view works
+- Retry errors button in admin Video tab resets `error` → `pending`
+- Worker status chip shows online/offline/encoding state correctly
+- Flush samples → video thumbnails regenerate lazily from poster JPG in raw/
+- Export with raw: .mp4 + poster .jpg exported to dump folder
+- Import: .mp4 file ingested, poster restored, `transcode_status=pending` if no poster
+- ZIP download: videos included as .mp4 regardless of size param
+- Delete video: .mp4 + poster .jpg removed from raw/
+
 **Unpublished**
 - "Tag" bulk action (TagPhotos component flow)

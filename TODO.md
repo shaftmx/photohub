@@ -132,16 +132,17 @@ Views, users, and other app state → handled via a separate DB dump outside the
 ## Future / Ideas
 - ⬜ Panoramic photo handling — special resize/display if ratio > 1/3 ?
 - ⬜ Non-JPEG support — `save_photo` in `hub/utils.py` only handles JPEG
-- ⬜ **Video support** — `Photo.type` field already in model
+- ✅ **Video support** — `Photo.type` field already in model
   - **Formats**: MP4, MOV and others accepted via ffmpeg; re-encoded to MP4/H264 web-optimised (`-movflags +faststart`) at ingestion
-  - **Thumbnails**: same sample system as photos (xs/sm/…); frame extracted by ffmpeg at t=0; used in all grids identically
-  - **Transcode background**: new `transcode_status` field on `Photo` (`pending` / `processing` / `done` / `error`); management command `transcode_pending` processes queued videos; triggered by a cron in docker-compose (e.g. every 2 min)
-  - **Grid**: play icon overlay on video thumbnails; loading spinner overlay when `transcode_status != done`
-  - **Detail panel**: HTML5 `<video>` player instead of `<img>`; metadata section shows ffprobe info (duration, resolution, codec) alongside EXIF
-  - **Upload**: same upload page, file type detected at ingestion; `save_photo` in `hub/utils.py` gets a video branch
-  - **Infra**: ffmpeg + ffprobe added to Dockerfile
-  - **Admin panel — Photo quality tab**: toggle `ALLOW_VIDEO_UPLOAD` (default off); when off, video files are rejected at upload with a clear error message
-  - **Grid filter**: image / video / all toggle in Photos page, ViewDetail, and ViewCreate
+  - **Thumbnails**: poster JPG extracted by ffmpeg at t=0, stored in raw/ alongside .mp4; same sample system as photos (xs/s/m/l); used in all grids identically
+  - **Transcode background**: `transcode_status` field (`pending`/`processing`/`done`/`error`); `transcode_pending` management command runs as foreground daemon in worker container; DB-configurable poll interval, CRF, preset, threads
+  - **Grid**: play icon overlay + duration badge; spinner when `transcode_status != done`
+  - **Detail panel**: HTML5 `<video>` player; duration chip; transcode status chip
+  - **Upload**: same upload page; `ALLOW_VIDEO_UPLOAD` toggle (default off); video rejected with clear error when off
+  - **Infra**: ffmpeg + ffprobe in Dockerfile; worker service in docker-compose with `cpus` limit
+  - **Admin panel — Video tab**: ALLOW_VIDEO_UPLOAD, poll interval, CRF, preset, threads; worker status chip (online/encoding/offline + elapsed time); transcode queue stats table; retry errors button
+  - **Grid filter**: All / Photos / Videos toggle in Photos, ViewDetail, ViewCreate; `filter_media_type` persisted on View model
+  - **Backup/restore**: export includes .mp4 + poster JPG + type/duration/dimensions in meta; import handles .mp4 files
 - ✅ **Map view** — Leaflet + OpenStreetMap map accessible from ViewDetail; shows a pin for each photo that has GPS EXIF data (Photos page map: future)
  shows a pin for each photo that has GPS EXIF data:
   - **Entry points**: map icon button in Photos toolbar and ViewDetail toolbar (only visible if at least one photo has GPS data)
