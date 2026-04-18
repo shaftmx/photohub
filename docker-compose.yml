@@ -66,4 +66,5 @@ services:
       DB_HOST: db
       DB_USER: photohub
       DB_PASSWORD: secret
+      LOG_LEVEL: INFO
     network_mode: bridge

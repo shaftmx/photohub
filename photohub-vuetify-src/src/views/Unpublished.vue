@@ -115,7 +115,7 @@
           <v-icon v-if="selectedPhotosFilenames.includes(photo.filename)" color="white" size="28">mdi-check-circle</v-icon>
         </div>
         <button class="detail-btn" @click.stop="$refs.photoDetail.open(photo.filename)" title="Details">
-          <v-icon size="16" color="white" style="opacity: 0.7;">mdi-information-outline</v-icon>
+          <v-icon size="18">mdi-information-outline</v-icon>
         </button>
       </template>
     </PhotoGrid>

@@ -137,6 +137,7 @@ def _export_photo(photo, dump_root, include_raw):
         "width":            photo.width,
         "height":           photo.height,
         "duration":         photo.duration,
+        "original_ext":     photo.original_ext,
     }
     meta_path = os.path.join(dump_root, "%s_meta.yml" % photo.filename)
     with open(meta_path, "w", encoding="utf-8") as f:
@@ -157,7 +158,7 @@ def _export_photo(photo, dump_root, include_raw):
             with default_storage.open(raw_storage_path, "rb") as src:
                 with open(dest, "wb") as dst:
                     shutil.copyfileobj(src, dst)
-        # For videos, also export the poster JPG so samples can regenerate on import
+        # For videos, also export poster JPG and original file if kept
         if photo.type == 'video':
             poster_filename = photo.filename.rsplit('.', 1)[0] + '.jpg'
             poster_storage_path = getRawPath(poster_filename)
@@ -166,6 +167,14 @@ def _export_photo(photo, dump_root, include_raw):
                 with default_storage.open(poster_storage_path, "rb") as src:
                     with open(dest, "wb") as dst:
                         shutil.copyfileobj(src, dst)
+            if photo.original_ext:
+                orig_storage_path = get_video_original_path(photo.filename, photo.original_ext)
+                if default_storage.exists(orig_storage_path):
+                    orig_dump_filename = photo.filename.rsplit('.', 1)[0] + '_original.' + photo.original_ext
+                    dest = os.path.join(dump_root, orig_dump_filename)
+                    with default_storage.open(orig_storage_path, "rb") as src:
+                        with open(dest, "wb") as dst:
+                            shutil.copyfileobj(src, dst)
 
 
 @admin_required
@@ -180,9 +189,10 @@ def import_dump(request):
     media_files = [f for f in all_files
                    if (f.endswith(".jpg") or f.endswith(".mp4"))
                    and not f.endswith("_meta.yml") and not f.endswith("_exif.yml")]
-    # Exclude poster JPGs that are video companions (same stem as an .mp4)
+    # Exclude poster JPGs and _original.* files that are video companions
     mp4_stems = {f[:-4] for f in media_files if f.endswith(".mp4")}
     media_files = [f for f in media_files if not (f.endswith(".jpg") and f[:-4] in mp4_stems)]
+    media_files = [f for f in media_files if '_original.' not in f]
 
     if not media_files:
         return Response(200, data={"message": "No media files found in %s" % dump_root})
@@ -271,7 +281,7 @@ def _create_photo_from_dump(filename, raw_path, meta):
         with open(raw_path, "rb") as f:
             default_storage.save(storage_path, File(f, name=filename))
 
-    # For videos, also restore the poster JPG if present in dump
+    # For videos, also restore poster JPG and original file if present in dump
     if is_video:
         poster_filename = filename.rsplit('.', 1)[0] + '.jpg'
         poster_dump_path = os.path.join(os.path.dirname(raw_path), poster_filename)
@@ -280,6 +290,15 @@ def _create_photo_from_dump(filename, raw_path, meta):
             if not default_storage.exists(poster_storage_path):
                 with open(poster_dump_path, "rb") as f:
                     default_storage.save(poster_storage_path, File(f, name=poster_filename))
+        original_ext = meta.get("original_ext")
+        if original_ext:
+            orig_dump_filename = filename.rsplit('.', 1)[0] + '_original.' + original_ext
+            orig_dump_path = os.path.join(os.path.dirname(raw_path), orig_dump_filename)
+            if os.path.exists(orig_dump_path):
+                orig_storage_path = get_video_original_path(filename, original_ext)
+                if not default_storage.exists(orig_storage_path):
+                    with open(orig_dump_path, "rb") as f:
+                        default_storage.save(orig_storage_path, File(f, name=orig_dump_filename))
 
     # Extract dimensions — from meta if available, else EXIF for photos
     width  = int(meta.get("width") or 0)

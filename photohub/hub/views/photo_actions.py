@@ -71,18 +71,14 @@ def delete_photo(request, filename):
     except models.Photo.DoesNotExist:
         return ErrorResponse("NotFound", 404, "Photo not found")
 
-    # Delete raw file
-    raw_path = getRawPath(filename)
-    if default_storage.exists(raw_path):
-        default_storage.delete(raw_path)
-        LOG.info("Deleted raw file %s" % raw_path)
-
-    # Delete video poster JPG from raw/ if applicable
-    if filename.endswith('.mp4'):
-        poster_path = getRawPath(filename.rsplit('.', 1)[0] + '.jpg')
-        if default_storage.exists(poster_path):
-            default_storage.delete(poster_path)
-            LOG.info("Deleted video poster %s" % poster_path)
+    # Delete raw file(s) — videos use delete_video_files() to also clean poster + original
+    if photo.type == 'video':
+        delete_video_files(photo)
+    else:
+        raw_path = getRawPath(filename)
+        if default_storage.exists(raw_path):
+            default_storage.delete(raw_path)
+            LOG.info("Deleted raw file %s" % raw_path)
 
     # Delete all sample files
     for sample in get_setting('SAMPLE_PHOTOS_SETTINGS'):

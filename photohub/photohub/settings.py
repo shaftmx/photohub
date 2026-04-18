@@ -205,10 +205,12 @@ RAW_PHOTO_OVERRIDE_EXISTS = strtobool(os.environ.get('RAW_PHOTO_OVERRIDE_EXISTS'
 GENERATE_SAMPLES_ON_UPLOAD = strtobool(os.environ.get('GENERATE_SAMPLES_ON_UPLOAD', 'False'))
 
 ALLOW_VIDEO_UPLOAD      = strtobool(os.environ.get('ALLOW_VIDEO_UPLOAD', 'False'))
+KEEP_ORIGINAL_VIDEO     = strtobool(os.environ.get('KEEP_ORIGINAL_VIDEO', 'False'))
 TRANSCODE_POLL_INTERVAL = int(os.environ.get('TRANSCODE_POLL_INTERVAL', '10'))
 TRANSCODE_THREADS       = int(os.environ.get('TRANSCODE_THREADS', '0'))
 TRANSCODE_PRESET        = os.environ.get('TRANSCODE_PRESET', 'fast')
 TRANSCODE_CRF           = int(os.environ.get('TRANSCODE_CRF', '23'))
+TRANSCODE_TIMEOUT       = int(os.environ.get('TRANSCODE_TIMEOUT', '3600'))
 
 # Sample (resized) versions generated for each uploaded photo.
 # The frontend picks the appropriate sample automatically based on the grid

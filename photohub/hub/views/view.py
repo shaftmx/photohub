@@ -469,7 +469,11 @@ def download_view_zip(request, view_id):
 
     def _get_photo_path(filename):
         photo = photo_map.get(filename)
-        if size == 'raw' or (photo and photo.type == 'video'):
+        if photo and photo.type == 'video':
+            if size == 'raw' and photo.original_ext:
+                return p_join(settings.MEDIA_ROOT, get_video_original_path(filename, photo.original_ext))
+            return p_join(settings.MEDIA_ROOT, getRawPath(filename))
+        if size == 'raw':
             return p_join(settings.MEDIA_ROOT, getRawPath(filename))
         return p_join(settings.MEDIA_ROOT, getSamplePath(filename, size))
 

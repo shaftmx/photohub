@@ -163,6 +163,7 @@ def upload_photo(request):
 
         _err = save_photo(file, photo_path, owner=request.user.username)
         if _err is not None:
+            LOG.error("save_photo '%s' - %s" % (file.name, _err), exc_info=_err)
             return ErrorUnexpected(details="save_photo '%s' - %s" % (file.name, _err), trace=_err)
 
         if is_video:

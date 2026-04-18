@@ -285,7 +285,7 @@
               density="compact"
               variant="outlined"
               class="mb-3"
-              hint="RAW_PHOTOS_QUALITY — Pillow quality preset applied when re-encoding RAW photos. None = original file stored as-is."
+              hint="RAW_PHOTOS_QUALITY — integer 1–95, or named preset: web_low, web_medium, web_high, web_very_high, web_maximum. Empty = original file stored as-is."
               persistent-hint
             ></v-select>
 
@@ -309,7 +309,7 @@
               color="primary"
               density="compact"
               class="mb-2 ml-2"
-              hint="RAW_PHOTO_OVERRIDE_EXISTS — re-process and overwrite file on disk when the same photo is re-uploaded"
+              hint="RAW_PHOTO_OVERRIDE_EXISTS — re-process and overwrite file on disk when the same photo (or video) is re-uploaded. Also resets the original_ext field for videos."
               persistent-hint
             ></v-switch>
 
@@ -338,10 +338,43 @@
 
           <v-col cols="12" md="7">
             <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-2" style="letter-spacing:.08em">Sample photos settings</p>
-            <p class="text-body-2 text-medium-emphasis mb-2">
-              YAML list defining the sample sizes to generate for each photo.<br>
-              Each entry: <code>name</code>, <code>max_size</code>, <code>quality</code> (optional).
+            <p class="text-body-2 text-medium-emphasis mb-3">
+              YAML list defining the sample sizes to generate for each photo. You can define as many samples as needed (e.g. thumbnail, preview, fullscreen).
             </p>
+            <v-alert type="warning" density="compact" variant="tonal" class="mb-3 text-caption">
+              The following names are used by the UI and <strong>must be present</strong>: <code>xs</code>, <code>s</code>, <code>m</code>, <code>l</code>. Removing any of them will cause broken images.
+            </v-alert>
+            <v-expansion-panels variant="accordion" class="mb-3">
+              <v-expansion-panel>
+                <v-expansion-panel-title class="text-caption text-medium-emphasis py-2" style="min-height:36px">
+                  How sizing and quality work
+                </v-expansion-panel-title>
+                <v-expansion-panel-text class="text-caption text-medium-emphasis">
+                  <p class="mb-2">Each entry requires:</p>
+                  <ul class="mb-3 pl-4" style="line-height:1.8">
+                    <li><strong>name</strong> — unique identifier used in URLs (e.g. <code>thumb</code>, <code>large</code>)</li>
+                    <li><strong>max_size</strong> — largest dimension in pixels. The image is resized so that neither width nor height exceeds this value, preserving aspect ratio.</li>
+                    <li><strong>quality</strong> — JPEG quality: an integer <code>1–95</code>, a Pillow named preset, or <code>keep</code> to preserve the original quality. Omitting it defaults to <code>keep</code>.
+                      <table style="margin-top:6px; border-collapse:collapse; font-size:0.9em">
+                        <tr><th style="text-align:left; padding-right:16px">Preset</th><th style="text-align:left">~equivalent</th></tr>
+                        <tr><td><code>web_low</code></td><td>10</td></tr>
+                        <tr><td><code>web_medium</code></td><td>50</td></tr>
+                        <tr><td><code>web_high</code></td><td>80</td></tr>
+                        <tr><td><code>web_very_high</code></td><td>90</td></tr>
+                        <tr><td><code>web_maximum</code></td><td>95</td></tr>
+                      </table>
+                    </li>
+                  </ul>
+                  <p class="mb-1">Example:</p>
+                  <pre style="background:rgba(0,0,0,0.06); border-radius:4px; padding:8px; font-size:0.8em">- name: thumb
+  max_size: 400
+  quality: 80
+- name: large
+  max_size: 1920
+  quality: keep</pre>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
             <div class="yaml-editor-wrap" :class="{ loading: qualityLoading }">
               <div ref="sampleEditor"></div>
             </div>
@@ -389,6 +422,21 @@
               persistent-hint
             ></v-switch>
 
+            <v-switch
+              v-model="qualityConfig.KEEP_ORIGINAL_VIDEO"
+              :true-value="true"
+              :false-value="false"
+              label="Keep original video file"
+              color="primary"
+              density="compact"
+              class="mb-2 ml-2"
+              hint="KEEP_ORIGINAL_VIDEO — keep the original uploaded file alongside the transcoded MP4. Uses extra disk space."
+              persistent-hint
+            ></v-switch>
+            <v-alert v-if="qualityConfig.KEEP_ORIGINAL_VIDEO" type="warning" density="compact" variant="tonal" class="mb-2 text-caption">
+              Enabling this stores the original file for each new upload. Already-uploaded videos are not affected retroactively.
+            </v-alert>
+
             <v-divider class="my-4"></v-divider>
             <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-4" style="letter-spacing:.08em">Transcoding worker</p>
 
@@ -425,6 +473,14 @@
               persistent-hint clearable
             ></v-text-field>
 
+            <v-text-field
+              v-model="qualityConfig.TRANSCODE_TIMEOUT"
+              type="number" label="Transcode timeout (seconds)"
+              density="compact" variant="outlined" class="mb-3"
+              hint="Max duration for a single ffmpeg transcode. Default: 3600 (1 hour)"
+              persistent-hint clearable
+            ></v-text-field>
+
             <v-btn color="primary" variant="flat" class="text-none" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
           </v-col>
 
@@ -442,9 +498,12 @@
               <v-chip size="small" :color="workerStatusColor" :prepend-icon="workerStatusIcon" variant="tonal">
                 {{ workerStatusLabel }}
               </v-chip>
-              <span v-if="qualityConfig.worker_status.encoding_since" class="text-caption text-medium-emphasis">
-                {{ qualityConfig.worker_status.encoding_file }}
-              </span>
+              <div v-if="qualityConfig.worker_status.encoding_since" class="text-caption text-medium-emphasis">
+                <div>{{ qualityConfig.worker_status.encoding_file }}</div>
+                <div v-if="qualityConfig.worker_status.encoding_internal" style="opacity:0.6; font-size:0.75em; font-family:monospace">
+                  {{ qualityConfig.worker_status.encoding_internal }}
+                </div>
+              </div>
             </div>
 
             <v-table v-if="qualityConfig.video_transcode_stats" density="compact" class="rounded">
@@ -990,7 +1049,7 @@ export default {
 
     async retryErrors() {
       this.retryLoading = true
-      await useAsyncFetch('/api/admin/retry-errors', { method: 'POST' })
+      await useAsyncPost('/api/admin/retry-errors', {})
       await this.loadConfig()
       this.retryLoading = false
     },
@@ -1005,6 +1064,7 @@ export default {
         cfg.RAW_PHOTO_OVERRIDE_EXISTS = ['True', 'true', '1', 1, true].includes(cfg.RAW_PHOTO_OVERRIDE_EXISTS)
         cfg.GENERATE_SAMPLES_ON_UPLOAD = ['True', 'true', '1', 1, true].includes(cfg.GENERATE_SAMPLES_ON_UPLOAD)
         cfg.ALLOW_VIDEO_UPLOAD = ['True', 'true', '1', 1, true].includes(cfg.ALLOW_VIDEO_UPLOAD)
+        cfg.KEEP_ORIGINAL_VIDEO = ['True', 'true', '1', 1, true].includes(cfg.KEEP_ORIGINAL_VIDEO)
         // Normalize null-ish values
         if (!cfg.RAW_PHOTOS_QUALITY) cfg.RAW_PHOTOS_QUALITY = null
         if (!cfg.RAW_PHOTOS_MAX_SIZE) cfg.RAW_PHOTOS_MAX_SIZE = null
@@ -1048,10 +1108,12 @@ export default {
         RAW_PHOTO_OVERRIDE_EXISTS:  this.qualityConfig.RAW_PHOTO_OVERRIDE_EXISTS ? 'True' : 'False',
         GENERATE_SAMPLES_ON_UPLOAD: this.qualityConfig.GENERATE_SAMPLES_ON_UPLOAD ? 'True' : 'False',
         ALLOW_VIDEO_UPLOAD:         this.qualityConfig.ALLOW_VIDEO_UPLOAD ? 'True' : 'False',
+        KEEP_ORIGINAL_VIDEO:        this.qualityConfig.KEEP_ORIGINAL_VIDEO ? 'True' : 'False',
         TRANSCODE_POLL_INTERVAL:    this.qualityConfig.TRANSCODE_POLL_INTERVAL || '',
         TRANSCODE_THREADS:          this.qualityConfig.TRANSCODE_THREADS || '',
         TRANSCODE_PRESET:           this.qualityConfig.TRANSCODE_PRESET || '',
         TRANSCODE_CRF:              this.qualityConfig.TRANSCODE_CRF || '',
+        TRANSCODE_TIMEOUT:          this.qualityConfig.TRANSCODE_TIMEOUT || '',
         SAMPLE_PHOTOS_SETTINGS:    this.qualitySampleYaml,
       }
       const { data } = await useAsyncPost('/api/admin/config', payload)

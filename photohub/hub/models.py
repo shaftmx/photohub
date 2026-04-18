@@ -37,6 +37,7 @@ class Photo(models.Model):
     rating = models.IntegerField(default=0)  # 0 = not rated, 1-5 stars
     filename = models.CharField(max_length=250, unique=True)
     origin_filename = models.TextField(blank=True)
+    original_ext = models.CharField(max_length=10, null=True, blank=True)  # set when KEEP_ORIGINAL_VIDEO saved the source file
     date = models.DateTimeField(default=datetime.now)
     upload_date = models.DateTimeField(auto_now_add=True)
     tags = models.ManyToManyField(Tag)

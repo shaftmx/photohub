@@ -22,9 +22,9 @@ def get_setting(key):
         raw = models.AppConfig.objects.get(key=key).value
         if key == 'SAMPLE_PHOTOS_SETTINGS':
             return yaml.safe_load(raw)
-        if key in ('RAW_PHOTOS_MAX_SIZE', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_CRF'):
+        if key in ('RAW_PHOTOS_MAX_SIZE', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT'):
             return int(raw) if raw else None
-        if key in ('RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD'):
+        if key in ('RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD', 'KEEP_ORIGINAL_VIDEO'):
             return raw in ('True', 'true', '1')
         return raw or None
     except models.AppConfig.DoesNotExist:
@@ -266,12 +266,43 @@ def save_photo(file, photo_path, owner):
         return e
 
 
+def get_video_original_path(filename, original_ext):
+    """Return the raw/ path for the preserved original video file."""
+    stem = filename.rsplit('.', 1)[0]
+    return getRawPath('%s_original.%s' % (stem, original_ext))
+
+
+def delete_video_files(photo):
+    """Delete all raw files associated with a video: .mp4, poster .jpg, and original if kept."""
+    raw_path = getRawPath(photo.filename)
+    if default_storage.exists(raw_path):
+        default_storage.delete(raw_path)
+        LOG.info("Deleted video raw %s" % raw_path)
+
+    poster_path = getRawPath(photo.filename.rsplit('.', 1)[0] + '.jpg')
+    if default_storage.exists(poster_path):
+        default_storage.delete(poster_path)
+        LOG.info("Deleted video poster %s" % poster_path)
+
+    if photo.original_ext:
+        orig_path = get_video_original_path(photo.filename, photo.original_ext)
+        if default_storage.exists(orig_path):
+            default_storage.delete(orig_path)
+            LOG.info("Deleted video original %s" % orig_path)
+
+
 def save_video(file, photo_path, owner):
     try:
         write_raw_photo(file, photo_path)
         abs_path = _get_absolute_path(photo_path)
         width, height, duration = _ffprobe_video(abs_path)
-        create_video_in_db(file, basename(photo_path), owner, width, height, duration)
+        filename = basename(photo_path)
+        original_ext = None
+        if get_setting('KEEP_ORIGINAL_VIDEO'):
+            # Record the original extension — worker will rename after successful transcode
+            original_ext = (file.name.rsplit('.', 1)[-1].lower()) if '.' in (file.name or '') else 'mp4'
+            LOG.info("save_video: KEEP_ORIGINAL_VIDEO enabled, original_ext=%s" % original_ext)
+        create_video_in_db(file, filename, owner, width, height, duration, original_ext=original_ext)
         return
     except Exception as e:
         return e
@@ -386,7 +417,7 @@ def get_exif(file):
 from django.utils import timezone
 from . import models
 import datetime
-def create_video_in_db(file, filename, owner, width, height, duration):
+def create_video_in_db(file, filename, owner, width, height, duration, original_ext=None):
     if not get_setting('RAW_PHOTO_OVERRIDE_EXISTS') and models.Photo.objects.filter(filename=filename).exists():
         LOG.info("Video already in db, skip")
         return
@@ -399,6 +430,7 @@ def create_video_in_db(file, filename, owner, width, height, duration):
         "width": width,
         "height": height,
         "duration": duration or None,
+        "original_ext": original_ext,
     }
     p, _ = models.Photo.objects.update_or_create(filename=filename, defaults=defaults)
 

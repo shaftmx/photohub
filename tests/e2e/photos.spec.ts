@@ -14,13 +14,13 @@ test.describe('Photos — grid & display', () => {
   })
 
   test('click photo opens detail panel', async ({ page }) => {
-    await page.locator('.item img').first().click()
+    await page.locator('.item:not(:has(.video-overlay)) img').first().click()
     // DisplayPhoto opens — URL gets ?displayPhoto= param
     await expect(page).toHaveURL(/displayPhoto=/)
   })
 
   test('detail panel: close button returns to grid', async ({ page }) => {
-    await page.locator('.item img').first().click()
+    await page.locator('.item:not(:has(.video-overlay)) img').first().click()
     await expect(page).toHaveURL(/displayPhoto=/)
     // Close button is in .photo-toolbar (custom toolbar, not v-toolbar)
     await page.locator('.photo-toolbar button:has(.mdi-close)').click()
@@ -327,7 +327,7 @@ test.describe('Photo detail panel', () => {
     await navigateTo(page, 'Photos')
     await waitForGrid(page)
     // Open the fullscreen photo dialog
-    await page.locator('.item img').first().click()
+    await page.locator('.item:not(:has(.video-overlay)) img').first().click()
     await expect(page).toHaveURL(/displayPhoto=/)
     // Open the detail panel — the toggle button uses mdi-information-outline (icon-only)
     await page.locator('.photo-toolbar button:has(.mdi-information-outline)').click()

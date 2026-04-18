@@ -236,7 +236,7 @@ test.describe('Views — detail', () => {
 
   test('click photo opens detail panel', async ({ page }) => {
     await waitForGrid(page)
-    await page.locator('.item img').first().click()
+    await page.locator('.item:not(:has(.video-overlay)) img').first().click()
     await expect(page).toHaveURL(/displayPhoto=/)
   })
 
@@ -273,7 +273,7 @@ test.describe('Views — detail', () => {
   test('"define as cover" button visible in photo detail panel from view context', async ({ page }) => {
     await waitForGrid(page)
     // Open photo detail via carousel
-    await page.locator('.item img').first().click()
+    await page.locator('.item:not(:has(.video-overlay)) img').first().click()
     await expect(page).toHaveURL(/displayPhoto=/)
     // Open the detail panel — icon-only button with mdi-information-outline
     await page.locator('.photo-toolbar button:has(.mdi-information-outline)').click()

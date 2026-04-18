@@ -18,7 +18,7 @@ from .. import models
 
 
 # Keys managed via AppConfig
-CONFIG_KEYS = ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'SAMPLE_PHOTOS_SETTINGS', 'ALLOW_VIDEO_UPLOAD', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF']
+CONFIG_KEYS = ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'SAMPLE_PHOTOS_SETTINGS', 'ALLOW_VIDEO_UPLOAD', 'KEEP_ORIGINAL_VIDEO', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT']
 
 
 def _get_config_value(key):
@@ -59,10 +59,12 @@ def _get_config(request):
         "GENERATE_SAMPLES_ON_UPLOAD":  _get_config_value('GENERATE_SAMPLES_ON_UPLOAD'),
         "SAMPLE_PHOTOS_SETTINGS":      _get_config_value('SAMPLE_PHOTOS_SETTINGS'),
         "ALLOW_VIDEO_UPLOAD":          _get_config_value('ALLOW_VIDEO_UPLOAD'),
+        "KEEP_ORIGINAL_VIDEO":         _get_config_value('KEEP_ORIGINAL_VIDEO'),
         "TRANSCODE_POLL_INTERVAL":     _get_config_value('TRANSCODE_POLL_INTERVAL'),
         "TRANSCODE_THREADS":           _get_config_value('TRANSCODE_THREADS'),
         "TRANSCODE_PRESET":            _get_config_value('TRANSCODE_PRESET'),
         "TRANSCODE_CRF":               _get_config_value('TRANSCODE_CRF'),
+        "TRANSCODE_TIMEOUT":           _get_config_value('TRANSCODE_TIMEOUT'),
         # Read-only info
         "MEDIA_ROOT": settings.MEDIA_ROOT,
         "DUMP_ROOT":  settings.DUMP_ROOT,
@@ -84,6 +86,7 @@ def _worker_status():
         "last_seen": _get('WORKER_LAST_SEEN'),
         "encoding_since": _get('WORKER_ENCODING_SINCE'),
         "encoding_file": _get('WORKER_ENCODING_FILE'),
+        "encoding_internal": _get('WORKER_ENCODING_INTERNAL'),
     }
 
 
@@ -100,7 +103,7 @@ def _set_config(request):
     if err:
         return ErrorRequest(details=err)
 
-    for key in ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF']:
+    for key in ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD', 'KEEP_ORIGINAL_VIDEO', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT']:
         if key in body:
             _set_config_value(key, body[key])
 
