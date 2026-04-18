@@ -12,9 +12,6 @@
         <v-btn :disabled="!form" :loading="loading" block color="primary" size="large" type="submit" variant="tonal">
           Login
         </v-btn>
-        <div class="mt-2">
-          <p class="text-body-2">Don't have an account? <a href="#">Sign Up</a></p>
-        </div>
       </v-form>
     </v-card>
   </v-sheet>
