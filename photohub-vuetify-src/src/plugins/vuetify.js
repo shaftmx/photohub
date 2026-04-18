@@ -43,6 +43,8 @@ export default createVuetify({
       },
       dark: {
         colors: {
+          background: '#1a1a1a',
+          surface: '#1a1a1a',
           // Primary/secondary: used in the logo, for headlines, for buttons (if dask enough) and as background
           // accent: use for buttons or section that need to stand out
           // Neutral: great for background

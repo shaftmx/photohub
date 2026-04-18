@@ -106,7 +106,8 @@ export default defineComponent({
 
   computed: {
     panelBg() {
-      return this.appThemeName === 'dark' ? '#1e1e1e' : '#ffffff'
+      const surface = this.theme.global.current.value.colors.surface
+      return surface || (this.appThemeName === 'dark' ? '#1a1a1a' : '#ffffff')
     },
     currentPhotoName() {
       const photo = (this.photos || []).find(p => p.filename === this.displayedPhoto)

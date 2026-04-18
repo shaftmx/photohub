@@ -1,5 +1,5 @@
 <template>
-  <v-container class="bg-black mb-7 pa-0">
+  <v-container class="mb-7 pa-0">
   <v-app-bar flat class="bg-primary" :density="density">
     <v-app-bar-title>
       <router-link class="logo-link" :to="{ name: 'Home' }">
