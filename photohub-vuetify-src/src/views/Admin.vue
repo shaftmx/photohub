@@ -620,9 +620,9 @@
       <v-card>
         <v-card-title class="text-body-1 font-weight-medium pt-4 px-4">Confirm import</v-card-title>
         <v-card-text class="text-body-2 text-medium-emphasis px-4">
-          Scans <code>{{ qualityConfig.DUMP_ROOT || 'DUMP_ROOT' }}</code> for <code>.jpg</code> files and ingests them.
+          Scans <code>{{ qualityConfig.DUMP_ROOT || 'DUMP_ROOT' }}</code> for <code>.jpg</code> and <code>.mp4</code> files and ingests them.
           <br><br>
-          Existing photos will have their metadata updated. New photos will be created.
+          Existing entries will have their metadata updated. New photos and videos will be created.
           This action cannot be undone.
         </v-card-text>
         <v-card-actions class="px-4 pb-4">
