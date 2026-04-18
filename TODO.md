@@ -143,6 +143,13 @@ Views, users, and other app state → handled via a separate DB dump outside the
   - **Admin panel — Video tab**: ALLOW_VIDEO_UPLOAD, poll interval, CRF, preset, threads; worker status chip (online/encoding/offline + elapsed time); transcode queue stats table; retry errors button
   - **Grid filter**: All / Photos / Videos toggle in Photos, ViewDetail, ViewCreate; `filter_media_type` persisted on View model
   - **Backup/restore**: export includes .mp4 + poster JPG + type/duration/dimensions in meta; import handles .mp4 files
+  - ⬜ **KEEP_ORIGINAL_VIDEO** — optional setting to preserve the source file before transcoding:
+    - `KEEP_ORIGINAL_VIDEO` AppConfig key (bool, default `False`); configurable live in Admin → Video tab with a disk usage warning
+    - When enabled at upload time: source file saved as `<md5>_original.<ext>` in `raw/`; extension stored in new `Photo.original_ext` DB field
+    - Setting is per-upload: toggling it off later does not affect videos already uploaded with originals (field `original_ext` drives behaviour, not the current setting)
+    - **Delete**: `delete_video_files()` helper removes `.mp4` + poster `.jpg` + `_original.<ext>` (if `original_ext` set) — single place for full lifecycle
+    - **ZIP download**: `size=raw` serves `_original.<ext>` if available, otherwise falls back to transcoded `.mp4`; other sizes always serve transcoded `.mp4`
+    - **Backup/restore**: export includes `_original.<ext>` if present + `original_ext` in meta; import restores it
 - ✅ **Map view** — Leaflet + OpenStreetMap map accessible from ViewDetail; shows a pin for each photo that has GPS EXIF data (Photos page map: future)
  shows a pin for each photo that has GPS EXIF data:
   - **Entry points**: map icon button in Photos toolbar and ViewDetail toolbar (only visible if at least one photo has GPS data)

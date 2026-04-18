@@ -2,9 +2,22 @@
   <v-container class="pa-6" max-width="1100">
 
     <!-- Page header -->
-    <div class="mb-6">
+    <div class="mb-4">
       <p class="text-h5 font-weight-medium mb-1">Admin</p>
       <p class="text-body-2 text-medium-emphasis">Manage users, tags and application settings.</p>
+    </div>
+
+    <!-- Disk usage bar -->
+    <div v-if="qualityConfig.disk_usage" class="mb-5 d-flex align-center ga-3" style="max-width: 400px">
+      <span class="text-caption text-medium-emphasis text-no-wrap">Disk</span>
+      <v-progress-linear
+        :model-value="qualityConfig.disk_usage.used / qualityConfig.disk_usage.total * 100"
+        :color="diskUsageColor"
+        bg-color="surface-variant"
+        rounded
+        height="4"
+      ></v-progress-linear>
+      <span class="text-caption text-medium-emphasis text-no-wrap">{{ formatBytes(qualityConfig.disk_usage.free) }} free</span>
     </div>
 
     <!-- Tabs — each tab is conditionally shown based on the user's role -->
@@ -312,20 +325,15 @@
               persistent-hint
             ></v-switch>
 
-            <!-- Disk usage bar -->
-            <div v-if="qualityConfig.disk_usage" class="mt-5">
-              <div class="d-flex justify-space-between text-caption text-medium-emphasis mb-1">
-                <span>Disk usage</span>
-                <span>{{ formatBytes(qualityConfig.disk_usage.used) }} / {{ formatBytes(qualityConfig.disk_usage.total) }} — {{ formatBytes(qualityConfig.disk_usage.free) }} free</span>
-              </div>
-              <v-progress-linear
-                :model-value="qualityConfig.disk_usage.used / qualityConfig.disk_usage.total * 100"
-                :color="diskUsageColor"
-                bg-color="surface-variant"
-                rounded
-                height="6"
-              ></v-progress-linear>
-            </div>
+            <!-- Raw storage doc -->
+            <v-alert type="info" variant="tonal" density="compact" class="mt-4 mb-2 text-caption">
+              By default, uploaded files are stored as-is in <code>raw/</code> — originals are preserved.
+              <br>
+              Set <strong>JPEG quality preset</strong> and/or <strong>Max size</strong> to re-encode files on upload:
+              both settings work together — the file is resized first (if a max size is set), then re-encoded at the chosen quality.
+              Leave both empty to keep originals intact.
+            </v-alert>
+
           </v-col>
 
           <v-col cols="12" md="7">
