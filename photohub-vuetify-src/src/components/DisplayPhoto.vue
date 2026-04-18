@@ -47,11 +47,14 @@
           <!-- Detail panel (full width on mobile, fixed width on desktop) -->
           <div
             v-if="showDetail"
-            class="overflow-y-auto detail-panel"
+            class="detail-panel"
             :style="sharedDatas.isMobile
-              ? `width: 100%; min-height: 0; padding-top: 40px; background: ${panelBg};`
-              : `width: 480px; min-height: 0; border-left: 1px solid rgba(255,255,255,0.1); padding-top: 40px; background: ${panelBg};`"
+              ? `width: 100%; min-height: 0; background: ${panelBg};`
+              : `width: 480px; min-height: 0; background: ${panelBg};`"
           >
+            <!-- Panel header band — provides backdrop for toolbar buttons in light theme -->
+            <div class="detail-panel-header" :class="appThemeName === 'dark' ? 'detail-panel-header--dark' : 'detail-panel-header--light'"></div>
+            <div class="overflow-y-auto" style="height: calc(100% - 40px);">
             <v-theme-provider :theme="appThemeName">
               <PhotoDetail
                 ref="photoDetail"
@@ -64,6 +67,7 @@
                 @unpublished="onUnpublished"
               />
             </v-theme-provider>
+            </div>
           </div>
         </div>
 
@@ -225,7 +229,7 @@ if (this.$route.query.displayPhoto) {
   gap: 4px;
   padding: 0 4px;
   height: 40px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%);
+  background: transparent;
   color: white;
 }
 
@@ -248,6 +252,24 @@ if (this.$route.query.displayPhoto) {
   opacity: 1;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
+}
+
+.detail-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-panel-header {
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.detail-panel-header--dark {
+  background: transparent;
+}
+
+.detail-panel-header--light {
+  background: rgb(var(--v-theme-primary));
 }
 
 :deep(.v-carousel__controls) {
