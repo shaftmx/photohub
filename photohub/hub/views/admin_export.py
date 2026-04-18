@@ -188,7 +188,7 @@ def import_dump(request):
         return Response(200, data={"message": "No media files found in %s" % dump_root})
 
     def _run():
-        total = len(jpg_files)
+        total = len(media_files)
         imported, updated, errors = 0, 0, []
         started_at = datetime.now(timezone.utc).isoformat()
         step = max(1, total // 20)
