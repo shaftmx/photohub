@@ -100,6 +100,9 @@ def getSamplePath(filename, samplename):
     "return the sample path for a given filename eg cache/samples/xs/0/1/01234.jpg"
     return p_join(settings.SAMPLE_PHOTOS_PATH, samplename, genHasingPath(filename), filename)
 
+PHOTO_LIST_FIELDS = ["filename", "date", "owner", "height", "width", "tags", "favorite", "rating", "origin_filename", "type", "transcode_status", "duration"]
+
+
 def getRawPath(filename):
     "return the raw path for a given filename eg raw/0/1/01234.jpg"
     return p_join(settings.RAW_PHOTOS_PATH, genHasingPath(filename), filename)

@@ -88,7 +88,7 @@ def get_photos(request):
 
     # excludes = ["id", "description", "published"]
     # data = [ model_to_dict(i, exclude=excludes) for i in photos ]
-    fields = ["filename", "date", "owner", "height", "width", "tags", "favorite", "rating", "origin_filename", "type", "transcode_status", "duration"]
+    fields = PHOTO_LIST_FIELDS
     data_photos = []
     for p in photos:
         _p = model_to_dict(p, fields=fields)
