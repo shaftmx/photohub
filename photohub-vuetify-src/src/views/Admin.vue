@@ -365,6 +365,7 @@
       <!-- ─────────────── Tab: Video ─────────────── -->
       <v-window-item value="video">
         <v-row>
+          <!-- Left col: settings -->
           <v-col cols="12" md="5">
             <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-4" style="letter-spacing:.08em">Upload</p>
 
@@ -395,9 +396,11 @@
               clearable
             ></v-text-field>
 
-            <v-btn color="primary" variant="flat" class="text-none mb-6" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
+            <v-btn color="primary" variant="flat" class="text-none" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
+          </v-col>
 
-            <v-divider class="my-4"></v-divider>
+          <!-- Right col: worker status -->
+          <v-col cols="12" md="5" offset-md="1">
             <div class="d-flex align-center mb-3">
               <p class="text-subtitle-2 text-medium-emphasis text-uppercase ma-0" style="letter-spacing:.08em">Worker status</p>
               <v-spacer></v-spacer>
@@ -406,7 +409,6 @@
               </v-btn>
             </div>
 
-            <!-- Worker online/offline chip -->
             <div v-if="qualityConfig.worker_status" class="mb-4 d-flex ga-2 flex-wrap align-center">
               <v-chip size="small" :color="workerStatusColor" :prepend-icon="workerStatusIcon" variant="tonal">
                 {{ workerStatusLabel }}
@@ -416,8 +418,7 @@
               </span>
             </div>
 
-            <!-- Transcode queue stats table -->
-            <v-table v-if="qualityConfig.video_transcode_stats" density="compact" class="rounded" style="max-width:360px">
+            <v-table v-if="qualityConfig.video_transcode_stats" density="compact" class="rounded">
               <thead>
                 <tr>
                   <th class="text-caption text-medium-emphasis">State</th>
@@ -429,7 +430,7 @@
                 <tr>
                   <td><v-chip size="x-small" color="warning" variant="tonal">pending</v-chip></td>
                   <td class="text-body-2">{{ qualityConfig.video_transcode_stats.pending }}</td>
-                  <td class="text-caption text-medium-emphasis">Uploaded, waiting for worker</td>
+                  <td class="text-caption text-medium-emphasis">Waiting for worker</td>
                 </tr>
                 <tr>
                   <td><v-chip size="x-small" color="primary" variant="tonal">processing</v-chip></td>
@@ -450,9 +451,9 @@
               </tbody>
             </v-table>
 
-            <p class="text-caption text-medium-emphasis mt-3" style="max-width:420px">
-              Transcoding errors are logged to stdout of the worker container.
-              Run <code>docker compose logs worker</code> to investigate.
+            <p class="text-caption text-medium-emphasis mt-3">
+              Errors are logged to stdout of the worker container.<br>
+              <code>docker compose logs worker</code>
             </p>
           </v-col>
         </v-row>
@@ -714,7 +715,10 @@ export default {
 
     this.role = result.role
     this.currentUserId = result.id
-    this.tab = this.role === 'contributor' ? 'tags' : 'users'
+    const queryTab = this.$route.query.tab
+    const defaultTab = this.role === 'contributor' ? 'tags' : 'users'
+    this.tab = queryTab || defaultTab
+    await this.onTabChange(this.tab)
 
     if (this.role === 'admin') await this.loadUsers()
     await this.loadTags()
@@ -889,6 +893,7 @@ export default {
 
     // ── Tags ──────────────────────────────────────────────────────────────
     async onTabChange(tab) {
+      this.$router.replace({ query: { ...this.$route.query, tab } })
       if (tab === 'backup') {
         await this._loadExportStatus()
         await this._loadImportStatus()
