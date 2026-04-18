@@ -501,7 +501,7 @@
         <v-alert type="info" variant="tonal" density="compact" class="mb-6" style="max-width:640px">
           <p class="text-body-2 mb-1">
             <strong>Export with raw files</strong> — everything lands in the dump folder (<code>DUMP_ROOT</code>):
-            one <code>_meta.yml</code> + one <code>_exif.yml</code> per photo, plus the raw <code>.jpg</code> file.
+            one <code>_meta.yml</code> + one <code>_exif.yml</code> per media, plus the raw file (<code>.jpg</code> for photos, <code>.mp4</code> + poster <code>.jpg</code> for videos).
             Mount <code>DUMP_ROOT</code> as a volume to retrieve the files (e.g. <code>./dumps:/dumps</code> in docker-compose).
           </p>
           <p class="text-body-2 mb-0">
@@ -523,7 +523,7 @@
               color="primary"
               density="compact"
               class="mb-3 ml-2"
-              hint="When enabled, the .jpg files are copied into the dump folder alongside the metadata."
+              hint="When enabled, raw files (.jpg, .mp4) are copied into the dump folder alongside the metadata."
               persistent-hint
             ></v-switch>
             <v-btn color="primary" variant="flat" class="text-none mt-4"
@@ -560,9 +560,9 @@
           <v-col cols="12" md="4">
             <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Import</p>
             <p class="text-body-2 text-medium-emphasis mb-4">
-              Scans the dump folder for <code>.jpg</code> files and ingests them.
-              Existing photos (same filename) have their metadata updated.
-              New photos are created with EXIF re-extracted from the raw file.
+              Scans the dump folder for <code>.jpg</code> and <code>.mp4</code> files and ingests them.
+              Existing entries have their metadata updated.
+              New photos have EXIF re-extracted from the raw file; videos are queued for transcoding if no poster is found.
             </p>
             <v-btn variant="tonal" class="text-none"
               :loading="importLoading" :disabled="importStatus && importStatus.status === 'pending'"

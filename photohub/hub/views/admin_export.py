@@ -3,7 +3,7 @@ Admin Export / Import — /api/admin/export and /api/admin/import
 
 Export: writes _meta.yml + _exif.yml per photo into DUMP_ROOT.
         Optionally copies the raw .jpg file alongside.
-Import: scans DUMP_ROOT for raw .jpg files, ingests each one:
+Import: scans DUMP_ROOT for raw .jpg and .mp4 files, ingests each one:
         - reads _meta.yml if present (tags, favorite, rating, description, owner, published)
         - if photo already exists (same filename): updates metadata only
         - if new: creates the photo record and re-extracts EXIF from the raw file
