@@ -49,10 +49,10 @@
             v-if="showDetail"
             class="overflow-y-auto detail-panel"
             :style="sharedDatas.isMobile
-              ? 'width: 100%; min-height: 0; padding-top: 40px;'
-              : 'width: 480px; min-height: 0; border-left: 1px solid rgba(255,255,255,0.1); padding-top: 40px;'"
+              ? `width: 100%; min-height: 0; padding-top: 40px; background: ${panelBg};`
+              : `width: 480px; min-height: 0; border-left: 1px solid rgba(255,255,255,0.1); padding-top: 40px; background: ${panelBg};`"
           >
-            <v-theme-provider theme="dark">
+            <v-theme-provider :theme="appThemeName">
               <PhotoDetail
                 ref="photoDetail"
                 :embedded="true"
@@ -73,12 +73,19 @@
 
 
 <script>
-import { defineComponent } from 'vue'
+import { defineComponent, computed } from 'vue'
+import { useTheme } from 'vuetify'
 import { getSharedDatas } from '../sharedDatas.js'
 import PhotoDetail from '../views/PhotoDetail.vue'
 
 export default defineComponent({
   components: { PhotoDetail },
+
+  setup() {
+    const theme = useTheme()
+    const appThemeName = computed(() => theme.global.name.value)
+    return { theme, appThemeName }
+  },
 
   props: {
     photos: Array,
@@ -98,6 +105,9 @@ export default defineComponent({
   }),
 
   computed: {
+    panelBg() {
+      return this.appThemeName === 'dark' ? '#1e1e1e' : '#ffffff'
+    },
     currentPhotoName() {
       const photo = (this.photos || []).find(p => p.filename === this.displayedPhoto)
       return (photo && photo.origin_filename) || this.displayedPhoto || 'Photo'
@@ -106,7 +116,7 @@ export default defineComponent({
 
   mounted() {
     this.sharedDatas = getSharedDatas(this)
-    if (this.$route.query.displayPhoto) {
+if (this.$route.query.displayPhoto) {
       this.displayedPhoto = this.$route.query.displayPhoto
       this.displayed = true
     }
@@ -248,10 +258,6 @@ export default defineComponent({
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.detail-panel {
-  background: #242424;
-  color: rgba(255, 255, 255, 0.87);
-}
 
 :deep(.v-window__controls .v-btn:hover) {
   background: rgba(255, 255, 255, 0.25) !important;
