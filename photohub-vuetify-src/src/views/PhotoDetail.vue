@@ -71,7 +71,7 @@
   </v-navigation-drawer>
 
   <!-- ── EMBEDDED MODE (inside DisplayPhoto split layout) ── -->
-  <div v-else class="overflow-y-auto fill-height">
+  <v-sheet v-else class="overflow-y-auto fill-height" style="background: transparent;">
     <div v-if="loading" class="d-flex justify-center align-center pa-12">
       <v-progress-circular indeterminate color="primary"></v-progress-circular>
     </div>
@@ -86,7 +86,7 @@
         <v-chip size="small" variant="outlined">{{ photo.width }}×{{ photo.height }}</v-chip>
         <v-spacer></v-spacer>
         <template v-if="!readonly">
-          <v-btn v-if="viewId" icon size="small" variant="text" :color="isCover ? 'primary' : 'default'"
+          <v-btn v-if="viewId" icon size="small" variant="text" :color="isCover ? 'primary' : undefined"
             :loading="loadingCover" @click="setCover()" :title="isCover ? 'Remove cover' : 'Set as cover'">
             <v-icon>{{ isCover ? 'mdi-book-open-page-variant' : 'mdi-book-open-page-variant-outline' }}</v-icon>
           </v-btn>
@@ -120,7 +120,7 @@
 
     <!-- Edit tags dialog — opens when user clicks "Edit" in the tags section -->
     <EditTagsDialog v-model="editTagsDialog" :photo="photo" @tagsUpdated="onTagsUpdated" />
-  </div>
+  </v-sheet>
 </template>
 
 

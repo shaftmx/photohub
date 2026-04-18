@@ -1,25 +1,27 @@
 <template>
   <v-sheet>
     <v-dialog v-model="displayed" fullscreen :scrim="false">
-      <v-card class="d-flex flex-column" style="height: 100vh; overflow: hidden;">
+      <v-card class="d-flex flex-column" style="height: 100vh; overflow: hidden; background: #1a1a1a;">
 
-        <div class="photo-toolbar">
-          <span class="photo-toolbar-title ml-2">{{ currentPhotoName }}</span>
-          <v-spacer></v-spacer>
-          <!-- Mobile: back to photo when detail panel is open -->
-          <v-btn v-if="showDetail && sharedDatas.isMobile" variant="text" size="x-small"
-            prepend-icon="mdi-arrow-left" @click="showDetail = false">Photo</v-btn>
-          <!-- Detail toggle -->
-          <v-btn variant="text" size="x-small"
-            :icon="showDetail ? 'mdi-information' : 'mdi-information-outline'"
-            @click="toggleDetail()" :disabled="!displayedPhoto">
-          </v-btn>
-          <v-btn icon dark size="x-small" variant="text" @click="closePhoto()">
-            <v-icon size="16">mdi-close</v-icon>
-          </v-btn>
-        </div>
+        <div class="d-flex flex-grow-1 overflow-hidden" style="min-height: 0; position: relative;">
 
-        <div class="d-flex flex-grow-1 overflow-hidden" style="min-height: 0;">
+          <!-- Floating toolbar -->
+          <div class="photo-toolbar">
+            <span class="photo-toolbar-title ml-2">{{ currentPhotoName }}</span>
+            <v-spacer></v-spacer>
+            <!-- Mobile: back to photo when detail panel is open -->
+            <v-btn v-if="showDetail && sharedDatas.isMobile" variant="text" size="x-small" color="white"
+              prepend-icon="mdi-arrow-left" @click="showDetail = false">Photo</v-btn>
+            <!-- Detail toggle -->
+            <v-btn variant="text" size="x-small" color="white"
+              :icon="showDetail ? 'mdi-information' : 'mdi-information-outline'"
+              @click="toggleDetail()" :disabled="!displayedPhoto">
+            </v-btn>
+            <v-btn icon size="x-small" variant="text" color="white" @click="closePhoto()">
+              <v-icon size="16">mdi-close</v-icon>
+            </v-btn>
+          </div>
+
           <!-- Carousel (hidden on mobile when detail is open) -->
           <div
             v-show="!showDetail || !sharedDatas.isMobile"
@@ -45,20 +47,22 @@
           <!-- Detail panel (full width on mobile, fixed width on desktop) -->
           <div
             v-if="showDetail"
-            class="overflow-y-auto"
+            class="overflow-y-auto detail-panel"
             :style="sharedDatas.isMobile
-              ? 'width: 100%; min-height: 0;'
-              : 'width: 480px; min-height: 0; border-left: 1px solid rgba(0,0,0,0.12);'"
+              ? 'width: 100%; min-height: 0; padding-top: 40px;'
+              : 'width: 480px; min-height: 0; border-left: 1px solid rgba(255,255,255,0.1); padding-top: 40px;'"
           >
-            <PhotoDetail
-              ref="photoDetail"
-              :embedded="true"
-              :view-id="viewId"
-              :cover-filename="coverFilename"
-              :readonly="readonly"
-              @deleted="onDeleted"
-              @unpublished="onUnpublished"
-            />
+            <v-theme-provider theme="dark">
+              <PhotoDetail
+                ref="photoDetail"
+                :embedded="true"
+                :view-id="viewId"
+                :cover-filename="coverFilename"
+                :readonly="readonly"
+                @deleted="onDeleted"
+                @unpublished="onUnpublished"
+              />
+            </v-theme-provider>
           </div>
         </div>
 
@@ -198,13 +202,17 @@ export default defineComponent({
 
 <style scoped>
 .photo-toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 0 4px;
-  height: 36px;
-  flex-shrink: 0;
-  background: rgb(var(--v-theme-primary));
+  height: 40px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%);
   color: white;
 }
 
@@ -216,5 +224,37 @@ export default defineComponent({
   white-space: nowrap;
   flex: 1 1 0;
   min-width: 0;
+}
+
+.photo-toolbar .v-btn {
+  opacity: 0.7;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.photo-toolbar .v-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+:deep(.v-carousel__controls) {
+  display: none;
+}
+
+:deep(.v-window__controls .v-btn) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(2px);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.detail-panel {
+  background: #242424;
+  color: rgba(255, 255, 255, 0.87);
+}
+
+:deep(.v-window__controls .v-btn:hover) {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
 }
 </style>

@@ -46,17 +46,18 @@
     <div class="d-flex align-center mb-3">
       <v-icon size="small" class="mr-2" color="primary">mdi-tag-multiple</v-icon>
       <span class="text-body-2 font-weight-medium">Tags</span>
-      <v-spacer></v-spacer>
-      <v-btn v-if="!readonly" size="x-small" variant="tonal" color="primary" prepend-icon="mdi-pencil"
-        @click="$emit('editTags', photo.filename)">Edit</v-btn>
+      <v-btn v-if="!readonly" icon size="x-small" variant="text" color="primary" class="ml-1"
+        @click="$emit('editTags', photo.filename)" title="Edit tags">
+        <v-icon size="14">mdi-pencil</v-icon>
+      </v-btn>
     </div>
     <div v-if="Object.keys(photo.tags).length === 0" class="text-caption text-medium-emphasis mb-4 ml-1">
       No tags — click Edit to add some
     </div>
-    <div v-else class="rounded-lg mb-4" style="background: rgba(0,0,0,0.04);">
+    <div v-else class="rounded-lg mb-4 tag-list-bg">
       <div v-for="(group, groupName, index) in photo.tags" :key="groupName"
         class="d-flex align-center px-3 py-2"
-        :style="index > 0 ? 'border-top: 1px solid rgba(0,0,0,0.08)' : ''">
+        :class="index > 0 ? 'tag-list-row-border' : ''">
         <div class="d-flex align-center mr-3" style="min-width: 90px;">
           <v-icon :color="group.color || 'grey'" icon="mdi-square-rounded" size="x-small" class="mr-1"></v-icon>
           <span class="text-caption text-medium-emphasis">{{ groupName }}</span>
@@ -79,7 +80,7 @@
         Maps
       </v-btn>
     </div>
-    <v-list density="compact" class="pa-0 mb-4 rounded-lg" style="background: rgba(0,0,0,0.04);">
+    <v-list density="compact" class="pa-0 mb-4 rounded-lg tag-list-bg">
       <v-list-item v-if="photo.origin_filename" class="px-3 py-1">
         <template v-slot:prepend><v-icon size="x-small" class="mr-2 text-medium-emphasis">mdi-file-image</v-icon></template>
         <v-list-item-title class="text-caption text-medium-emphasis">Original file</v-list-item-title>
@@ -181,3 +182,12 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.tag-list-bg {
+  background: rgba(var(--v-theme-on-surface), 0.04);
+}
+.tag-list-row-border {
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+</style>
