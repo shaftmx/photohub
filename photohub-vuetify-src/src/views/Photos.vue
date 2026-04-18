@@ -51,20 +51,25 @@
                 density="compact" append-icon="mdi-chevron-down" :disabled="selectedFilenames.length < 1">Actions</v-btn>
             </template>
             <v-list density="compact">
-              <v-list-item prepend-icon="mdi-tag-arrow-right" @click="displayed = false; $refs.tagPhotos.open()">
+              <v-list-item @click="displayed = false; $refs.tagPhotos.open()">
+                <template #prepend><v-icon color="primary" class="mr-4">mdi-tag-arrow-right</v-icon></template>
                 <v-list-item-title>Tag</v-list-item-title>
               </v-list-item>
-              <v-list-item prepend-icon="mdi-heart" @click="bulkSetFavorite(true)">
+              <v-list-item @click="bulkSetFavorite(true)">
+                <template #prepend><v-icon color="red" class="mr-4">mdi-heart</v-icon></template>
                 <v-list-item-title>Add to favorites</v-list-item-title>
               </v-list-item>
-              <v-list-item prepend-icon="mdi-heart-off-outline" @click="bulkSetFavorite(false)">
+              <v-list-item @click="bulkSetFavorite(false)">
+                <template #prepend><v-icon class="mr-4">mdi-heart-off-outline</v-icon></template>
                 <v-list-item-title>Remove from favorites</v-list-item-title>
               </v-list-item>
-              <v-list-item prepend-icon="mdi-cloud-off-outline" @click="confirmBulkUnpublishDialog = true">
+              <v-list-item @click="confirmBulkUnpublishDialog = true">
+                <template #prepend><v-icon class="mr-4">mdi-cloud-off-outline</v-icon></template>
                 <v-list-item-title>Unpublish</v-list-item-title>
               </v-list-item>
               <v-divider></v-divider>
-              <v-list-item prepend-icon="mdi-delete" @click="confirmBulkDeleteDialog = true" class="text-error">
+              <v-list-item @click="confirmBulkDeleteDialog = true">
+                <template #prepend><v-icon color="error" class="mr-4">mdi-delete</v-icon></template>
                 <v-list-item-title>Delete</v-list-item-title>
               </v-list-item>
             </v-list>
@@ -89,20 +94,25 @@
                     density="compact" append-icon="mdi-chevron-down" :disabled="selectedFilenames.length < 1">Actions</v-btn>
                 </template>
                 <v-list density="compact">
-                  <v-list-item prepend-icon="mdi-tag-arrow-right" @click="displayed = false; $refs.tagPhotos.open()">
+                  <v-list-item @click="displayed = false; $refs.tagPhotos.open()">
+                    <template #prepend><v-icon color="primary" class="mr-4">mdi-tag-arrow-right</v-icon></template>
                     <v-list-item-title>Tag</v-list-item-title>
                   </v-list-item>
-                  <v-list-item prepend-icon="mdi-heart" @click="bulkSetFavorite(true)">
+                  <v-list-item @click="bulkSetFavorite(true)">
+                    <template #prepend><v-icon color="red" class="mr-4">mdi-heart</v-icon></template>
                     <v-list-item-title>Add to favorites</v-list-item-title>
                   </v-list-item>
-                  <v-list-item prepend-icon="mdi-heart-off-outline" @click="bulkSetFavorite(false)">
+                  <v-list-item @click="bulkSetFavorite(false)">
+                    <template #prepend><v-icon class="mr-4">mdi-heart-off-outline</v-icon></template>
                     <v-list-item-title>Remove from favorites</v-list-item-title>
                   </v-list-item>
-                  <v-list-item prepend-icon="mdi-cloud-off-outline" @click="confirmBulkUnpublishDialog = true">
+                  <v-list-item @click="confirmBulkUnpublishDialog = true">
+                    <template #prepend><v-icon class="mr-4">mdi-cloud-off-outline</v-icon></template>
                     <v-list-item-title>Unpublish</v-list-item-title>
                   </v-list-item>
                   <v-divider></v-divider>
-                  <v-list-item prepend-icon="mdi-delete" @click="confirmBulkDeleteDialog = true" class="text-error">
+                  <v-list-item @click="confirmBulkDeleteDialog = true">
+                    <template #prepend><v-icon color="error" class="mr-4">mdi-delete</v-icon></template>
                     <v-list-item-title>Delete</v-list-item-title>
                   </v-list-item>
                 </v-list>
