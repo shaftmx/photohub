@@ -132,23 +132,37 @@ Views, users, and other app state → handled via a separate DB dump outside the
 ## Future / Ideas
 - ⬜ Panoramic photo handling — special resize/display if ratio > 1/3 ?
 - ⬜ Non-JPEG support — `save_photo` in `hub/utils.py` only handles JPEG
-- ⬜ Video support — `Photo.type` field already in model
-- ⬜ Show tags in grid thumbnail — TBD: colors only, tag names, hover tooltip?
+- ⬜ **Video support** — `Photo.type` field already in model
+  - **Formats**: MP4, MOV and others accepted via ffmpeg; re-encoded to MP4/H264 web-optimised (`-movflags +faststart`) at ingestion
+  - **Thumbnails**: same sample system as photos (xs/sm/…); frame extracted by ffmpeg at t=0; used in all grids identically
+  - **Transcode background**: new `transcode_status` field on `Photo` (`pending` / `processing` / `done` / `error`); management command `transcode_pending` processes queued videos; triggered by a cron in docker-compose (e.g. every 2 min)
+  - **Grid**: play icon overlay on video thumbnails; loading spinner overlay when `transcode_status != done`
+  - **Detail panel**: HTML5 `<video>` player instead of `<img>`; metadata section shows ffprobe info (duration, resolution, codec) alongside EXIF
+  - **Upload**: same upload page, file type detected at ingestion; `save_photo` in `hub/utils.py` gets a video branch
+  - **Infra**: ffmpeg + ffprobe added to Dockerfile
+  - **Admin panel — Photo quality tab**: toggle `ALLOW_VIDEO_UPLOAD` (default off); when off, video files are rejected at upload with a clear error message
+  - **Grid filter**: image / video / all toggle in Photos page, ViewDetail, and ViewCreate
 - ⬜ Map view — display all photos with GPS data on a global map
 - ⬜ **View map** — Google Maps page for a specific view: show all photos that have GPS data as markers on a map, clicking a marker opens the photo detail
 - ⬜ **Filter by owner** — photos and views have an `owner` field (username); future UI to filter/isolate content by owner; currently ignored — all authenticated users see all content
 - ⬜ Pagination or infinite scroll — TBD based on performance and UX
-- ⬜ Future: create a view from a manual selection of specific photos
-- ⬜ **Upload link** — shareable link allowing anyone (no account) to upload photos into a specific context:
-  - Two modes:
-    - **View-scoped**: linked to a view; uploaded photos are auto-tagged to match the view's tag filters and auto-published; uploaders see their photos appear immediately in the view
-    - **Generic**: not linked to a view; uploaded photos land in Unpublished as usual (owner curates manually)
-  - Link management: generate / revoke (like private view share links)
-  - **Link expiration** — optional expiry date (same concept as view share link expiration)
-  - Moderation: owner can delete/edit photos uploaded by guests via bulk selection in ViewDetail or Photos filter
+- ⬜ **Upload link** — second shareable link on a view (write access), separate from the existing read-only share link:
+  - Two independent links per view: **read link** (existing `share_link`) and **write/upload link** (new `upload_link` UUID token)
+  - The upload link page (`/upload_view/<token>`) shows the view in read mode + an Upload button
+  - Upload flow: same UI as the current Upload page, in the context of the view; after upload shows "X photos uploaded" + "Go to view" button
+  - Auto-applies view's `filter_tags` to uploaded photos (not rating/favorite); photos are auto-published
+  - Moderation: via bulk selection in ViewCreate edit mode (already implemented)
+  - No expiry (keep simple)
+  - **Model**: new `upload_link` (UUID, nullable) field on `View`
+  - **Backend**:
+    - `GET /api/upload_view/<token>/photos` — read access via upload token (same as shared view)
+    - `POST /api/upload_view/<token>/upload` — upload + auto-tag + auto-publish
+    - Generate / revoke upload link endpoints (mirroring share_link endpoints)
+  - **Frontend — ViewDetail share panel**: existing share link section gains a Write subsection (collapsible) for upload link management (generate / copy / revoke); same UX pattern as read link
+  - **Frontend — upload link page**: route `/upload_view/<token>`; displays the view + Upload button; after upload reloads the view photos
 - ⬜ **Multi-view group link** — a shareable link that bundles multiple private views into a single public page; create/edit/delete the group, select which views to include, regenerate/revoke the link; displayed folded at the bottom of the Views page
   - **Link expiration** — optional expiry date (same concept as above)
-- ⬜ **ZIP download** — generate and download a zip of photos; scope TBD: current filter/selection in Photos, a full view, or a manual selection; photo size selectable (raw, medium, small sample)
+- ✅ **ZIP download** — download button in ViewDetail; size picker (all samples + raw); streams a ZIP of all view photos at the selected size
 
 ## Infra / Dev
 
