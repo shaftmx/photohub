@@ -19,12 +19,12 @@
       </v-form>
 
       <!-- v-if="loading" -->
-      <v-container v-if="uploaded_files.length > 0" class="mt-5" style="max-width: 500px;">
+      <v-container v-if="uploaded_count > 0" class="mt-5" style="max-width: 500px;">
 
         <!-- Header: progress + count + nav button -->
         <div class="d-flex align-center mb-3 ga-2">
           <v-progress-circular color="primary" :width="4" size="20" :model-value="progress"></v-progress-circular>
-          <span class="text-body-2 text-medium-emphasis">{{ uploaded_files.length }} / {{ total_files }} uploaded</span>
+          <span class="text-body-2 text-medium-emphasis">{{ uploaded_count }} / {{ total_files }} uploaded</span>
           <v-spacer></v-spacer>
           <v-btn @click="goTo('Unpublished')" variant="text" icon color="primary" size="small">
             <v-tooltip activator="parent" location="top">Go to unpublished</v-tooltip>
@@ -32,10 +32,13 @@
           </v-btn>
         </div>
 
-        <!-- File list — most recent first, no preview -->
+        <!-- File list — last 800, most recent first, no preview -->
         <v-list density="compact" class="pa-0">
+          <v-list-item v-if="uploaded_count > 200" class="px-2 py-1 text-caption text-medium-emphasis">
+            … and {{ uploaded_count - 200 }} more
+          </v-list-item>
           <v-list-item
-            v-for="item in [...uploaded_files].reverse()"
+            v-for="item in uploaded_files.slice(-200).reverse()"
             :key="item.name"
             class="px-2 py-1 mb-1 rounded"
             style="background: rgba(0,0,0,0.04);"
@@ -71,6 +74,7 @@ export default {
     form: false,
     files: [],
     uploaded_files: [],
+    uploaded_count: 0,
     total_files: 0,
     loading: false,
     progress: 0,
@@ -91,10 +95,6 @@ export default {
       const val = data.value.data.ALLOW_VIDEO_UPLOAD
       this.allowVideoUpload = val === 'True' || val === true || val === '1'
     }
-  },
-  beforeUnmount() {
-    // Revoke object URLs to free memory
-    this.uploaded_files.forEach(f => { if (f._objectUrl) URL.revokeObjectURL(f._objectUrl) })
   },
   methods: {
     // handleFilesUpload(event) {
@@ -119,8 +119,8 @@ export default {
       const { triggerAlert } = useAlertStore()
 
       // Reset state — revoke previous object URLs first
-      this.uploaded_files.forEach(f => { if (f._objectUrl) URL.revokeObjectURL(f._objectUrl) })
       this.uploaded_files = []
+      this.uploaded_count = 0
       this.total_files = this.files.length
       this.progress = 0
 
@@ -148,13 +148,14 @@ export default {
           return
         } else {
           // Attach a local preview URL for the thumbnail
-          file._objectUrl = URL.createObjectURL(file)
+          this.uploaded_count++
+          if (this.uploaded_files.length >= 200) this.uploaded_files.shift()
           this.uploaded_files.push(file)
-          this.progress = Math.round((100 * this.uploaded_files.length) / this.total_files);
+          this.progress = Math.round((100 * this.uploaded_count) / this.total_files);
         }
       }
       this.$refs.form.reset()
-      triggerAlert("success", `${this.uploaded_files.length} file${this.uploaded_files.length !== 1 ? 's' : ''} uploaded`, "")
+      triggerAlert("success", `${this.uploaded_count} file${this.uploaded_count !== 1 ? 's' : ''} uploaded`, "")
       this.loading = false
       this.files = []
 
