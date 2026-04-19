@@ -12,11 +12,13 @@
         <div v-if="!sharedDatas.isMobile" class="d-flex align-center ga-2 mb-1">
           <h1 class="text-h4">{{ title }}</h1>
           <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
+          <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" class="ml-2" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
         </div>
         <p v-if="!sharedDatas.isMobile" class="text-body-2 text-medium-emphasis mb-4">{{ subtitle }}</p>
         <div v-if="sharedDatas.isMobile" class="d-flex align-center ga-2 mb-1">
           <h1 class="text-h6">{{ title }}</h1>
           <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
+          <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" class="ml-2" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
         </div>
         <p v-if="sharedDatas.isMobile" class="text-caption text-medium-emphasis mb-4">{{ subtitle }}</p>
       </v-sheet>
@@ -134,6 +136,7 @@ import PhotoGrid from '@/components/PhotoGrid.vue'
 <script>
 import { requireAuth } from '../authrequired.js'
 import { useAlertStore } from '../stores/alert'
+import { useAppConfigStore } from '../stores/appConfig.js'
 import { getSharedDatas } from '../sharedDatas.js'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 
@@ -145,6 +148,7 @@ export default {
     title: "Unpublished",
     subtitle: "All recently uploaded photos that have not been published",
     photos: [],
+    total: 0,
     selectedPhotosFilenames: [],
     lastSelectedIndex: null, // anchor for shift+click range selection
     paths: {},
@@ -154,9 +158,10 @@ export default {
     sortDir: 'desc',
   }),
 
-  mounted() {
+  async mounted() {
     requireAuth(this)
     this.sharedDatas = getSharedDatas(this)
+    await useAppConfigStore().load()
     this.doGetPhotos()
   },
 
@@ -264,7 +269,9 @@ export default {
 
     async doGetPhotos() {
       const { triggerAlert } = useAlertStore()
-      const { data, error } = await useAsyncFetch(`/api/unpublished?sort_by=${this.sortBy}&sort_dir=${this.sortDir}`)
+      const appConfig = useAppConfigStore()
+      const limit = appConfig.galleryLimit(this.sharedDatas.isMobile)
+      const { data, error } = await useAsyncFetch(`/api/unpublished?sort_by=${this.sortBy}&sort_dir=${this.sortDir}&limit=${limit}`)
       if (error.value) {
         triggerAlert('error', 'Request failure', error.value)
       } else if (data.value.ERROR) {
@@ -272,6 +279,7 @@ export default {
       } else {
         this.paths = data.value.data.paths
         this.photos = data.value.data.photos
+        this.total = data.value.data.total ?? this.photos.length
       }
     },
   },

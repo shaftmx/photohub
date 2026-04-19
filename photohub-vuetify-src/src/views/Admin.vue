@@ -272,8 +272,33 @@
 
       <!-- ─────────────── Tab: Photo quality ─────────────── -->
       <v-window-item value="quality">
+        <div class="d-flex justify-end mb-3">
+          <v-btn color="primary" variant="flat" class="text-none" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
+        </div>
         <v-row>
           <v-col cols="12" md="5">
+            <!-- Gallery page size -->
+            <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Gallery page size</p>
+            <v-text-field
+              v-model="qualityConfig.GALLERY_PAGE_SIZE_DESKTOP"
+              label="Desktop"
+              type="number"
+              density="compact"
+              class="mb-2"
+              hint="GALLERY_PAGE_SIZE_DESKTOP — max photos loaded per page on desktop (default: 600)"
+              persistent-hint
+            ></v-text-field>
+            <v-text-field
+              v-model="qualityConfig.GALLERY_PAGE_SIZE_MOBILE"
+              label="Mobile"
+              type="number"
+              density="compact"
+              class="mb-4"
+              hint="GALLERY_PAGE_SIZE_MOBILE — max photos loaded per page on mobile (default: 500)"
+              persistent-hint
+            ></v-text-field>
+
+            <v-divider class="mb-4"></v-divider>
             <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-4" style="letter-spacing:.08em">Raw photo processing</p>
 
             <v-select
@@ -380,8 +405,7 @@
             </div>
             <p class="text-caption text-disabled mt-1">SAMPLE_PHOTOS_SETTINGS</p>
             <div class="d-flex align-center mt-4 mb-6 gap-3">
-              <v-btn color="primary" variant="flat" class="text-none" :loading="qualitySaving" @click="saveConfig">Save settings</v-btn>
-              <v-btn variant="tonal" class="text-none ml-3" :loading="resampleLoading" @click="flushSamples">Flush samples</v-btn>
+              <v-btn variant="tonal" class="text-none" :loading="resampleLoading" @click="flushSamples">Flush samples</v-btn>
             </div>
           </v-col>
         </v-row>
@@ -708,6 +732,7 @@ import { requireAdminOrContributor } from '../authrequired.js'
 import TagGroupsEditor from '../components/TagGroupsEditor.vue'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { useAlertStore } from '../stores/alert'
+import { useAppConfigStore } from '../stores/appConfig.js'
 import sampleTagsYaml from '../data/tags_sample.yml?raw'
 import { EditorView, basicSetup } from 'codemirror'
 import { yaml } from '@codemirror/lang-yaml'
@@ -1114,11 +1139,14 @@ export default {
         TRANSCODE_PRESET:           this.qualityConfig.TRANSCODE_PRESET || '',
         TRANSCODE_CRF:              this.qualityConfig.TRANSCODE_CRF || '',
         TRANSCODE_TIMEOUT:          this.qualityConfig.TRANSCODE_TIMEOUT || '',
+        GALLERY_PAGE_SIZE_DESKTOP:  this.qualityConfig.GALLERY_PAGE_SIZE_DESKTOP || '',
+        GALLERY_PAGE_SIZE_MOBILE:   this.qualityConfig.GALLERY_PAGE_SIZE_MOBILE || '',
         SAMPLE_PHOTOS_SETTINGS:    this.qualitySampleYaml,
       }
       const { data } = await useAsyncPost('/api/admin/config', payload)
       this.qualitySaving = false
       if (data.value && !data.value.ERROR) {
+        useAppConfigStore().invalidate()
         triggerAlert('success', 'Settings saved', '')
       } else {
         triggerAlert('error', 'Save failed', data.value?.details || '')

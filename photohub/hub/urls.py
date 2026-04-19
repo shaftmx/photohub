@@ -75,6 +75,9 @@ urlpatterns = [
     # Admin — tags (admin + contributor)
     path("admin/tags", admin_tags.tags_view, name="admin_tags"),
 
+    # Public app config (no auth)
+    path("app-config", admin_config.app_config, name="app_config"),
+
     # Admin — config / photo quality (admin only)
     path("admin/config", admin_config.config_view, name="admin_config"),
     path("admin/flush-samples", admin_config.flush_samples, name="admin_flush_samples"),

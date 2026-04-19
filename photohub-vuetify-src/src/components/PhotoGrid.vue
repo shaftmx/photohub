@@ -15,6 +15,7 @@
       <div class="item-inner">
         <img
           :src="paths[adaptivePhotoSize] + '/' + photo.hash_path + '/' + thumbFilename(photo)"
+          loading="lazy"
           @click="!draggable && $emit('item-click', photo, index, $event)"
         />
         <div v-if="photo.type === 'video'" class="video-overlay" @click="!draggable && $emit('item-click', photo, index, $event)">

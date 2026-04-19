@@ -134,6 +134,7 @@
       <v-sheet class="d-flex mb-2 align-center">
         <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="onSortChange()" @update:sortDir="onSortChange()"></SortControls>
         <span class="text-body-2 text-medium-emphasis ml-3">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
+        <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" class="ml-2" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
         <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
         <v-sheet class="d-flex ma-0 pa-0 align-end justify-end w-50">
           <v-slider v-model="sharedDatas.gridSize" style="max-width: 300px; width: 100%"
@@ -306,6 +307,7 @@ import SortControls from '@/components/SortControls.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
 import FilterModeToggle from '@/components/FilterModeToggle.vue'
 import { useAuthStore } from '../stores/auth.js'
+import { useAppConfigStore } from '../stores/appConfig.js'
 const authStore = useAuthStore()
 </script>
 
@@ -328,6 +330,7 @@ export default {
     tags: [],
     tagGroups: [],
     loading: false,
+    total: 0,
     // Selection mode
     selectionMode: false,
     selectedFilenames: [],
@@ -380,9 +383,10 @@ export default {
     },
   },
 
-  mounted() {
+  async mounted() {
     requireAuth(this)
     this.sharedDatas = getSharedDatas(this)
+    await useAppConfigStore().load()
     this.init()
   },
 
@@ -705,6 +709,9 @@ export default {
       params.sort_dir = this.sortDir
       if (this.mediaType !== 'all') params.media_type = this.mediaType
 
+      const appConfig = useAppConfigStore()
+      params.limit = appConfig.galleryLimit(this.sharedDatas.isMobile)
+
       const queryFilter = Object.keys(params).length > 0 ? "?" + new URLSearchParams(params) : ""
 
       const { triggerAlert } = useAlertStore()
@@ -716,6 +723,7 @@ export default {
       } else {
         this.paths = data.value.data.paths
         this.photos = data.value.data.photos
+        this.total = data.value.data.total ?? this.photos.length
         this.availableTags = data.value.data.available_tags
       }
     },

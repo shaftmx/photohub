@@ -3,6 +3,7 @@ from .errors import *
 from django.contrib.auth import authenticate
 from django.http import JsonResponse
 import json
+import re
 import yaml
 import hashlib
 import subprocess
@@ -11,6 +12,7 @@ from django.conf import settings
 from PIL import Image, ExifTags, ImageCms
 from django.core.files.storage import default_storage
 from os.path import basename
+from dateutil import parser as dateutil_parser
 
 
 def get_setting(key):
@@ -137,12 +139,13 @@ def get_photo_root_paths():
 def dms_to_dd(gps_coords, gps_coords_ref):
     d, m, s =  gps_coords
     dd = d + m / 60 + s / 3600
-    if gps_coords_ref.upper() in ('S', 'W'):
+    ref = (gps_coords_ref or '').strip('\x00').strip().upper()
+    if ref in ('S', 'W'):
         return float(-dd)
-    elif gps_coords_ref.upper() in ('N', 'E'):
+    elif ref in ('N', 'E'):
         return float(dd)
     else:
-        raise RuntimeError('Incorrect gps_coords_ref {}'.format(gps_coords_ref))
+        raise RuntimeError('Incorrect gps_coords_ref {!r}'.format(gps_coords_ref))
 
 #
 # Write photos
@@ -250,6 +253,25 @@ def generate_photo_samples(filename):
         return e
 
 
+def _to_jpeg_file(image, original_file):
+    """Convert any Pillow image to a JPEG File object, flattening alpha on white."""
+    if image.mode in ('RGBA', 'LA', 'P'):
+        bg = Image.new('RGB', image.size, (255, 255, 255))
+        src = image.convert('RGBA') if image.mode == 'P' else image
+        bg.paste(src, mask=src.split()[-1])
+        image = bg
+    elif image.mode != 'RGB':
+        image = image.convert('RGB')
+    icc_profile = original_file.info.get("icc_profile") if hasattr(original_file, 'info') else None
+    exif = original_file.info.get("exif") if hasattr(original_file, 'info') else None
+    buf = BytesIO()
+    image.save(buf, format='JPEG', quality=100, icc_profile=icc_profile, exif=exif or b'')
+    buf.seek(0)
+    jpeg_file = File(buf, name=getattr(original_file, 'name', 'photo.jpg'))
+    jpeg_file.content_type = 'image/jpeg'
+    return jpeg_file
+
+
 def save_photo(file, photo_path, owner):
     mime = getattr(file, 'content_type', '') or ''
     if mime.startswith('video/') or photo_path.endswith('.mp4'):
@@ -257,7 +279,8 @@ def save_photo(file, photo_path, owner):
     try:
         with Image.open(file) as image_raw:
             if image_raw.format != "JPEG":
-                return Exception("Image format not supported %s" % image_raw.format)
+                LOG.info("save_photo: converting %s → JPEG for %s" % (image_raw.format, photo_path))
+                file = _to_jpeg_file(image_raw, image_raw)
 
         write_raw_photo(file, photo_path)
         create_photo_in_db(file, basename(photo_path), owner)
@@ -410,6 +433,8 @@ def get_exif(file):
         # exif_ifd = exif.get_ifd(ExifTags.IFD.Exif)
         # for k, v in exif_ifd.items():
         #     LOG.warning("IFD: %s %s" % (ExifTags.TAGS.get(k, k),v))
+    # Strip null bytes and whitespace from all string EXIF values
+    exifs = {k: v.strip('\x00').strip() if isinstance(v, str) else v for k, v in exifs.items()}
     LOG.info(exifs)
     return exifs
 
@@ -458,7 +483,13 @@ def create_photo_in_db(file, filename, owner):
         # DateTime 2023:01:31 22:04:00
         pdate = exifs.get("DateTimeOriginal", exifs.get("DateTime"))
         if pdate is not None:
-            defaults["date"] = datetime.datetime.strptime(pdate, '%Y:%m:%d %H:%M:%S').astimezone(tz=datetime.timezone.utc) # Assume exif date use UTC
+            pdate = pdate.strip('\x00').strip()
+            # Extract only the date/time portion — strip trailing garbage (e.g. "2019-03-01 15:17:54Adobe Photoshop")
+            m = re.match(r'[\d:/ T.+-]+', pdate)
+            pdate = m.group(0).strip() if m else pdate
+            # Normalize EXIF date separators: 2021:09:12 → 2021-09-12 (dateutil doesn't handle colons as date sep)
+            normalized = pdate[:10].replace(':', '-') + pdate[10:]
+            defaults["date"] = dateutil_parser.parse(normalized).astimezone(tz=datetime.timezone.utc)
         LOG.info(defaults)
         # defaults: if the photo already exists in DB, only the fields listed in defaults are overwritten.
         # Fields not in defaults (tags, favorite, rating, description) are preserved.

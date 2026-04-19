@@ -19,6 +19,7 @@
         title="Back to views" :to="{ name: 'Views' }"></v-btn>
       <span class="text-h6">{{ view.name }}</span>
       <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
+      <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" class="ml-2" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
       <v-chip size="x-small" :color="view.public ? 'success' : 'default'" variant="tonal">
         {{ view.public ? 'Public' : 'Private' }}
       </v-chip>
@@ -336,6 +337,7 @@ import PhotoGrid from '@/components/PhotoGrid.vue'
 import ExpiryPicker from '@/components/ExpiryPicker.vue'
 import ViewMap from '@/components/ViewMap.vue'
 import { useAuthStore } from '../stores/auth.js'
+import { useAppConfigStore } from '../stores/appConfig.js'
 const authStore = useAuthStore()
 </script>
 
@@ -349,6 +351,7 @@ export default {
   data: () => ({
     view: {},
     photos: [],
+    total: 0,
     paths: {},
     loading: true,
     deleting: false,
@@ -391,8 +394,9 @@ export default {
     lastUploadedCount: 0,
   }),
 
-  mounted() {
+  async mounted() {
     this.sharedDatas = getSharedDatas(this)
+    await useAppConfigStore().load()
     this.loadView()
   },
 
@@ -403,7 +407,11 @@ export default {
 
     async loadView({ sortBy } = {}) {
       this.loading = true
-      const qs = sortBy ? `?sort_by=${sortBy}` : ''
+      const appConfig = useAppConfigStore()
+      const limit = appConfig.galleryLimit(this.sharedDatas.isMobile)
+      const params = new URLSearchParams({ limit })
+      if (sortBy) params.set('sort_by', sortBy)
+      const qs = '?' + params.toString()
       let result
 
       if (this.isUploadMode) {
@@ -453,6 +461,7 @@ export default {
       this.notFound = false
       this.view = result.data.value.data.view
       this.photos = result.data.value.data.photos
+      this.total = result.data.value.data.total ?? this.photos.length
       this.paths = result.data.value.data.paths
       this.sortBy = sortBy || this.view.sort_by
       this.sortDir = this.view.sort_dir

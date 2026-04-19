@@ -18,7 +18,7 @@ from .. import models
 
 
 # Keys managed via AppConfig
-CONFIG_KEYS = ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'SAMPLE_PHOTOS_SETTINGS', 'ALLOW_VIDEO_UPLOAD', 'KEEP_ORIGINAL_VIDEO', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT']
+CONFIG_KEYS = ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'SAMPLE_PHOTOS_SETTINGS', 'ALLOW_VIDEO_UPLOAD', 'KEEP_ORIGINAL_VIDEO', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT', 'GALLERY_PAGE_SIZE_DESKTOP', 'GALLERY_PAGE_SIZE_MOBILE']
 
 
 def _get_config_value(key):
@@ -65,6 +65,8 @@ def _get_config(request):
         "TRANSCODE_PRESET":            _get_config_value('TRANSCODE_PRESET'),
         "TRANSCODE_CRF":               _get_config_value('TRANSCODE_CRF'),
         "TRANSCODE_TIMEOUT":           _get_config_value('TRANSCODE_TIMEOUT'),
+        "GALLERY_PAGE_SIZE_DESKTOP":   _get_config_value('GALLERY_PAGE_SIZE_DESKTOP'),
+        "GALLERY_PAGE_SIZE_MOBILE":    _get_config_value('GALLERY_PAGE_SIZE_MOBILE'),
         # Read-only info
         "MEDIA_ROOT": settings.MEDIA_ROOT,
         "DUMP_ROOT":  settings.DUMP_ROOT,
@@ -103,7 +105,7 @@ def _set_config(request):
     if err:
         return ErrorRequest(details=err)
 
-    for key in ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD', 'KEEP_ORIGINAL_VIDEO', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT']:
+    for key in ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD', 'KEEP_ORIGINAL_VIDEO', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT', 'GALLERY_PAGE_SIZE_DESKTOP', 'GALLERY_PAGE_SIZE_MOBILE']:
         if key in body:
             _set_config_value(key, body[key])
 
@@ -156,3 +158,12 @@ def flush_samples(request):
                 deleted += 1
     LOG.info("Flush samples: deleted %d files" % deleted)
     return Response(200, data={"deleted": deleted})
+
+
+@require_http_methods(["GET"])
+def app_config(request):
+    """Public endpoint — non-sensitive display settings, no auth required."""
+    return Response(200, data={
+        "GALLERY_PAGE_SIZE_DESKTOP": int(_get_config_value('GALLERY_PAGE_SIZE_DESKTOP') or 1000),
+        "GALLERY_PAGE_SIZE_MOBILE":  int(_get_config_value('GALLERY_PAGE_SIZE_MOBILE') or 500),
+    })

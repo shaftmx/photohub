@@ -19,16 +19,17 @@ from django.forms.models import model_to_dict
 @admin_or_contributor_required
 @require_http_methods(["GET"])
 def get_unpublished(request):
-    photos = apply_sort(
+    photos_qs = apply_sort(
         models.Photo.objects.filter(published=False),
         request.GET.get('sort_by', 'date'),
         request.GET.get('sort_dir', 'desc'),
     ).all()
-    
-    # excludes = ["id", "description", "published"]
-    # data = [ model_to_dict(i, exclude=excludes) for i in photos ]
+    total = photos_qs.count()
+
+    limit = int(request.GET.get('limit') or get_setting('GALLERY_PAGE_SIZE_DESKTOP'))
+    photos = photos_qs[:limit]
+
     fields = PHOTO_LIST_FIELDS
-    
     data_photos = []
     for p in photos:
         _p = model_to_dict(p, fields=fields)
@@ -49,8 +50,7 @@ def get_unpublished(request):
             _p.pop('duration', None)
 
         data_photos.append(_p)
-    data = { "photos": data_photos,
-             "paths": get_photo_root_paths() }
+    data = {"photos": data_photos, "total": total, "paths": get_photo_root_paths()}
     return Response(200, data=data)
 # for e in Entry.objects.all():
 #     print(e.headline)

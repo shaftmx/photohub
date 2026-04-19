@@ -161,7 +161,11 @@ Views, users, and other app state → handled via a separate DB dump outside the
   - **GPS parsing**: EXIF GPS values are stored as DMS strings (e.g. `51/1, 30/1, 0/1`) — backend converts to decimal on the fly
   - **Auth**: same access rules as the parent context (public view = accessible without login, shared/upload token = token validated)
 - ⬜ **Filter by owner** — photos and views have an `owner` field (username); future UI to filter/isolate content by owner; currently ignored — all authenticated users see all content
-- ⬜ Pagination or infinite scroll — TBD based on performance and UX
+- 🚧 **Pagination** — implemented in phases:
+  - **Phase 1 (current)**: hard cap `GALLERY_PAGE_SIZE` (configurable in Admin → Photo quality tab, default 500); backend slices results; all views (Photos, Unpublished, ViewDetail, ViewCreate) show a "Showing X of Y — refine your filters" banner when cap is hit; applies everywhere photos are listed
+  - **Phase 2 (next)**: full pagination UI — prev/next + page numbers shown at top AND bottom of gallery; page resets to 1 on any filter/tag/sort change; backend accepts `?page=&limit=`; response includes `total`, `page`, `pages`
+  - **Future idea**: separate cap for desktop vs mobile (two settings); deferred — adds complexity, single cap sufficient for now
+  - *Discarded*: infinite scroll (DOM grows unboundedly past ~1000), virtual scroll libs (don't work on variable-ratio flex grids)
 - ✅ **Upload link** — second shareable link on a view (write access), separate from the existing read-only share link:
   - Two independent links per view: **read link** (existing `share_link`) and **write/upload link** (new `upload_link` UUID token)
   - The upload link page (`/upload_view/<token>`) shows the view in read mode + an Upload button
@@ -179,6 +183,10 @@ Views, users, and other app state → handled via a separate DB dump outside the
 - ⬜ **Multi-view group link** — a shareable link that bundles multiple private views into a single public page; create/edit/delete the group, select which views to include, regenerate/revoke the link; displayed folded at the bottom of the Views page
   - **Link expiration** — optional expiry date (same concept as above)
 - ✅ **ZIP download** — download button in ViewDetail; size picker (all samples + raw); streams a ZIP of all view photos at the selected size
+
+## Bug fixes / minor
+
+- ⬜ EXIF date parsing: if no format matches, currently crashes upload — convert to LOG.warning + date=None so unknown formats don't block upload
 
 ## Code quality / Audit
 

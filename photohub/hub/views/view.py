@@ -343,6 +343,9 @@ def _build_view_photos_response(request, v):
     sort_by_override = request.GET.get('sort_by')
     effective_sort_by = sort_by_override if sort_by_override else v.sort_by
     custom_order_qs = models.ViewPhotoOrder.objects.filter(view=v).select_related('photo').order_by('order')
+    total = filtered_qs.count()
+    limit = int(request.GET.get('limit') or get_setting('GALLERY_PAGE_SIZE_DESKTOP'))
+
     if effective_sort_by == 'custom' and custom_order_qs.exists():
         filtered_filenames = set(filtered_qs.values_list('filename', flat=True))
         ordered = [vpo.photo for vpo in custom_order_qs if vpo.photo.filename in filtered_filenames]
@@ -350,9 +353,9 @@ def _build_view_photos_response(request, v):
         for p in filtered_qs:
             if p.filename not in ordered_filenames:
                 ordered.append(p)
-        data_photos = [_serialize_photo(p) for p in ordered]
+        data_photos = [_serialize_photo(p) for p in ordered[:limit]]
     else:
-        data_photos = [_serialize_photo(p) for p in filtered_qs]
+        data_photos = [_serialize_photo(p) for p in filtered_qs[:limit]]
 
     # Edge case: if explicit cover no longer exists in filtered photos, fallback to first
     photo_filenames = {p["filename"] for p in data_photos}
@@ -363,6 +366,7 @@ def _build_view_photos_response(request, v):
 
     return Response(200, data={
         "photos": data_photos,
+        "total": total,
         "paths": get_photo_root_paths(),
         "view": v_data,
     })

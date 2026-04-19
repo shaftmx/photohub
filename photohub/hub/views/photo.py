@@ -84,10 +84,12 @@ def get_photos(request):
             for tag in tags:
                 photos_query = photos_query.filter(tags=tag)
 
-    photos = apply_sort(photos_query, request.GET.get('sort_by', 'date'), request.GET.get('sort_dir', 'desc')).distinct()
+    photos_qs = apply_sort(photos_query, request.GET.get('sort_by', 'date'), request.GET.get('sort_dir', 'desc')).distinct()
+    total = photos_qs.count()
 
-    # excludes = ["id", "description", "published"]
-    # data = [ model_to_dict(i, exclude=excludes) for i in photos ]
+    limit = int(request.GET.get('limit') or get_setting('GALLERY_PAGE_SIZE_DESKTOP'))
+    photos = photos_qs[:limit]
+
     fields = PHOTO_LIST_FIELDS
     data_photos = []
     for p in photos:
@@ -130,6 +132,7 @@ def get_photos(request):
 
     data = {
         "photos": data_photos,
+        "total": total,
         "paths": get_photo_root_paths(),
         "available_tags": all_used_tags,
     }

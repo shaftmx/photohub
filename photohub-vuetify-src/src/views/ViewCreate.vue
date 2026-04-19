@@ -353,6 +353,7 @@ import FilterModeToggle from '@/components/FilterModeToggle.vue'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { requireAuth } from '../authrequired.js'
 import { useAlertStore } from '../stores/alert'
+import { useAppConfigStore } from '../stores/appConfig.js'
 import { getSharedDatas } from '../sharedDatas.js'
 
 export default {
@@ -434,9 +435,10 @@ export default {
     },
   },
 
-  mounted() {
+  async mounted() {
     requireAuth(this)
     this.sharedDatas = getSharedDatas(this)
+    await useAppConfigStore().load()
     this.init()
   },
 
@@ -537,12 +539,15 @@ export default {
       }
       if (this.filterMediaType !== 'all') params.set('media_type', this.filterMediaType)
 
+      const appConfig = useAppConfigStore()
+      params.set('limit', appConfig.galleryLimit(this.sharedDatas.isMobile))
+
       // In edit mode with an existing custom order selected, load from the view endpoint
       // so the preview reflects the saved order (the photos API doesn't know about ViewPhotoOrder).
       const id = this.$route.params.id
       let fetchUrl
       if (this.isEditMode && this.dbHasCustomOrder && this.sortBy === 'custom') {
-        fetchUrl = `/api/views/${id}/photos?sort_by=custom`
+        fetchUrl = `/api/views/${id}/photos?sort_by=custom&limit=${appConfig.galleryLimit(this.sharedDatas.isMobile)}`
       } else {
         params.set('sort_by', this.sortBy)
         params.set('sort_dir', this.sortDir)

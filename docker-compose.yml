@@ -26,6 +26,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/api/app-config"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
     ports:
       - "8000:80"
       - "5000:5000"
@@ -52,8 +58,11 @@ services:
   worker:
     image: shaftmx/photohub
     links: [db]
+    restart: on-failure
     depends_on:
       db:
+        condition: service_healthy
+      web:
         condition: service_healthy
     cpus: "1.0"  # max CPU cores for the worker (e.g. 0.5 = half a core, 2.0 = 2 cores)
     command: python /photohub/manage.py transcode_pending

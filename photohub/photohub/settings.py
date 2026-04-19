@@ -212,6 +212,9 @@ TRANSCODE_PRESET        = os.environ.get('TRANSCODE_PRESET', 'fast')
 TRANSCODE_CRF           = int(os.environ.get('TRANSCODE_CRF', '23'))
 TRANSCODE_TIMEOUT       = int(os.environ.get('TRANSCODE_TIMEOUT', '3600'))
 
+GALLERY_PAGE_SIZE_DESKTOP = int(os.environ.get('GALLERY_PAGE_SIZE_DESKTOP', '600'))
+GALLERY_PAGE_SIZE_MOBILE  = int(os.environ.get('GALLERY_PAGE_SIZE_MOBILE', '500'))
+
 # Sample (resized) versions generated for each uploaded photo.
 # The frontend picks the appropriate sample automatically based on the grid
 # slider value (PhotoGrid.vue computed adaptivePhotoSize), using the max_size
