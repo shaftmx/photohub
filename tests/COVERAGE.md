@@ -243,12 +243,23 @@ Total: **124 tests** across 5 spec files.
 **Tags**
 - Tag & group description tooltips (hover on info icon in filter panel and tag editor)
 
+**Photos / Gallery page size**
+- Warning chip appears when total photos > configured limit (backend cap hit)
+- Cap respected per device type (desktop vs mobile limit differ)
+- Changing filters reloads within the new limit
+- `loading="lazy"` defers off-screen image requests (visual / network-level check)
+
 **Admin**
-- Admin panel tabs (Users, Tags, Photo quality, Backup)
+- Admin panel tabs (Users, Tags, Photo quality, Backup/Export, Video)
 - Tag YAML editor
 - User create/delete/password reset
 - Photo quality settings
 - Export/Import
+- Gallery page size fields (GALLERY_PAGE_SIZE_DESKTOP / GALLERY_PAGE_SIZE_MOBILE) visible and saveable in Photo quality tab
+- KEEP_ORIGINAL_VIDEO toggle visible in Video tab with disk warning alert
+- TRANSCODE_TIMEOUT field visible and saveable in Video tab
+- Save settings invalidates appConfig store cache (new limit applied immediately on next navigation)
+- Worker healthcheck: worker container waits for web healthcheck before starting
 
 **Video**
 - Upload an MP4 file when `ALLOW_VIDEO_UPLOAD=true` → appears in Unpublished with spinner overlay
