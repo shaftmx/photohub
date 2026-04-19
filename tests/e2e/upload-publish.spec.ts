@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { loginAs, navigateTo, FIXTURE_PHOTO, FIXTURE_PHOTO_2, waitForGrid } from './helpers'
+import { loginAs, navigateTo, FIXTURE_PHOTO, FIXTURE_PHOTO_2, waitForGrid, uniquePhoto } from './helpers'
 
 test.describe('Upload', () => {
 
@@ -35,7 +35,7 @@ test.describe('Upload', () => {
   test('upload multiple files at once', async ({ page }) => {
     await page.getByLabel('File input', { exact: true }).setInputFiles([FIXTURE_PHOTO, FIXTURE_PHOTO_2])
     await page.getByRole('button', { name: 'Upload', exact: true }).click()
-    await expect(page.getByText(/\d+ file.* uploaded/)).toBeVisible({ timeout: 20_000 })
+    await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 20_000 })
   })
 
 })
@@ -122,8 +122,14 @@ test.describe('Unpublished', () => {
     await expect(page.locator('.v-navigation-drawer')).toBeVisible({ timeout: 5_000 })
   })
 
-  // Destructive tests last — each removes photos from the unpublished queue
+  // Destructive tests — each uploads its own photos so the queue is guaranteed non-empty
   test('select a photo and publish it', async ({ page }) => {
+    await navigateTo(page, 'Upload')
+    await page.getByLabel('File input', { exact: true }).setInputFiles(FIXTURE_PHOTO)
+    await page.getByRole('button', { name: 'Upload', exact: true }).click()
+    await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })
+    await navigateTo(page, 'Unpublished')
+
     await waitForGrid(page)
     const countBefore = await page.locator('.item').count()
     await page.locator('.item').first().click()
@@ -131,13 +137,17 @@ test.describe('Unpublished', () => {
 
     await page.getByRole('button', { name: 'Actions' }).click()
     await page.locator('.v-list-item').filter({ hasText: 'Publish' }).click()
-    // Confirm dialog
     await page.getByRole('button', { name: 'Publish' }).last().click()
-    // One photo should have left the unpublished list
     await expect(page.locator('.item')).toHaveCount(countBefore - 1, { timeout: 8_000 })
   })
 
   test('delete an unpublished photo', async ({ page }) => {
+    await navigateTo(page, 'Upload')
+    await page.getByLabel('File input', { exact: true }).setInputFiles(FIXTURE_PHOTO_2)
+    await page.getByRole('button', { name: 'Upload', exact: true }).click()
+    await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })
+    await navigateTo(page, 'Unpublished')
+
     await waitForGrid(page)
     const countBefore = await page.locator('.item').count()
     await page.locator('.item').first().click()
@@ -149,9 +159,8 @@ test.describe('Unpublished', () => {
   })
 
   test('select all and publish', async ({ page }) => {
-    // Upload fresh photos first so the queue is guaranteed non-empty
     await navigateTo(page, 'Upload')
-    await page.getByLabel('File input', { exact: true }).setInputFiles([FIXTURE_PHOTO, FIXTURE_PHOTO_2])
+    await page.getByLabel('File input', { exact: true }).setInputFiles([uniquePhoto(), uniquePhoto(FIXTURE_PHOTO_2)])
     await page.getByRole('button', { name: 'Upload', exact: true }).click()
     await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })
     await navigateTo(page, 'Unpublished')

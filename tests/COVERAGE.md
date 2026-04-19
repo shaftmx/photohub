@@ -229,6 +229,10 @@ Total: **124 tests** across 5 spec files.
 - Duplicate file upload (same MD5 → "Picture already exist" response)
 - Non-JPEG file rejection
 - Large file or network error handling
+- WEBP / non-JPEG image auto-conversion (PIL converts to JPEG before saving)
+- DPI field missing or `None` in EXIF — upload should not crash (PIL `save()` without dpi kwarg)
+- GPS ref null-byte suffix (`'N\x00'`) — upload should not crash on malformed EXIF
+- EXIF date in unrecognised format — upload continues with `date=None` instead of crashing
 
 **Views**
 - Bulk selection actions in ViewCreate edit mode (tag, delete, unpublish, favorites)
@@ -257,6 +261,9 @@ Total: **124 tests** across 5 spec files.
 - Export/Import
 - Gallery page size fields (GALLERY_PAGE_SIZE_DESKTOP / GALLERY_PAGE_SIZE_MOBILE) visible and saveable in Photo quality tab
 - KEEP_ORIGINAL_VIDEO toggle visible in Video tab with disk warning alert
+- KEEP_ORIGINAL_VIDEO=true: worker renames source file to `_original.<ext>` after transcoding
+- KEEP_ORIGINAL_VIDEO=true: ZIP download serves `_original.<ext>` when raw size is requested
+- KEEP_ORIGINAL_VIDEO=true: export/import preserves `_original` file alongside poster
 - TRANSCODE_TIMEOUT field visible and saveable in Video tab
 - Save settings invalidates appConfig store cache (new limit applied immediately on next navigation)
 - Worker healthcheck: worker container waits for web healthcheck before starting
@@ -272,12 +279,19 @@ Total: **124 tests** across 5 spec files.
 - Media type filter in ViewDetail filters correctly
 - `filter_media_type` persisted on View: creating a "videos only" view works
 - Retry errors button in admin Video tab resets `error` → `pending`
+- Worker stuck-processing recovery: videos stuck in `processing` on startup are reset to `pending`
+- Worker heartbeat: `WORKER_LAST_SEEN` updated every ~30s during long transcodes (status chip stays "encoding")
 - Worker status chip shows online/offline/encoding state correctly
+- `origin_filename` displayed in worker status UI for the video currently being transcoded
 - Flush samples → video thumbnails regenerate lazily from poster JPG in raw/
 - Export with raw: .mp4 + poster .jpg exported to dump folder
 - Import: .mp4 file ingested, poster restored, `transcode_status=pending` if no poster
 - ZIP download: videos included as .mp4 regardless of size param
 - Delete video: .mp4 + poster .jpg removed from raw/
+
+**Navigation**
+- Middle-click / right-click → "Open in new tab" on photo cards, view cards, and gallery items
+- Favicon and app icon render correctly in browser tab and bookmarks
 
 **Unpublished**
 - "Tag" bulk action (TagPhotos component flow)

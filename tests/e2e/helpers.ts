@@ -1,5 +1,7 @@
 import { Page, expect } from '@playwright/test'
 import path from 'path'
+import fs from 'fs'
+import os from 'os'
 
 // ---
 // Credentials — override via env vars in CI
@@ -10,6 +12,21 @@ export const TEST_PASSWORD = process.env.TEST_PASSWORD || 'admin'
 // Small fixture JPEG placed in tests/fixtures/
 export const FIXTURE_PHOTO = path.join(__dirname, '../fixtures/test-photo.jpg')
 export const FIXTURE_PHOTO_2 = path.join(__dirname, '../fixtures/test-photo-2.jpg')
+
+/**
+ * Copy a fixture JPEG to a temp file with a random suffix appended to the JPEG
+ * comment marker so the MD5 differs from the original. Returns the temp path.
+ * Call this when you need a file that won't be rejected as a duplicate.
+ */
+export function uniquePhoto(base = FIXTURE_PHOTO): string {
+  const src = fs.readFileSync(base)
+  // Append a random comment to change the file's MD5 without breaking JPEG structure
+  const suffix = Buffer.from(`\xff\xfe` + Math.random().toString(36))
+  const unique = Buffer.concat([src, suffix])
+  const dest = path.join(os.tmpdir(), `photohub-test-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`)
+  fs.writeFileSync(dest, unique)
+  return dest
+}
 
 // ---
 // Auth helpers

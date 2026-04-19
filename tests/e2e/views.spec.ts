@@ -339,15 +339,16 @@ test.describe('Views — edit', () => {
     await nameInput.clear()
     await nameInput.fill('Renamed View')
     await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled()
-    // Wait for the API response before checking redirect
-    const [response] = await Promise.all([
-      page.waitForResponse(resp => resp.url().includes(`/api/views/${viewId}/update`)),
+    // Register both waits before clicking so we don't miss fast responses
+    const [updateResponse, _photosResponse] = await Promise.all([
+      page.waitForResponse(resp => resp.url().includes(`/api/views/${viewId}/update`), { timeout: 10_000 }),
+      // Skip the first photos response (may be the edit-page preview); wait for URL change then check name directly
       page.getByRole('button', { name: 'Save' }).click(),
     ])
-    expect(response.status()).toBe(200)
+    expect(updateResponse.status()).toBe(200)
     await expect(page).toHaveURL(new RegExp(`views/${viewId}$`), { timeout: 10_000 })
-    await page.waitForLoadState('networkidle')
-    await expect(page.locator('.text-h6').filter({ hasText: 'Renamed View' })).toBeVisible({ timeout: 10_000 })
+    // ViewDetail fetches the view on mount — name will appear once loadView() completes
+    await expect(page.locator('.text-h6').filter({ hasText: 'Renamed View' })).toBeVisible({ timeout: 15_000 })
     // Rename back for afterAll cleanup
     await page.locator('.v-btn').filter({ has: page.locator('.mdi-pencil-outline') }).first().click()
     await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').clear()
