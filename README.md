@@ -7,7 +7,7 @@ Screenshots
 ============
 Index page :
 
-![ScreenShot](https://raw.github.com/shaftmx/shopping-lists/master/screenshots/index.png)
+![ScreenShot](screenshots/index.png)
 
 
 Link of alternatives
