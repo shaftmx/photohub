@@ -542,6 +542,7 @@ export default {
         }
       }
       this.deselectAll()
+      this.fetchPreview()
     },
 
     async bulkUnpublish() {
@@ -557,6 +558,7 @@ export default {
         }
       }
       this.deselectAll()
+      this.fetchPreview()
     },
 
     async bulkDelete() {
@@ -572,6 +574,7 @@ export default {
         }
       }
       this.deselectAll()
+      this.fetchPreview()
     },
 
     onPhotoDeleted(filename) {

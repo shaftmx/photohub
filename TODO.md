@@ -12,18 +12,14 @@
 
 - 🚧 **Pagination** — phase 1 done (hard cap + banner); phase 2 pending:
   - Full pagination UI — prev/next + page numbers at top and bottom; page resets on filter/tag/sort change; backend accepts `?page=&limit=`; response includes `total`, `page`, `pages`
-- ⬜ **Filter by owner** — photos and views have an `owner` field; future UI to filter/isolate content by owner
+- 🚧 **Filter by owner** — photos and views have an `owner` field; UI placeholder done (icon + multiselect, hidden via `showOwnerFilter=false`); pending: backend filter + `available_owners` in API response; note: upload-link photos use `owner="guest"` hardcoded — needs design decision before enabling
 - ⬜ **Multi-view group link** — a shareable link bundling multiple private views into a single public page; create/edit/delete the group, select views, regenerate/revoke; shown at bottom of Views page
   - Optional expiry date
 
 ## UI / UX
 
-- ⬜ Review filter display mostly for mobile — make it less a mess
-  - 2 rows max: sort row (sort + direction + grid slider) + filter row (scrollable horizontal chips, no wrap)
-  - Group favorite + rating together (same topic)
-  - "Save as view" out of the filter area — move to title toolbar
-  - Icon-only chips need labels or a grouped "Filters ▾" menu
-- ⬜ **Filter by owner** — multiselect of owners; photos and views have an `owner` field
+- 🚧 Review filter display mostly for mobile — single row with spacer (right-aligned on mobile), favorite+rating grouped, media type 2-button toggle, Show/Hide filters inline with tag chips, Save as view moved next to Select, FilterBar extracted as shared component; remaining: scrollable horizontal chips if overflow
+- 🚧 **Filter by owner** — UI placeholder done (hidden); backend + wire-up pending (see Features section)
 
 ## Sécurité
 

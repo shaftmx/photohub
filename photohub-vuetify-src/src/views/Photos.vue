@@ -13,7 +13,7 @@
   :paths="paths"
   :allPhotos="photos"
   :selectedPhotosFilenames="selectedFilenames"
-  @closed="displayed = true; selectionMode = false"
+  @closed="onTagPhotosClosed"
 ></TagPhotos>
 
   <!-- Header -->
@@ -189,7 +189,7 @@
       :is-mobile="sharedDatas.isMobile"
       :show-tag-scope="true"
       v-model:showAllTags="showAllTags"
-      :show-owner-filter="true"
+      :show-owner-filter="false"
       v-model:filterOwners="filterOwners"
       :available-owners="availableOwners"
       @update:filterTagMode="onFilterModeChange"
@@ -423,6 +423,7 @@ export default {
         }
       }
       this.toggleSelectionMode()
+      this.doGetPhotos()
     },
 
     async bulkUnpublish() {
@@ -440,6 +441,7 @@ export default {
         }
       }
       this.toggleSelectionMode()
+      this.doGetPhotos()
     },
 
     async bulkSetFavorite(newValue) {
@@ -456,6 +458,13 @@ export default {
         }
       }
       this.toggleSelectionMode()
+      this.doGetPhotos()
+    },
+
+    onTagPhotosClosed() {
+      this.displayed = true
+      this.selectionMode = false
+      this.doGetPhotos()
     },
 
     onFilterModeChange(value) {

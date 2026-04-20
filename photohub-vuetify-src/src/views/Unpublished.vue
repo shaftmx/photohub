@@ -231,6 +231,7 @@ export default {
         }
       }
       this.selectedPhotosFilenames = []
+      this.doGetPhotos()
     },
 
     async deleteSelected() {
@@ -247,6 +248,7 @@ export default {
           this.selectedPhotosFilenames = this.selectedPhotosFilenames.filter(f => f !== filename)
         }
       }
+      this.doGetPhotos()
     },
 
     async publishSelected() {
