@@ -15,16 +15,17 @@
 
     <!-- Title block -->
     <v-sheet class="mb-2">
-      <div class="d-flex align-center ga-2 mb-1">
-        <v-btn v-if="isAuthenticated && !isUploadMode" icon="mdi-arrow-left" variant="text" density="compact" size="small"
-          title="Back to views" :to="{ name: 'Views' }"></v-btn>
-        <h1 :class="sharedDatas.isMobile ? 'text-h6' : 'text-h4'">{{ view.name }}</h1>
-        <v-chip size="x-small" :color="view.public ? 'success' : 'default'" variant="tonal">
-          {{ view.public ? 'Public' : 'Private' }}
-        </v-chip>
-        <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
-        <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
-      </div>
+      <PageTitle :title="view.name" :is-mobile="sharedDatas.isMobile" :count="photos.length" :total="total">
+        <template #prepend>
+          <v-btn v-if="isAuthenticated && !isUploadMode" icon="mdi-arrow-left" variant="text" density="compact" size="small"
+            title="Back to views" :to="{ name: 'Views' }"></v-btn>
+        </template>
+        <template #chips>
+          <v-chip size="x-small" :color="view.public ? 'success' : 'default'" variant="tonal">
+            {{ view.public ? 'Public' : 'Private' }}
+          </v-chip>
+        </template>
+      </PageTitle>
     </v-sheet>
 
     <!-- Toolbar row -->
@@ -339,6 +340,7 @@
 <script setup>
 import SortControls from '@/components/SortControls.vue'
 import DisplayPhoto from '@/components/DisplayPhoto.vue'
+import PageTitle from '@/components/PageTitle.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
 import ExpiryPicker from '@/components/ExpiryPicker.vue'
 import ViewMap from '@/components/ViewMap.vue'

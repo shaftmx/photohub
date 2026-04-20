@@ -18,11 +18,12 @@
     <!-- Header -->
     <!-- Title block -->
     <v-sheet class="mb-2">
-      <div class="d-flex align-center ga-2 mb-1">
-        <h1 :class="sharedDatas.isMobile ? 'text-h6' : 'text-h4'">{{ isEditMode ? 'Edit view' : 'Create view' }}</h1>
-        <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
-        <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
-      </div>
+      <PageTitle
+        :title="isEditMode ? 'Edit view' : 'Create view'"
+        :is-mobile="sharedDatas.isMobile"
+        :count="photos.length"
+        :total="total"
+      />
     </v-sheet>
 
     <!-- Toolbar row -->
@@ -281,6 +282,7 @@ import SortControls from '@/components/SortControls.vue'
 import DisplayPhoto from '@/components/DisplayPhoto.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
 import FilterBar from '@/components/FilterBar.vue'
+import PageTitle from '@/components/PageTitle.vue'
 </script>
 
 <script>

@@ -20,18 +20,13 @@
   <v-sheet v-if="displayed">
     <v-sheet>
       <v-sheet :class="!sharedDatas.isMobile ? 'ma-2 pa-2 me-auto' : ''">
-        <div v-if="!sharedDatas.isMobile" class="d-flex align-center ga-2 mb-1">
-          <h1 class="text-h4">{{ title }}</h1>
-          <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
-          <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" class="ml-2" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
-        </div>
-        <p v-if="!sharedDatas.isMobile" class="text-body-2 text-medium-emphasis mb-4">{{ subtitle }}</p>
-        <div v-if="sharedDatas.isMobile" class="d-flex align-center ga-2 mb-1">
-          <h1 class="text-h6">{{ title }}</h1>
-          <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
-          <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" class="ml-2" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
-        </div>
-        <p v-if="sharedDatas.isMobile" class="text-caption text-medium-emphasis mb-4">{{ subtitle }}</p>
+        <PageTitle
+          :title="title"
+          :is-mobile="sharedDatas.isMobile"
+          :count="photos.length"
+          :total="total"
+          :subtitle="subtitle"
+        />
       </v-sheet>
 
       <!-- Row 1: action buttons -->
@@ -218,6 +213,7 @@ import TagPhotos from '@/components/TagPhotos.vue'
 import SortControls from '@/components/SortControls.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
 import FilterBar from '@/components/FilterBar.vue'
+import PageTitle from '@/components/PageTitle.vue'
 import { useAuthStore } from '../stores/auth.js'
 import { useAppConfigStore } from '../stores/appConfig.js'
 const authStore = useAuthStore()
