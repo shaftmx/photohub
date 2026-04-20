@@ -41,7 +41,7 @@ CSRF_TRUSTED_ORIGINS = [u for u in _django_url.split(",") if u]
 
 INSTALLED_APPS = [
     'hub',
-    'django.contrib.admin',
+    # 'django.contrib.admin',  # disabled — legacy, PhotoHub has its own admin UI
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

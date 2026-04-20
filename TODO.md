@@ -188,6 +188,13 @@ Views, users, and other app state → handled via a separate DB dump outside the
 
 - ⬜ EXIF date parsing: if no format matches, currently crashes upload — convert to LOG.warning + date=None so unknown formats don't block upload
 
+## Sécurité
+
+- ⬜ **Protection des fichiers media via nginx `auth_request`** — actuellement les images (`/samples/`, `/raw/`) sont servies directement par nginx sans contrôle d'accès. N'importe qui connaissant l'URL peut accéder à une photo non publiée ou appartenant à une vue privée.
+  - Approche retenue : nginx `auth_request` avec cache. Pour chaque requête image, nginx fait une sous-requête légère vers un endpoint Django (ex. `/api/media-auth?path=...`) qui vérifie si la ressource est accessible (authentifié, photo publiée, vue publique, share link valide…). Nginx sert le fichier lui-même (pas de passage par Django), donc les perfs restent bonnes.
+  - Le cache `auth_request` peut être de plusieurs minutes — acceptable, le seul cas limite est un accès révoqué qui resterait valide jusqu'à expiration du cache.
+  - Référence : https://www.djangosnippets.org/snippets/491/ et https://stackoverflow.com/questions/28704712/django-nginx-x-accel-redirect-for-protected-files-on-webfaction
+
 ## Code quality / Audit
 
 - ⬜ **Code review — duplication & simplification**: scan frontend and backend for duplicated logic (e.g. serialization, URL construction, filter handling) and opportunities to simplify or extract shared helpers

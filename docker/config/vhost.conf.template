@@ -24,9 +24,9 @@ server {
         autoindex on; # This is a fully temporary rule and has to be removed. We just want to be sure we can serv static content properly
     }
 
-    location '/static/admin' {
-        root ${DJANGO_ADMIN_PATH};
-    }
+    # location '/static/admin' {  # disabled — legacy Django admin
+    #     root ${DJANGO_ADMIN_PATH};
+    # }
 
     location ~ ^/api {
         client_max_body_size ${NGINX_MAX_UPLOAD_SIZE};

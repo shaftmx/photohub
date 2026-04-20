@@ -25,7 +25,7 @@ services:
     #command: sleep 3600
     volumes:
       - "./photohub:/photohub"
-      - "/tmp/photohub-vuetify:/photohub-vuetify" # dist output of the build from web-vue
+      #- "/tmp/photohub-vuetify:/photohub-vuetify" # dist output of the build from web-vue: not used as nginx proxy on web-vue directly
       # Make the data persistent
       - "/tmp/data/photos:/data"
       - "./dumps:/dumps"
@@ -46,7 +46,7 @@ services:
     command: sh -c "cd /photohub-vuetify-src/ && yarn dev --host"
     volumes:
       - "./photohub-vuetify-src/:/photohub-vuetify-src"
-      - "/tmp/photohub-vuetify/:/photohub-vuetify" # dist ourput of the build
+      #- "/tmp/photohub-vuetify/:/photohub-vuetify" # dist ourput of the build if needed
     network_mode: bridge
 
   nginx:
