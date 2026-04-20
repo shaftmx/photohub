@@ -147,94 +147,22 @@
     </v-sheet>
 
     <!-- Filter bar -->
-    <v-sheet class="mb-3">
-      <div class="d-flex flex-wrap align-center ga-2" :class="(filterTagMode === 'quick' || (filterTagMode === 'detail' && filterPanelOpen)) ? 'mb-1' : 'mb-0'">
-        <FilterModeToggle
-          v-model="filterTagMode"
-          @update:modelValue="onFilterModeChange"
-        ></FilterModeToggle>
-
-        <v-divider vertical style="height: 24px; align-self: center;"></v-divider>
-
-        <!-- Media type filter -->
-        <v-btn-toggle v-model="filterMediaType" mandatory density="compact" rounded="lg" style="height:28px;" @update:modelValue="fetchPreview()">
-          <v-btn value="all" size="x-small" variant="text">All</v-btn>
-          <v-btn value="photo" size="x-small" variant="text"><v-icon size="14">mdi-image</v-icon></v-btn>
-          <v-btn value="video" size="x-small" variant="text"><v-icon size="14">mdi-video</v-icon></v-btn>
-        </v-btn-toggle>
-
-        <!-- Favorite filter toggle -->
-        <v-btn
-          :icon="filterFavorite ? 'mdi-heart' : 'mdi-heart-outline'"
-          :color="filterFavorite ? 'red' : 'default'"
-          :variant="filterFavorite ? 'tonal' : 'text'"
-          density="compact"
-          size="small"
-          :title="filterFavorite ? 'Favorites only — click to remove' : 'Filter by favorites'"
-          @click="filterFavorite = !filterFavorite; fetchPreview()"
-        ></v-btn>
-
-        <!-- Rating filter -->
-        <div class="d-flex align-center">
-          <v-btn
-            v-for="star in 5"
-            :key="star"
-            :icon="star <= filterRating ? 'mdi-star' : 'mdi-star-outline'"
-            :color="star <= filterRating ? 'amber' : 'default'"
-            variant="text"
-            density="compact"
-            size="x-small"
-            @click="filterRating = star === filterRating ? 0 : star; fetchPreview()"
-            :title="star + ' star' + (star > 1 ? 's' : '')"
-          ></v-btn>
-          <span
-            v-if="filterRating > 0"
-            class="text-primary font-weight-bold"
-            style="cursor: pointer; font-size: 13px; padding: 0 2px"
-            title="Toggle: <= rating or exactly equal"
-            @click="filterRatingMode = filterRatingMode === 'lte' ? 'eq' : 'lte'; fetchPreview()"
-          >{{ filterRatingMode === 'lte' ? '≤' : '=' }}</span>
-        </div>
-
-        <!-- Collapse toggle for detailed mode -->
-        <v-btn
-          v-if="filterTagMode === 'detail'"
-          :append-icon="filterPanelOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-          variant="tonal"
-          color="primary"
-          density="compact"
-          size="small"
-          class="ml-2"
-          @click="filterPanelOpen = !filterPanelOpen"
-        >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
-      </div>
-
-      <!-- Quick filter: tag autocomplete -->
-      <v-autocomplete v-if="filterTagMode === 'quick'"
-        prepend-icon="mdi-text-search-variant"
-        return-object
-        closable-chips
-        v-model="filterQuick"
-        item-title="name"
-        :items="allTagsFlat"
-        chips clearable multiple density="compact"
-        direction="horizontal"
-        variant="solo-inverted"
-        @update:model-value="fetchPreview()"
-      ></v-autocomplete>
-
-      <!-- Detailed filter panel -->
-      <v-expand-transition>
-        <div v-if="filterTagMode === 'detail' && filterPanelOpen" class="filter-panel pl-3 mt-1">
-          <TagFilter
-            v-model="filterDetail"
-            :tag-groups="tagGroups"
-            :photos="[]"
-            :show-all="true"
-          />
-        </div>
-      </v-expand-transition>
-    </v-sheet>
+    <FilterBar
+      :filter-tag-mode="filterTagMode"
+      v-model:filterFavorite="filterFavorite"
+      v-model:filterRating="filterRating"
+      v-model:filterRatingMode="filterRatingMode"
+      :media-type="filterMediaType"
+      v-model:filterQuick="filterQuick"
+      v-model:filterDetail="filterDetail"
+      :available-tags-flat="allTagsFlat"
+      :tag-groups="tagGroups"
+      :photos="[]"
+      :is-mobile="sharedDatas.isMobile"
+      @update:filterTagMode="onFilterModeChange"
+      @update:mediaType="filterMediaType = $event"
+      @change="fetchPreview"
+    />
 
     <!-- Preview header -->
     <v-sheet class="d-flex align-center mb-2">
@@ -348,12 +276,11 @@
 </template>
 
 <script setup>
-import TagFilter from '@/components/TagFilter.vue'
 import TagPhotos from '@/components/TagPhotos.vue'
 import SortControls from '@/components/SortControls.vue'
 import DisplayPhoto from '@/components/DisplayPhoto.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
-import FilterModeToggle from '@/components/FilterModeToggle.vue'
+import FilterBar from '@/components/FilterBar.vue'
 </script>
 
 <script>
@@ -379,7 +306,6 @@ export default {
     sharedDatas: {},
     // Filters
     filterTagMode: 'quick',  // quick / detail / notags
-    filterPanelOpen: false,
     filterQuick: [],
     filterDetail: {},
     filterFavorite: false,
@@ -433,13 +359,6 @@ export default {
       if (this.filterTagMode === 'quick') return 'basic'
       if (this.filterTagMode === 'detail') return 'smart'
       return 'notags'
-    },
-  },
-
-  watch: {
-    filterDetail: {
-      handler() { this.fetchPreview() },
-      deep: true,
     },
   },
 
@@ -686,7 +605,7 @@ export default {
         this.filterDetail = {}
       }
       this.filterTagMode = newMode
-      this.fetchPreview()
+      // fetchPreview is triggered by @change from FilterBar
     },
 
     onSortByChange() {
@@ -812,10 +731,6 @@ export default {
 </script>
 
 <style scoped>
-.filter-panel {
-  border-left: 2px solid rgba(var(--v-theme-primary), 0.4);
-}
-
 .selection-overlay {
   position: absolute;
   inset: 0;
