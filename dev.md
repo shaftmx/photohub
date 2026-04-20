@@ -241,6 +241,24 @@ rsync -av /tmp/photohub-vuetify/ /photohub-vuetify-src/
 
 ---
 
+## Initialiser la DB depuis un dump (db-init)
+
+Le dossier `db-init/` est monté dans le container `db` via `docker-compose-dev.yml`. MySQL l'utilise pour exécuter automatiquement tous les fichiers `.sql` qu'il contient **au premier démarrage** (si la DB est vide).
+
+```bash
+# Dumper la DB courante dans db-init/
+docker compose -f docker-compose.yml -f docker-compose-dev.yml exec db \
+  bash -c 'mysqldump -uroot -p$MYSQL_ROOT_PASSWORD photohub' > db-init/photohub.sql
+
+# Pour que MySQL le rejoue au prochain démarrage, supprimer le volume DB d'abord
+rm -rf /tmp/data/db
+docker compose -f docker-compose.yml -f docker-compose-dev.yml up db
+```
+
+Utile pour partager un jeu de données de dev ou bootstrapper un nouvel environnement.
+
+---
+
 ## Se connecter à la base de données
 
 ```bash

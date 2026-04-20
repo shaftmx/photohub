@@ -10,18 +10,6 @@
 
 ## Features
 
-- ⬜ **Non-JPEG support** — `save_photo` in `hub/utils.py` only handles JPEG
-- 🚧 **Video support** — `Photo.type` field already in model; `KEEP_ORIGINAL_VIDEO` done (see archive)
-  - **Formats**: MP4, MOV and others accepted via ffmpeg; re-encoded to MP4/H264 web-optimised (`-movflags +faststart`) at ingestion
-  - **Thumbnails**: poster JPG extracted by ffmpeg at t=0, stored in raw/ alongside .mp4; same sample system as photos (xs/s/m/l); used in all grids identically
-  - **Transcode background**: `transcode_status` field (`pending`/`processing`/`done`/`error`); `transcode_pending` management command runs as foreground daemon in worker container; DB-configurable poll interval, CRF, preset, threads
-  - **Grid**: play icon overlay + duration badge; spinner when `transcode_status != done`
-  - **Detail panel**: HTML5 `<video>` player; duration chip; transcode status chip
-  - **Upload**: same upload page; `ALLOW_VIDEO_UPLOAD` toggle (default off); video rejected with clear error when off
-  - **Infra**: ffmpeg + ffprobe in Dockerfile; worker service in docker-compose with `cpus` limit
-  - **Admin panel — Video tab**: ALLOW_VIDEO_UPLOAD, poll interval, CRF, preset, threads; worker status chip (online/encoding/offline + elapsed time); transcode queue stats table; retry errors button
-  - **Grid filter**: All / Photos / Videos toggle in Photos, ViewDetail, ViewCreate; `filter_media_type` persisted on View model
-  - **Backup/restore**: export includes .mp4 + poster JPG + type/duration/dimensions in meta; import handles .mp4 files
 - 🚧 **Pagination** — phase 1 done (hard cap + banner); phase 2 pending:
   - Full pagination UI — prev/next + page numbers at top and bottom; page resets on filter/tag/sort change; backend accepts `?page=&limit=`; response includes `total`, `page`, `pages`
 - ⬜ **Filter by owner** — photos and views have an `owner` field; future UI to filter/isolate content by owner
@@ -42,8 +30,6 @@
 - ⬜ **Test coverage review**: cross-check COVERAGE.md against actual features; identify gaps especially around video, upload link, map, and admin flows; add missing E2E tests
 
 ## Infra / Dev
-
-- ⬜ README — document how to dump DB to `db-init`
 
 ---
 
@@ -138,6 +124,18 @@
 ### Features (done)
 
 - ✅ Panoramic photo handling — handled naturally by the flex grid
+- ✅ **Non-JPEG support**
+- ✅ **Video support**
+  - **Formats**: MP4, MOV and others; re-encoded to MP4/H264 web-optimised (`-movflags +faststart`) at ingestion
+  - **Thumbnails**: poster JPG extracted at upload time (available during transcode); same sample system as photos (xs/s/m/l)
+  - **Transcode background**: `transcode_status` field (`pending`/`processing`/`done`/`error`); `transcode_pending` daemon in worker container; DB-configurable poll interval, CRF, preset, threads, timeout
+  - **Grid**: play icon overlay + duration badge; spinner when `transcode_status != done`
+  - **Detail panel**: HTML5 `<video>` player; duration chip; transcode status chip
+  - **Upload**: `ALLOW_VIDEO_UPLOAD` toggle (default off); video rejected with clear error when off
+  - **Infra**: ffmpeg + ffprobe in Dockerfile; worker service in docker-compose with `cpus` limit
+  - **Admin — Video tab**: ALLOW_VIDEO_UPLOAD, poll interval, CRF, preset, threads, timeout; worker status chip; transcode queue stats; retry errors button
+  - **Grid filter**: All / Photos / Videos toggle in Photos, ViewDetail, ViewCreate; `filter_media_type` persisted on View model
+  - **Backup/restore**: export includes .mp4 + poster JPG + type/duration/dimensions in meta; import handles .mp4
 - ✅ **KEEP_ORIGINAL_VIDEO** — `KEEP_ORIGINAL_VIDEO` AppConfig key (bool, default `False`); source saved as `<md5>_original.<ext>`; `Photo.original_ext` field; delete/download/backup handle the original file
 - ✅ **Map view** — Leaflet + OpenStreetMap; pins for geolocated photos; popup with thumbnail; click opens DisplayPhoto; entry points in Photos and ViewDetail toolbars
 - ✅ **Upload link** — write-access shareable link on a view (`/upload_view/<token>`); auto-applies view tags; photos auto-published; managed from ViewDetail share panel
@@ -148,3 +146,4 @@
 - ✅ **Favicon & app icon** — custom icon and favicon generated
 - ✅ **Open in new tab** — navigation converted to router-link / `<a href>` where needed
 - ✅ README reorganised — dev.md created, architecture SVG added
+- ✅ Document how to dump DB to `db-init` — see dev.md
