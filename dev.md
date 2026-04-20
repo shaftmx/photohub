@@ -163,11 +163,17 @@ Step 6 rebuilds from scratch to confirm the new pins resolve cleanly.
 
 Node version is set in the Dockerfile (`FROM node:lts-alpine...`). Package versions are in `photohub-vuetify-src/package.json` and `yarn.lock`.
 
-To upgrade Node itself, edit the Dockerfile first:
+To upgrade Node itself, update the tag in both places:
 
 ```dockerfile
-# Dockerfile — update the node stage to the new version
+# Dockerfile — update the node build stage
 FROM node:lts-alpine3.21 AS build   # ← change the tag here
+```
+
+```yaml
+# docker-compose-dev.yml — update the web-vue service
+web-vue:
+  image: node:lts-alpine3.21        # ← change to the same tag
 ```
 
 Then upgrade the JS packages using the dev container (no rebuild needed — the source is mounted as a volume):

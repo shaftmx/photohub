@@ -1,35 +1,30 @@
 services:
+
+  # ── Database ────────────────────────────────────────────────────────────────
   db:
     extends:
       file: docker-compose.yml
       service: db
     volumes:
-      # Make the database persistent
       - "/tmp/data/db:/var/lib/mysql"
-      # Init the db from a sample sql file
-      - "./db-init:/docker-entrypoint-initdb.d"
+      - "./db-init:/docker-entrypoint-initdb.d"  # optional: init DB from SQL dump on first start
 
+  # ── Web (Django + nginx) ────────────────────────────────────────────────────
   web:
-    environment:
-      DEBUG: "true"
-      LOG_LEVEL: "DEBUG"
-      # LOG_LEVEL: "INFO"
-      HEADER_ALLOW_ORIGIN: "*"
-      #DJANGO_URL: http://localhost:8080
-      #DJANGO_URL: http://192.168.1.120:8080
-      DJANGO_URL: http://192.168.3.33:8080
     extends:
       file: docker-compose.yml
       service: web
     build: .
-    #command: sleep 3600
+    environment:
+      DEBUG: "true"       # disables CSRF middleware — DJANGO_URL not needed in dev
+      LOG_LEVEL: "DEBUG"
+      HEADER_ALLOW_ORIGIN: "*"
     volumes:
-      - "./photohub:/photohub"
-      #- "/tmp/photohub-vuetify:/photohub-vuetify" # dist output of the build from web-vue: not used as nginx proxy on web-vue directly
-      # Make the data persistent
+      - "./photohub:/photohub"      # live reload — Django source mounted directly
       - "/tmp/data/photos:/data"
       - "./dumps:/dumps"
 
+  # ── Worker (video transcoding) ──────────────────────────────────────────────
   worker:
     extends:
       file: docker-compose.yml
@@ -39,28 +34,38 @@ services:
       - "./photohub:/photohub"
       - "/tmp/data/photos:/data"
 
-  web-vue: # Split this web in order to be able to use node command to run yarn dev
+  # ── Vue dev server (HMR) ────────────────────────────────────────────────────
+  # Serves the Vue frontend with Vite HMR — no build step needed.
+  # The nginx dev proxy (below) routes / to this container, including WebSocket
+  # upgrade headers so Vite HMR live-reload works in the browser.
+  # To upgrade Node: update the image tag here AND in the Dockerfile. See dev.md → Upgrading dependencies.
+  web-vue:
     image: node:lts-alpine3.21
     ports:
       - "3000:3000"
     command: sh -c "cd /photohub-vuetify-src/ && yarn dev --host"
     volumes:
       - "./photohub-vuetify-src/:/photohub-vuetify-src"
-      #- "/tmp/photohub-vuetify/:/photohub-vuetify" # dist ourput of the build if needed
     network_mode: bridge
 
+  # ── nginx dev proxy ─────────────────────────────────────────────────────────
+  # Listens on :8080 and splits traffic:
+  #   /           → web-vue:3000  (Vite HMR, with WebSocket upgrade headers)
+  #   /api|static → web:80        (Django API + media files)
+  # This mirrors the prod routing — the frontend behaves identically in dev.
+  # Template: dev/nginx-template/default.conf.template
+  # See dev.md for the full dev stack architecture diagram.
   nginx:
+    image: nginx
     links: [web, web-vue]
     depends_on:
       - web
       - web-vue
-    image: nginx
-    volumes:
-      - ./dev/nginx-template/:/etc/nginx/templates
-    command: [nginx-debug, '-g', 'daemon off;']
     ports:
       - "8080:8080"
+    volumes:
+      - ./dev/nginx-template/:/etc/nginx/templates
     environment:
       NGINX_MAX_UPLOAD_SIZE: "10240m"
+    command: [nginx-debug, '-g', 'daemon off;']
     network_mode: bridge
-

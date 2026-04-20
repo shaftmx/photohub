@@ -1,4 +1,6 @@
 services:
+
+  # ── Database ────────────────────────────────────────────────────────────────
   db:
     image: mysql:8
     ports: ["3306:3306"]
@@ -6,23 +8,20 @@ services:
       MYSQL_DATABASE: photohub
       MYSQL_USER: photohub
       MYSQL_PASSWORD: secret
-      MYSQL_ROOT_PASSWORD: changeme
+      MYSQL_ROOT_PASSWORD: changeme  # change in production
     network_mode: bridge
-    #volumes:
-    #  # Make the database persistent
-    #  - "/tmp/data/db:/var/lib/mysql"
     healthcheck:
-        test: "mysqladmin ping -uroot -p$$MYSQL_ROOT_PASSWORD"
-        #test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-p$$MYSQL_ROOT_PASSWORD"]
-        timeout: 2s
-        interval: 2s
-        retries: 30
+      test: "mysqladmin ping -uroot -p$$MYSQL_ROOT_PASSWORD"
+      timeout: 2s
+      interval: 2s
+      retries: 30
+    volumes:
+      - "/your/path/db:/var/lib/mysql"  # persist MySQL data
 
-
-
+  # ── Web (Django + nginx) ────────────────────────────────────────────────────
   web:
     image: shaftmx/photohub
-    links: [db]
+    links: [db]  # name resolution on default bridge network
     depends_on:
       db:
         condition: service_healthy
@@ -34,27 +33,27 @@ services:
       start_period: 10s
     ports:
       - "8000:80"
-      - "5000:5000"
-    #volumes:
-    #  # Make the database persistent
-    #  - "/tmp/data/photos:/data"
     environment:
       NGINX_MAX_UPLOAD_SIZE: "10240m"
-      DJANGO_SUPERUSER_PASSWORD: admin
       DJANGO_SUPERUSER_USERNAME: admin
+      DJANGO_SUPERUSER_PASSWORD: admin   # change in production
       DJANGO_SUPERUSER_EMAIL: admin@admin.admin
-      DJANGO_SECRET_KEY: 'django-insecure-51=qtuhifsb)&!!gdps^rkn2^re7_#nqp62pcq7fi^d*015+)6'
-      # Access-Control-Allow-Origin
-      HEADER_ALLOW_ORIGIN: "mysite.fr"
-      # CSRF_TRUSTED_ORIGINS
-      DJANGO_URL: https://mysite.fr
+      # Generate a secret key: python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+      DJANGO_SECRET_KEY: 'django-insecure-51=qtuhifsb)&!!gdps^rkn2^re7_#nqp62pcq7fi^d*015+)6'  # change in production
+      DJANGO_URL: https://mysite.fr     # public URL — used for CSRF validation; change to your domain
+      HEADER_ALLOW_ORIGIN: "mysite.fr"  # Access-Control-Allow-Origin; change to your domain
       DB_NAME: photohub
       DB_HOST: db
       DB_USER: photohub
       DB_PASSWORD: secret
     network_mode: bridge
+    volumes:
+      - "/your/path/photos:/data"   # persist photos and thumbnails
+      - "/your/path/dumps:/dumps"   # persist export/import dumps
 
-
+  # ── Worker (video transcoding) ──────────────────────────────────────────────
+  # Optional — only needed if ALLOW_VIDEO_UPLOAD is enabled.
+  # Shares the same image and media volume as web.
   worker:
     image: shaftmx/photohub
     links: [db]
@@ -64,16 +63,15 @@ services:
         condition: service_healthy
       web:
         condition: service_healthy
-    cpus: "1.0"  # max CPU cores for the worker (e.g. 0.5 = half a core, 2.0 = 2 cores)
+    cpus: "1.0"  # limit CPU usage (e.g. 0.5 = half a core, 2.0 = 2 cores)
     command: python /photohub/manage.py transcode_pending
-    #volumes:
-    #  # Same media volume as web
-    #  - "/tmp/data/photos:/data"
     environment:
-      DJANGO_SECRET_KEY: 'django-insecure-51=qtuhifsb)&!!gdps^rkn2^re7_#nqp62pcq7fi^d*015+)6'
+      DJANGO_SECRET_KEY: 'django-insecure-51=qtuhifsb)&!!gdps^rkn2^re7_#nqp62pcq7fi^d*015+)6'  # must match web's DJANGO_SECRET_KEY
       DB_NAME: photohub
       DB_HOST: db
       DB_USER: photohub
       DB_PASSWORD: secret
       LOG_LEVEL: INFO
     network_mode: bridge
+    volumes:
+      - "/your/path/photos:/data"   # must match web's media volume
