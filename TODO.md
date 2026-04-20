@@ -16,6 +16,10 @@
 - ⬜ **Multi-view group link** — a shareable link bundling multiple private views into a single public page; create/edit/delete the group, select views, regenerate/revoke; shown at bottom of Views page
   - Optional expiry date
 
+## UI / UX
+
+- ⬜ Review filter display mostly for mobile — make it less a mess
+
 ## Sécurité
 
 - ⬜ **Protection des fichiers media via nginx `auth_request`** — actuellement les images (`/samples/`, `/raw/`) sont servies directement par nginx sans contrôle d'accès. N'importe qui connaissant l'URL peut accéder à une photo non publiée ou appartenant à une vue privée.

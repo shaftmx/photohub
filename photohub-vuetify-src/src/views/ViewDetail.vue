@@ -13,30 +13,22 @@
 
   <v-sheet class="pa-4" v-if="!loading && !invalidToken && !notFound">
 
-    <!-- Header row -->
+    <!-- Title block -->
+    <v-sheet class="mb-2">
+      <div class="d-flex align-center ga-2 mb-1">
+        <v-btn v-if="isAuthenticated && !isUploadMode" icon="mdi-arrow-left" variant="text" density="compact" size="small"
+          title="Back to views" :to="{ name: 'Views' }"></v-btn>
+        <h1 :class="sharedDatas.isMobile ? 'text-h6' : 'text-h4'">{{ view.name }}</h1>
+        <v-chip size="x-small" :color="view.public ? 'success' : 'default'" variant="tonal">
+          {{ view.public ? 'Public' : 'Private' }}
+        </v-chip>
+        <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
+        <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
+      </div>
+    </v-sheet>
+
+    <!-- Toolbar row -->
     <v-sheet class="d-flex align-center mb-2 ga-2">
-      <v-btn v-if="isAuthenticated && !isUploadMode" icon="mdi-arrow-left" variant="text" density="compact" size="small"
-        title="Back to views" :to="{ name: 'Views' }"></v-btn>
-      <span class="text-h6">{{ view.name }}</span>
-      <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
-      <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" class="ml-2" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
-      <v-chip size="x-small" :color="view.public ? 'success' : 'default'" variant="tonal">
-        {{ view.public ? 'Public' : 'Private' }}
-      </v-chip>
-      <v-btn
-        :icon="filtersOpen ? 'mdi-tag' : 'mdi-tag-outline'"
-        :color="filtersOpen ? 'primary' : 'default'"
-        variant="text" density="compact" size="small"
-        title="Toggle filters"
-        @click="filtersOpen = !filtersOpen"
-      ></v-btn>
-      <v-btn v-if="view.description"
-        :icon="descriptionOpen ? 'mdi-text-box' : 'mdi-text-box-outline'"
-        :color="descriptionOpen ? 'primary' : 'default'"
-        variant="text" density="compact" size="small"
-        :title="descriptionOpen ? 'Hide description' : 'Show description'"
-        @click="descriptionOpen = !descriptionOpen"
-      ></v-btn>
       <v-spacer></v-spacer>
 
       <!-- Map button (all modes) -->
@@ -209,6 +201,35 @@
       </template>
     </v-sheet>
 
+    <!-- Sort + grid size slider -->
+    <v-sheet class="d-flex align-center mb-2 ga-2">
+      <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir"
+        :show-custom-order="!isUploadMode && (view.has_custom_order || false)"
+        @update:sortBy="applySort()" @update:sortDir="applySort()">
+      </SortControls>
+      <v-btn
+        :icon="filtersOpen ? 'mdi-tag' : 'mdi-tag-outline'"
+        :color="filtersOpen ? 'primary' : 'default'"
+        variant="text" density="compact" size="small"
+        title="Toggle filters"
+        @click="filtersOpen = !filtersOpen"
+      ></v-btn>
+      <v-btn v-if="view.description"
+        :icon="descriptionOpen ? 'mdi-text-box' : 'mdi-text-box-outline'"
+        :color="descriptionOpen ? 'primary' : 'default'"
+        variant="text" density="compact" size="small"
+        :title="descriptionOpen ? 'Hide description' : 'Show description'"
+        @click="descriptionOpen = !descriptionOpen"
+      ></v-btn>
+      <v-spacer></v-spacer>
+      <v-sheet class="d-flex align-end justify-end" style="max-width: 300px; width: 50%">
+        <v-slider v-model="sharedDatas.gridSize" :max="sharedDatas.gridMax" :min="sharedDatas.gridMin"
+          hide-details color="primary" append-icon="mdi-image-size-select-actual"
+          density="compact" track-size="2" thumb-size="15">
+        </v-slider>
+      </v-sheet>
+    </v-sheet>
+
     <!-- Filter chips (collapsible, normal mode only) -->
     <v-expand-transition>
       <v-sheet v-if="filtersOpen" class="d-flex flex-wrap align-center ga-1 mb-2">
@@ -233,21 +254,6 @@
         <v-divider class="mb-2"></v-divider>
       </div>
     </v-expand-transition>
-
-    <!-- Sort + grid size slider -->
-    <v-sheet class="d-flex align-center mb-2 ga-2">
-      <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir"
-        :show-custom-order="!isUploadMode && (view.has_custom_order || false)"
-        @update:sortBy="applySort()" @update:sortDir="applySort()">
-      </SortControls>
-      <v-spacer></v-spacer>
-      <v-sheet class="d-flex align-end justify-end" style="max-width: 300px; width: 50%">
-        <v-slider v-model="sharedDatas.gridSize" :max="sharedDatas.gridMax" :min="sharedDatas.gridMin"
-          hide-details color="primary" append-icon="mdi-image-size-select-actual"
-          density="compact" track-size="2" thumb-size="15">
-        </v-slider>
-      </v-sheet>
-    </v-sheet>
 
     <!-- Photo grid -->
     <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" :show-favorite="authStore.canEdit && !isUploadMode"

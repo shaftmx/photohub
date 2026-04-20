@@ -16,8 +16,17 @@
   <v-sheet v-if="tagPhotosVisible" class="pa-4">
 
     <!-- Header -->
+    <!-- Title block -->
+    <v-sheet class="mb-2">
+      <div class="d-flex align-center ga-2 mb-1">
+        <h1 :class="sharedDatas.isMobile ? 'text-h6' : 'text-h4'">{{ isEditMode ? 'Edit view' : 'Create view' }}</h1>
+        <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
+        <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
+      </div>
+    </v-sheet>
+
+    <!-- Toolbar row -->
     <v-sheet class="d-flex align-center mb-4 ga-2">
-      <span class="text-h6">{{ isEditMode ? 'Edit view' : 'Create view' }}</span>
       <v-spacer></v-spacer>
       <v-btn variant="text" density="compact" @click="cancel">Cancel</v-btn>
       <v-btn color="primary" variant="tonal" density="compact" prepend-icon="mdi-check"
@@ -229,9 +238,7 @@
 
     <!-- Preview header -->
     <v-sheet class="d-flex align-center mb-2">
-      <span class="text-body-2 text-medium-emphasis">
-        {{ loading ? 'Loading…' : photos.length + ' photo' + (photos.length !== 1 ? 's' : '') + ' match' }}
-      </span>
+      <span class="text-body-2 text-medium-emphasis">Preview</span>
       <v-spacer></v-spacer>
       <v-sheet class="d-flex align-end justify-end" style="max-width: 240px; width: 40%">
         <v-slider v-model="sharedDatas.gridSize" :max="sharedDatas.gridMax" :min="sharedDatas.gridMin"
@@ -381,6 +388,7 @@ export default {
     filterMediaType: 'all',
     // Preview
     photos: [],
+    total: 0,
     loading: false,
     // Cover (edit mode)
     coverFilename: null,
@@ -558,6 +566,7 @@ export default {
       this.loading = false
       if (error.value) return
       this.photos = data.value.data.photos
+      this.total = data.value.data.total ?? this.photos.length
       this.paths = data.value.data.paths
     },
 

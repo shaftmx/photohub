@@ -22,10 +22,14 @@
       <v-sheet :class="!sharedDatas.isMobile ? 'ma-2 pa-2 me-auto' : ''">
         <div v-if="!sharedDatas.isMobile" class="d-flex align-center ga-2 mb-1">
           <h1 class="text-h4">{{ title }}</h1>
+          <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
+          <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" class="ml-2" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
         </div>
         <p v-if="!sharedDatas.isMobile" class="text-body-2 text-medium-emphasis mb-4">{{ subtitle }}</p>
         <div v-if="sharedDatas.isMobile" class="d-flex align-center ga-2 mb-1">
           <h1 class="text-h6">{{ title }}</h1>
+          <span class="text-caption text-medium-emphasis">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
+          <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" class="ml-2" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
         </div>
         <p v-if="sharedDatas.isMobile" class="text-caption text-medium-emphasis mb-4">{{ subtitle }}</p>
       </v-sheet>
@@ -133,8 +137,6 @@
       <!-- Row 2: sort + photo count + grid size slider -->
       <v-sheet class="d-flex mb-2 align-center">
         <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="onSortChange()" @update:sortDir="onSortChange()"></SortControls>
-        <span class="text-body-2 text-medium-emphasis ml-3">{{ photos.length }} photo{{ photos.length !== 1 ? 's' : '' }}</span>
-        <v-chip v-if="total > photos.length" size="x-small" color="warning" variant="tonal" class="ml-2" :title="`${total} total — refine your filters to see more`">{{ total }}+ results, showing {{ photos.length }}</v-chip>
         <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
         <v-sheet class="d-flex ma-0 pa-0 align-end justify-end w-50">
           <v-slider v-model="sharedDatas.gridSize" style="max-width: 300px; width: 100%"
