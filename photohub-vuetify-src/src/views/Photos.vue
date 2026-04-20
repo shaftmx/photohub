@@ -122,6 +122,12 @@
                 </v-list>
               </v-menu>
             </template>
+            <v-btn v-if="authStore.canEdit && !selectionMode"
+              prepend-icon="mdi-plus-box-outline"
+              variant="tonal" color="primary" density="compact"
+              :size="sharedDatas.isMobile ? 'small' : 'default'"
+              @click="goToCreateView"
+            >Save as view</v-btn>
             <v-btn v-if="authStore.canEdit"
               :color="selectionMode ? 'primary' : 'default'"
               :variant="selectionMode ? 'tonal' : 'outlined'"
@@ -175,94 +181,115 @@
 
     <!-- Filter bar: toggle + collapsible filter panel -->
     <v-sheet class="mb-2">
-      <!-- Row 1: mode toggle + tag toggle + heart + rating + show filters -->
-      <div class="d-flex flex-wrap align-center ga-2 mb-1">
+      <!-- Single filter row -->
+      <div class="d-flex align-center ga-2 mb-1">
         <FilterModeToggle
           v-model="filterTagMode"
+          :size="sharedDatas.isMobile ? 'x-small' : 'small'"
           @update:modelValue="onFilterModeChange"
         ></FilterModeToggle>
 
-        <!-- Toggle: all published tags vs tags in current selection (hidden in notags/none mode) -->
+        <!-- Tag scope toggle (hidden in notags/none mode) -->
         <v-btn
           v-if="filterTagMode !== 'notags' && filterTagMode !== 'none'"
           :icon="showAllTags ? 'mdi-tag-multiple' : 'mdi-tag-search'"
           :color="showAllTags ? 'primary' : 'default'"
           :variant="showAllTags ? 'tonal' : 'text'"
-          density="compact"
-          size="small"
+          density="compact" size="small"
           :title="showAllTags ? 'Showing all tags — click to show selection only' : 'Showing selection tags — click to show all'"
           @click="showAllTags = !showAllTags"
         ></v-btn>
 
-        <v-divider vertical style="height: 24px; align-self: center;"></v-divider>
+        <v-spacer v-if="sharedDatas.isMobile"></v-spacer>
+        <v-divider v-else vertical style="height: 24px; align-self: center;"></v-divider>
 
-        <!-- Favorite filter toggle -->
-        <v-btn
-          :icon="filterFavorite ? 'mdi-heart' : 'mdi-heart-outline'"
-          :color="filterFavorite ? 'red' : 'default'"
-          :variant="filterFavorite ? 'tonal' : 'text'"
-          density="compact"
-          size="small"
-          :title="filterFavorite ? 'Favorites only — click to remove' : 'Filter by favorites'"
-          @click="filterFavorite = !filterFavorite"
-        ></v-btn>
-
-        <!-- Media type filter -->
-        <v-btn-toggle v-model="mediaType" mandatory density="compact" rounded="lg" style="height:28px;">
-          <v-btn value="all" size="x-small" variant="text">All</v-btn>
-          <v-btn value="photo" size="x-small" variant="text"><v-icon size="14">mdi-image</v-icon></v-btn>
-          <v-btn value="video" size="x-small" variant="text"><v-icon size="14">mdi-video</v-icon></v-btn>
-        </v-btn-toggle>
-
-        <!-- Rating filter: stars + operator toggle -->
+        <!-- Favorite + rating grouped -->
         <div class="d-flex align-center">
           <v-btn
-            v-for="star in 5"
-            :key="star"
+            :icon="filterFavorite ? 'mdi-heart' : 'mdi-heart-outline'"
+            :color="filterFavorite ? 'red' : 'default'"
+            :variant="filterFavorite ? 'tonal' : 'text'"
+            density="compact" size="small"
+            :title="filterFavorite ? 'Favorites only — click to remove' : 'Filter by favorites'"
+            @click="filterFavorite = !filterFavorite"
+          ></v-btn>
+          <v-btn
+            v-for="star in 5" :key="star"
             :icon="star <= filterRating ? 'mdi-star' : 'mdi-star-outline'"
             :color="star <= filterRating ? 'amber' : 'default'"
-            variant="text"
-            density="compact"
-            size="x-small"
+            variant="text" density="compact" size="x-small"
             @click="filterRating = star === filterRating ? 0 : star"
             :title="star + ' star' + (star > 1 ? 's' : '')"
           ></v-btn>
-          <span
-            v-if="filterRating > 0"
+          <span v-if="filterRating > 0"
             class="rating-mode-toggle text-primary font-weight-bold"
             title="Toggle: <= rating or exactly equal"
             @click="filterRatingMode = filterRatingMode === 'lte' ? 'eq' : 'lte'"
           >{{ filterRatingMode === 'lte' ? '≤' : '=' }}</span>
         </div>
 
-        <!-- Collapse toggle — only for detailed mode, at the end -->
-        <v-btn
-          v-if="filterTagMode === 'detail'"
-          :append-icon="filterPanelOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-          variant="tonal"
-          color="primary"
-          density="compact"
-          size="small"
-          class="ml-2"
-          @click="filterPanelOpen = !filterPanelOpen"
-        >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
+        <v-divider vertical style="height: 24px; align-self: center;"></v-divider>
 
-        <!-- Save as view -->
+        <!-- Media type: photo / video (click active = deselect = all) -->
         <v-btn
-          class="ml-auto"
-          prepend-icon="mdi-plus-box-outline"
-          variant="tonal"
-          color="primary"
-          density="compact"
-          size="small"
-          @click="goToCreateView"
-        >Save as view</v-btn>
+          :icon="'mdi-image'"
+          :color="mediaType === 'photo' ? 'primary' : 'default'"
+          :variant="mediaType === 'photo' ? 'tonal' : 'text'"
+          density="compact" size="small"
+          title="Photos only"
+          @click="mediaType = mediaType === 'photo' ? 'all' : 'photo'"
+        ></v-btn>
+        <v-btn
+          :icon="'mdi-video'"
+          :color="mediaType === 'video' ? 'primary' : 'default'"
+          :variant="mediaType === 'video' ? 'tonal' : 'text'"
+          density="compact" size="small"
+          title="Videos only"
+          @click="mediaType = mediaType === 'video' ? 'all' : 'video'"
+        ></v-btn>
+
+        <v-divider vertical style="height: 24px; align-self: center;"></v-divider>
+
+        <!-- Owner filter (placeholder — hardcoded until backend support) -->
+        <v-menu v-model="ownerMenu" :close-on-content-click="false" location="bottom start">
+          <template #activator="{ props }">
+            <v-btn v-bind="props"
+              icon="mdi-account"
+              :color="filterOwners.length > 0 ? 'primary' : 'default'"
+              :variant="filterOwners.length > 0 ? 'tonal' : 'text'"
+              density="compact" size="small"
+              title="Filter by owner"
+            ></v-btn>
+          </template>
+          <v-card min-width="180">
+            <v-list density="compact" select-strategy="leaf" v-model:selected="filterOwners">
+              <v-list-item v-for="owner in availableOwners" :key="owner" :value="owner">
+                <template #prepend="{ isSelected }">
+                  <v-checkbox-btn :model-value="isSelected" density="compact" class="mr-2"></v-checkbox-btn>
+                </template>
+                <v-list-item-title>{{ owner }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+            <v-card-actions v-if="filterOwners.length > 0" class="pt-0">
+              <v-btn size="small" variant="text" @click="filterOwners = []">Clear</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-menu>
+
       </div>
 
-      <!-- Row 2: active tag chips summary (detailed mode, panel closed) -->
-      <div v-if="filterTagMode === 'detail' && !filterPanelOpen && filter.length > 0" class="d-flex flex-wrap ga-1 mb-1">
-        <v-chip v-for="tag in filter" :key="tag" size="x-small" color="primary" closable
-          @click:close="removeDetailFilter(tag)">{{ tag }}</v-chip>
+      <!-- Tag area: show/hide toggle + active chips (detail mode) -->
+      <div v-if="filterTagMode === 'detail'" class="d-flex flex-wrap align-center ga-1 mb-1">
+        <v-btn
+          :append-icon="filterPanelOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+          variant="tonal" color="primary" density="compact" size="small"
+          @click="filterPanelOpen = !filterPanelOpen"
+        >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
+        <template v-if="!filterPanelOpen">
+          <v-chip v-for="tag in filter" :key="tag"
+            size="x-small" color="primary" closable
+            @click:close="removeDetailFilter(tag)">{{ tag }}</v-chip>
+        </template>
       </div>
 
       <!-- Quick filter: tag autocomplete -->
@@ -353,6 +380,10 @@ export default {
     filterRating: 0,       // 0 = no filter, 1-5 = filter by rating
     filterRatingMode: "lte", // lte = <= rating, eq = strictly equal
     mediaType: 'all',      // 'all' | 'photo' | 'video'
+    // Owner filter (placeholder — hardcoded until backend support)
+    ownerMenu: false,
+    filterOwners: [],
+    availableOwners: ['user1', 'user2'],
   }),
 
   computed: {

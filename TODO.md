@@ -19,6 +19,11 @@
 ## UI / UX
 
 - ⬜ Review filter display mostly for mobile — make it less a mess
+  - 2 rows max: sort row (sort + direction + grid slider) + filter row (scrollable horizontal chips, no wrap)
+  - Group favorite + rating together (same topic)
+  - "Save as view" out of the filter area — move to title toolbar
+  - Icon-only chips need labels or a grouped "Filters ▾" menu
+- ⬜ **Filter by owner** — multiselect of owners; photos and views have an `owner` field
 
 ## Sécurité
 
