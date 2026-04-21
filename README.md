@@ -49,10 +49,17 @@ docker compose up
 The stack runs as three services from a single image (`shaftmx/photohub`):
 
 - **db** — MySQL 8 database
-- **web** — Django + nginx, serves the app and API
-- **worker** — runs the video transcoding loop, starts only after `web` is healthy
+- **web** — Django + nginx, serves the app and API (default mode, no argument)
+- **worker** — video transcoding loop, starts only after `web` is healthy (`command: transcode`)
 
-> The goal is one image covering both `web` and `worker` modes — deployable anywhere with a simple compose file.
+The entrypoint accepts two modes:
+
+| Command | Behaviour |
+|---------|-----------|
+| *(no argument)* | Starts nginx + Django web server (default, `web` service) |
+| `transcode` | Runs the video transcode daemon in the foreground (`worker` service) |
+
+Any other argument is passed directly to the container shell (`exec "$@"`), so you can still run one-off management commands such as `docker compose run web python /photohub/manage.py shell`.
 
 ## Configuration
 

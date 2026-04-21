@@ -26,18 +26,19 @@ envsubst '$NGINX_DEFAULT_PORT $DJANGO_ADMIN_PATH $HEADER_ALLOW_ORIGIN $NGINX_MAX
 
 set -x
 if [ ! "$1" ]; then
-    echo "Starting Nginx and photohub list"
+    echo "Starting Nginx and photohub"
     nginx
-    python photohub/manage.py migrate
+    python /photohub/manage.py migrate
     if [ -n "$DJANGO_SUPERUSER_USERNAME" ]; then
-        # Use automatically DJANGO_SUPERUSER_PASSWORD
-        python photohub/manage.py createsuperuser \
+        python /photohub/manage.py createsuperuser \
             --noinput \
             --username $DJANGO_SUPERUSER_USERNAME \
             --email $DJANGO_SUPERUSER_EMAIL || true
-
     fi
-    exec python photohub/manage.py runserver 0.0.0.0:5000
+    exec python /photohub/manage.py runserver 0.0.0.0:5000
+elif [ "$1" = "transcode" ]; then
+    echo "Starting video transcode worker"
+    exec python /photohub/manage.py transcode_pending
 fi
 
 exec "$@"
