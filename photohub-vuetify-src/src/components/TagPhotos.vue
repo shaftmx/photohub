@@ -4,11 +4,7 @@
     <!-- ### Page Header -->
     <v-sheet>
       <v-sheet :class="!sharedDatas.isMobile ? 'ma-2 pa-2 me-auto' : ''">
-        <h1 v-if="!sharedDatas.isMobile" class="text-h4 mb-4">{{ title }}</h1>
-        <h1 v-if="!sharedDatas.isMobile" class="text-subtitle-1 mb-4">{{ subtitle }}</h1>
-
-        <h1 v-if="sharedDatas.isMobile" class="text-h6 mb-1">{{ title }}</h1>
-        <h1 v-if="sharedDatas.isMobile" class="text-body-2 mb-4">{{ subtitle }}</h1>
+        <PageTitle :title="title" :is-mobile="sharedDatas.isMobile" :subtitle="subtitle" />
       </v-sheet>
       <v-sheet class="d-flex mb-2">
         <v-sheet class="ma-0 pa-0 me-auto">
@@ -54,8 +50,8 @@
 
       <!-- TAGS — common tags applied to all selected photos -->
       <h1 class="text-h4 mt-6 mb-0">Tags</h1>
-      <!-- TagGroupsEditor handles the tag UI, v-model syncs with stagingCommonTags -->
-      <TagGroupsEditor v-model="stagingCommonTags" :tag-groups="tagGroups" />
+      <!-- TagGroupsWidget handles the tag UI, v-model syncs with stagingCommonTags -->
+      <TagGroupsWidget v-model="stagingCommonTags" :tag-groups="tagGroups" />
     </v-sheet>
 
 
@@ -63,9 +59,9 @@
     <v-sheet v-if="singleDisplay">
       <v-sheet class="d-flex mb-10" v-for="photo in taggedPhotos" :key="photo.filename">
 
-        <!-- Tags column — TagGroupsEditor bound to this specific photo's tags -->
+        <!-- Tags column — TagGroupsWidget bound to this specific photo's tags -->
         <v-sheet class="ma-0 pa-0 me-auto">
-          <TagGroupsEditor v-model="photo.tags" :tag-groups="tagGroups" />
+          <TagGroupsWidget v-model="photo.tags" :tag-groups="tagGroups" />
         </v-sheet>
 
         <!-- Picture column -->
@@ -102,10 +98,11 @@ import { getSharedDatas } from '../sharedDatas.js'
 import '../styles/galleryGrid.css'
 import { useAlertStore } from '../stores/alert'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
-import TagGroupsEditor from './TagGroupsEditor.vue'
+import TagGroupsWidget from './TagGroupsWidget.vue'
+import PageTitle from './PageTitle.vue'
 
 export default defineComponent({
-  components: { TagGroupsEditor },
+  components: { TagGroupsWidget, PageTitle },
 
   props: {
     allPhotos: Object,
@@ -135,10 +132,9 @@ export default defineComponent({
   },
 
   methods: {
-    open() {
+    async open() {
       this.displayed = true
-      // this.taggedPhotos = []
-      this.doGetTags()
+      await this.doGetTags()
       this.genSelectedPhotos()
     },
 
@@ -170,74 +166,85 @@ export default defineComponent({
     },
 
     genSelectedPhotos() {
-      window.console.log("--genSelectedPhotos");
-      // Init
       this.photos = []
       this.currentCommonTags = {}
 
-      // Compute
-      var commonGroups = []
-      let photoGroups = []
+      // Compute intersection of tags across selected photos (strings from API)
+      let commonGroups = []
       this.allPhotos.forEach((photo) => {
-        if (this.selectedPhotosFilenames.includes(photo.filename)) {
-          // Picture selected
-          this.photos.push({ ...photo });
-
-          // Compute common tags
-          commonGroups = Object.keys(this.currentCommonTags)
-          if (commonGroups == 0) {
-            this.currentCommonTags = { ...photo.tags }
-          } else {
-            // Check tags for each common groups
-            commonGroups.forEach((tagGroup) => {
-              photoGroups = Object.keys(photo.tags)
-              if (photoGroups.includes(tagGroup)) {
-                // Do filter/intersect between common and photo tags
-                this.currentCommonTags[tagGroup] = this.currentCommonTags[tagGroup].filter(value => photo.tags[tagGroup].includes(value));
-              } else {
-                // If tag group does not exist on current photo, remote it from common
-                delete this.currentCommonTags[tagGroup]
-              }
-            })
-          }
+        if (!this.selectedPhotosFilenames.includes(photo.filename)) return
+        this.photos.push({ ...photo })
+        commonGroups = Object.keys(this.currentCommonTags)
+        if (commonGroups.length === 0) {
+          this.currentCommonTags = { ...photo.tags }
+        } else {
+          commonGroups.forEach((tagGroup) => {
+            if (Object.keys(photo.tags).includes(tagGroup)) {
+              this.currentCommonTags[tagGroup] = this.currentCommonTags[tagGroup].filter(
+                v => photo.tags[tagGroup].includes(v)
+              )
+            } else {
+              delete this.currentCommonTags[tagGroup]
+            }
+          })
         }
       })
 
-      // Mark common tags as staging tags to preselect them
-      this.stagingCommonTags = { ...this.currentCommonTags }
+      // Convert string tags → tagObj format for TagGroupsWidget
+      this.currentCommonTags = this.toTagObjs(this.currentCommonTags)
+      this.stagingCommonTags = JSON.parse(JSON.stringify(this.currentCommonTags))
+      this.taggedPhotos = JSON.parse(JSON.stringify(this.photos)).map(p => ({
+        ...p,
+        tags: this.toTagObjs(p.tags),
+      }))
+    },
 
-      // Create tagget photo list for single view, in order to be able to compare with photos
-      // Doing deep copy because this object contain nested objects
-      // https://medium.com/@navneetskahlon/shallow-and-deep-copy-in-javascript-a-guide-with-lodash-structuredclone-and-json-methods-071ad2da5cfc#:~:text=A%20deep%20copy%20creates%20a,t%20affect%20the%20original%20object.&text=Lodash%20provides%20a%20cloneDeep%20method,deep%20copying%20complex%20data%20structures.
-      this.taggedPhotos = JSON.parse(JSON.stringify(this.photos))
+    // Convert { group: [tagName, ...] } → { group: [tagObj, ...] }
+    toTagObjs(tags) {
+      const result = {}
+      for (const [groupName, names] of Object.entries(tags)) {
+        const group = this.tagGroups.find(g => g.name === groupName)
+        result[groupName] = names.map(name =>
+          group?.tags.find(t => t.name === name) || { name }
+        )
+      }
+      return result
+    },
+
+    // Convert { group: [tagObj, ...] } → { group: [tagName, ...] } for API
+    flattenTags(tags) {
+      const result = {}
+      for (const [group, tagList] of Object.entries(tags)) {
+        if (tagList?.length) result[group] = tagList.map(t => t.name ?? t)
+      }
+      return result
     },
 
     async doApplyTags() {
-      window.console.log("--doApplyTags");
       this.loading = true
-
-      // Get alert store to be able to trigger some alert messages
       const { triggerAlert } = useAlertStore()
 
-      let data = null;
-      let error = null;
+      let data = null
+      let error = null
       if (this.singleDisplay) {
-        ({ data, error } = await useAsyncPost('/api/apply_tags', {
-          "current_tagged_photos": this.photos,
-          "staging_tagged_photos": this.taggedPhotos
+        const current = this.photos.map(p => ({ ...p, tags: this.flattenTags(p.tags) }))
+        const staging = this.taggedPhotos.map(p => ({ ...p, tags: this.flattenTags(p.tags) }))
+        ;({ data, error } = await useAsyncPost('/api/apply_tags', {
+          current_tagged_photos: current,
+          staging_tagged_photos: staging,
         }))
       } else {
-        ({ data, error } = await useAsyncPost('/api/apply_tags', {
-          "current_common_tags": this.currentCommonTags,
-          "staging_common_tags": this.stagingCommonTags,
-          "common_photos_filename": this.selectedPhotosFilenames
+        ;({ data, error } = await useAsyncPost('/api/apply_tags', {
+          current_common_tags: this.flattenTags(this.currentCommonTags),
+          staging_common_tags: this.flattenTags(this.stagingCommonTags),
+          common_photos_filename: this.selectedPhotosFilenames,
         }))
       }
 
       if (error.value) {
-        triggerAlert("error", "Tag failure", error.value)
+        triggerAlert('error', 'Tag failure', error.value)
       } else if (data.value.ERROR) {
-        triggerAlert("error", data.value.message, data.value.details)
+        triggerAlert('error', data.value.message, data.value.details)
       }
       this.loading = false
       this.close()

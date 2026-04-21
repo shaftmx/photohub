@@ -267,7 +267,7 @@
 
         <!-- Preview -->
         <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Preview</p>
-        <TagGroupsEditor :tag-groups="tagGroups" v-model="tagsPreviewSelection" />
+        <TagGroupsWidget :tag-groups="tagGroups" v-model="tagsPreviewSelection" />
       </v-window-item>
 
       <!-- ─────────────── Tab: Photo quality ─────────────── -->
@@ -729,7 +729,7 @@
 
 <script>
 import { requireAdminOrContributor } from '../authrequired.js'
-import TagGroupsEditor from '../components/TagGroupsEditor.vue'
+import TagGroupsWidget from '../components/TagGroupsWidget.vue'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { useAlertStore } from '../stores/alert'
 import { useAppConfigStore } from '../stores/appConfig.js'
@@ -741,7 +741,7 @@ import { indentWithTab } from '@codemirror/commands'
 import { keymap } from '@codemirror/view'
 
 export default {
-  components: { TagGroupsEditor },
+  components: { TagGroupsWidget },
   data: () => ({
     tab: null,
     role: '',

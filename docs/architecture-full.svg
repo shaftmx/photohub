@@ -1,0 +1,328 @@
+<svg width="1540" height="930" viewBox="0 0 1540 930" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif,system-ui,sans-serif">
+
+  <defs>
+    <marker id="ar-blue"   markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#1565C0"/></marker>
+    <marker id="ar-teal"   markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#00838F"/></marker>
+    <marker id="ar-purple" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#6A1B9A"/></marker>
+    <marker id="ar-dkgreen" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#2E7D32"/></marker>
+    <marker id="ar-orange" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#BF360C"/></marker>
+    <marker id="ar-pink"   markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#880E4F"/></marker>
+    <marker id="ar-green"  markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#2E7D32"/></marker>
+    <marker id="ar-yellow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#F9A825"/></marker>
+    <marker id="ar-red"    markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#E53935"/></marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1540" height="930" fill="#F7F8FA"/>
+
+  <!-- Title bar -->
+  <rect width="1540" height="44" fill="#1E2A3A"/>
+  <text x="680" y="27" text-anchor="middle" font-size="16" font-weight="700" fill="white" letter-spacing="0.5">PhotoHub — Architecture Composants Frontend</text>
+
+  <!-- ══ LEGEND ══ -->
+  <rect x="1290" y="50" width="240" height="178" rx="6" fill="white" stroke="#DDD" stroke-width="1"/>
+  <text x="1410" y="68" text-anchor="middle" font-size="11" font-weight="700" fill="#444">Légende</text>
+  <rect x="1300" y="75" width="12" height="12" rx="2" fill="#BBDEFB" stroke="#1565C0" stroke-width="1.5"/><text x="1318" y="86" font-size="10" fill="#333">Page / Vue</text>
+  <rect x="1300" y="94" width="12" height="12" rx="2" fill="#C8E6C9" stroke="#2E7D32" stroke-width="1.5"/><text x="1318" y="105" font-size="10" fill="#333">Affichage photos</text>
+  <rect x="1300" y="113" width="12" height="12" rx="2" fill="#FFF9C4" stroke="#F9A825" stroke-width="1.5"/><text x="1318" y="124" font-size="10" fill="#333">Filtres &amp; navigation</text>
+  <rect x="1300" y="132" width="12" height="12" rx="2" fill="#FFE0B2" stroke="#E65100" stroke-width="1.5"/><text x="1318" y="143" font-size="10" fill="#333">Gestion tags</text>
+  <rect x="1300" y="151" width="12" height="12" rx="2" fill="#E8EAF6" stroke="#303F9F" stroke-width="1.5"/><text x="1318" y="162" font-size="10" fill="#333">Utilitaires</text>
+  <rect x="1300" y="170" width="12" height="12" rx="2" fill="white" stroke="#E53935" stroke-dasharray="3,2" stroke-width="1.5"/><text x="1318" y="181" font-size="10" fill="#E53935">⚠ Duplication</text>
+  <line x1="1300" y1="192" x2="1320" y2="192" stroke="#1565C0" stroke-width="2"/><text x="1326" y="196" font-size="10" fill="#333">Connexion page → composant</text>
+
+  <!-- ══ PAGES SECTION ══ -->
+  <text x="14" y="62" font-size="11" font-weight="700" fill="#666" letter-spacing="1.5">PAGES</text>
+  <line x1="58" y1="58" x2="1282" y2="58" stroke="#CCC" stroke-width="1"/>
+
+  <!-- Home (cx=87) -->
+  <rect x="14" y="65" width="145" height="58" rx="6" fill="#BBDEFB" stroke="#1565C0" stroke-width="1.5"/>
+  <text x="86" y="83" text-anchor="middle" font-size="12" font-weight="700" fill="#0D47A1">Home.vue</text>
+  <text x="86" y="97" text-anchor="middle" font-size="10" fill="#1565C0">Vitrine: vues publiques</text>
+  <text x="86" y="110" text-anchor="middle" font-size="10" fill="#1565C0">+ privées (cards)</text>
+
+  <!-- Login/Logout (cx=251) -->
+  <rect x="174" y="65" width="155" height="58" rx="6" fill="#BBDEFB" stroke="#1565C0" stroke-width="1.5"/>
+  <text x="251" y="83" text-anchor="middle" font-size="12" font-weight="700" fill="#0D47A1">Login / Logout</text>
+  <text x="251" y="97" text-anchor="middle" font-size="10" fill="#1565C0">Authentification</text>
+  <text x="251" y="110" text-anchor="middle" font-size="10" fill="#1565C0">session utilisateur</text>
+
+  <!-- Photos (cx=419) -->
+  <rect x="342" y="65" width="155" height="58" rx="6" fill="#BBDEFB" stroke="#1565C0" stroke-width="1.5"/>
+  <text x="419" y="83" text-anchor="middle" font-size="12" font-weight="700" fill="#0D47A1">Photos.vue</text>
+  <text x="419" y="97" text-anchor="middle" font-size="10" fill="#1565C0">Galerie principale publiée</text>
+  <text x="419" y="110" text-anchor="middle" font-size="10" fill="#1565C0">filtres + sélection bulk</text>
+  <!-- color strip -->
+  <rect x="342" y="118" width="155" height="5" rx="0" fill="#1565C0" opacity="0.6"/>
+
+  <!-- Unpublished (cx=587) -->
+  <rect x="510" y="65" width="155" height="58" rx="6" fill="#BBDEFB" stroke="#1565C0" stroke-width="1.5"/>
+  <text x="587" y="83" text-anchor="middle" font-size="12" font-weight="700" fill="#0D47A1">Unpublished.vue</text>
+  <text x="587" y="97" text-anchor="middle" font-size="10" fill="#1565C0">Photos uploadées non</text>
+  <text x="587" y="110" text-anchor="middle" font-size="10" fill="#1565C0">encore publiées</text>
+  <rect x="510" y="118" width="155" height="5" rx="0" fill="#00838F" opacity="0.6"/>
+
+  <!-- ViewDetail (cx=755) -->
+  <rect x="678" y="65" width="155" height="58" rx="6" fill="#BBDEFB" stroke="#1565C0" stroke-width="1.5"/>
+  <text x="755" y="83" text-anchor="middle" font-size="12" font-weight="700" fill="#0D47A1">ViewDetail.vue</text>
+  <text x="755" y="97" text-anchor="middle" font-size="10" fill="#1565C0">Affichage vue publique</text>
+  <text x="755" y="110" text-anchor="middle" font-size="10" fill="#1565C0">privée ou partagée</text>
+  <rect x="678" y="118" width="155" height="5" rx="0" fill="#6A1B9A" opacity="0.6"/>
+
+  <!-- ViewCreate (cx=923) -->
+  <rect x="846" y="65" width="155" height="58" rx="6" fill="#BBDEFB" stroke="#1565C0" stroke-width="1.5"/>
+  <text x="923" y="83" text-anchor="middle" font-size="12" font-weight="700" fill="#0D47A1">ViewCreate.vue</text>
+  <text x="923" y="97" text-anchor="middle" font-size="10" fill="#1565C0">Création / édition de vue</text>
+  <text x="923" y="110" text-anchor="middle" font-size="10" fill="#1565C0">filtres + aperçu photos</text>
+  <rect x="846" y="118" width="155" height="5" rx="0" fill="#2E7D32" opacity="0.6"/>
+
+  <!-- Views (cx=1091) -->
+  <rect x="1014" y="65" width="155" height="58" rx="6" fill="#BBDEFB" stroke="#1565C0" stroke-width="1.5"/>
+  <text x="1091" y="83" text-anchor="middle" font-size="12" font-weight="700" fill="#0D47A1">Views.vue</text>
+  <text x="1091" y="97" text-anchor="middle" font-size="10" fill="#1565C0">Liste &amp; gestion des vues</text>
+  <text x="1091" y="110" text-anchor="middle" font-size="10" fill="#1565C0">CRUD + partage</text>
+  <rect x="1014" y="118" width="155" height="5" rx="0" fill="#BF360C" opacity="0.6"/>
+
+  <!-- Admin (cx=1200) -->
+  <rect x="1182" y="65" width="100" height="58" rx="6" fill="#BBDEFB" stroke="#1565C0" stroke-width="1.5"/>
+  <text x="1232" y="83" text-anchor="middle" font-size="12" font-weight="700" fill="#0D47A1">Admin.vue</text>
+  <text x="1232" y="97" text-anchor="middle" font-size="10" fill="#1565C0">Panel admin: users,</text>
+  <text x="1232" y="110" text-anchor="middle" font-size="10" fill="#1565C0">tags, config, backup</text>
+  <rect x="1182" y="118" width="100" height="5" rx="0" fill="#880E4F" opacity="0.6"/>
+
+  <!-- Upload (cx=1140) -->
+  <rect x="1182" y="130" width="100" height="38" rx="6" fill="#BBDEFB" stroke="#90CAF9" stroke-width="1"/>
+  <text x="1232" y="144" text-anchor="middle" font-size="11" font-weight="600" fill="#0D47A1">Upload.vue</text>
+  <text x="1232" y="159" text-anchor="middle" font-size="10" fill="#1565C0">Upload photos/vidéos</text>
+
+  <!-- ══ PAGE COLOR LEGEND ══ -->
+  <rect x="14" y="176" width="540" height="20" rx="4" fill="white" stroke="#EEE" stroke-width="1"/>
+  <circle cx="30" cy="186" r="5" fill="#1565C0"/><text x="40" y="190" font-size="10" fill="#333">Photos</text>
+  <circle cx="102" cy="186" r="5" fill="#00838F"/><text x="112" y="190" font-size="10" fill="#333">Unpublished</text>
+  <circle cx="196" cy="186" r="5" fill="#6A1B9A"/><text x="206" y="190" font-size="10" fill="#333">ViewDetail</text>
+  <circle cx="278" cy="186" r="5" fill="#2E7D32"/><text x="288" y="190" font-size="10" fill="#333">ViewCreate</text>
+  <circle cx="360" cy="186" r="5" fill="#BF360C"/><text x="370" y="190" font-size="10" fill="#333">Views</text>
+  <circle cx="410" cy="186" r="5" fill="#880E4F"/><text x="420" y="190" font-size="10" fill="#333">Admin</text>
+  <text x="490" y="190" font-size="10" fill="#999">↓ = composant utilisé</text>
+
+  <!-- ══════════════════════════════════
+       CONNECTION LINES (drawn BEFORE component boxes so they appear underneath)
+       Bezier: M page_cx,123  C page_cx,185  comp_cx,(comp_top-25)  comp_cx,comp_top
+       ══════════════════════════════════ -->
+
+  <!-- === Photos (#1565C0) → PhotoGrid(130,272) DisplayPhoto(375,272) FilterBar(633,272) TagPhotos(1126,272) PageTitle(875,358) SortControls(875,452) PhotoDetailPanel(130,368) ViewMap(130,472) -->
+  <path d="M 419,123 C 419,192 130,250 130,272" fill="none" stroke="#1565C0" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-blue)"/>
+  <path d="M 419,123 C 419,192 375,250 375,272" fill="none" stroke="#1565C0" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-blue)"/>
+  <path d="M 419,123 C 419,192 633,250 633,272" fill="none" stroke="#1565C0" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-blue)"/>
+  <path d="M 419,123 C 419,192 1126,250 1126,272" fill="none" stroke="#1565C0" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-blue)"/>
+  <path d="M 419,123 C 419,200 875,335 875,358" fill="none" stroke="#1565C0" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-blue)"/>
+  <path d="M 419,123 C 419,205 875,430 875,452" fill="none" stroke="#1565C0" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-blue)"/>
+  <path d="M 419,123 C 419,200 130,346 130,368" fill="none" stroke="#1565C0" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-blue)"/>
+  <path d="M 419,123 C 419,210 130,450 130,472" fill="none" stroke="#1565C0" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-blue)"/>
+
+  <!-- === Unpublished (#00838F) → PhotoGrid(130,272) TagPhotos(1126,272) PageTitle(875,358) SortControls(875,452) PhotoDetailPanel(130,368) -->
+  <path d="M 587,123 C 587,192 130,250 130,272" fill="none" stroke="#00838F" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-teal)"/>
+  <path d="M 587,123 C 587,192 1126,250 1126,272" fill="none" stroke="#00838F" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-teal)"/>
+  <path d="M 587,123 C 587,200 875,335 875,358" fill="none" stroke="#00838F" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-teal)"/>
+  <path d="M 587,123 C 587,205 875,430 875,452" fill="none" stroke="#00838F" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-teal)"/>
+  <path d="M 587,123 C 587,200 130,346 130,368" fill="none" stroke="#00838F" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-teal)"/>
+
+  <!-- === ViewDetail (#6A1B9A) → PhotoGrid(130,272) DisplayPhoto(375,272) PageTitle(875,358) SortControls(875,452) ViewMap(130,472) ExpiryPicker(803,648) -->
+  <path d="M 755,123 C 755,192 130,250 130,272" fill="none" stroke="#6A1B9A" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-purple)"/>
+  <path d="M 755,123 C 755,192 375,250 375,272" fill="none" stroke="#6A1B9A" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-purple)"/>
+  <path d="M 755,123 C 755,200 875,335 875,358" fill="none" stroke="#6A1B9A" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-purple)"/>
+  <path d="M 755,123 C 755,205 875,430 875,452" fill="none" stroke="#6A1B9A" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-purple)"/>
+  <path d="M 755,123 C 755,210 130,450 130,472" fill="none" stroke="#6A1B9A" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-purple)"/>
+  <path d="M 755,123 C 755,215 803,625 803,648" fill="none" stroke="#6A1B9A" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-purple)"/>
+
+  <!-- === ViewCreate (#2E7D32) → FilterBar(633,272) PhotoGrid(130,272) PageTitle(875,358) TagPhotos(1126,272) -->
+  <path d="M 923,123 C 923,192 633,250 633,272" fill="none" stroke="#2E7D32" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-dkgreen)"/>
+  <path d="M 923,123 C 923,192 130,250 130,272" fill="none" stroke="#2E7D32" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-dkgreen)"/>
+  <path d="M 923,123 C 923,200 875,335 875,358" fill="none" stroke="#2E7D32" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-dkgreen)"/>
+  <path d="M 923,123 C 923,192 1126,250 1126,272" fill="none" stroke="#2E7D32" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-dkgreen)"/>
+
+  <!-- === Views (#BF360C) → ConfirmDialog(579,648) -->
+  <path d="M 1091,123 C 1091,215 579,625 579,648" fill="none" stroke="#BF360C" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-orange)"/>
+
+  <!-- === Admin (#880E4F) → TagGroupsEditor(1368,272) -->
+  <path d="M 1232,123 C 1232,192 1368,250 1368,272" fill="none" stroke="#880E4F" stroke-width="1.2" opacity="0.35" marker-end="url(#ar-pink)"/>
+
+  <!-- ══ COMPOSANTS SECTION ══ -->
+  <text x="14" y="210" font-size="11" font-weight="700" fill="#666" letter-spacing="1.5">COMPOSANTS</text>
+  <line x1="108" y1="206" x2="1540" y2="206" stroke="#CCC" stroke-width="1"/>
+
+  <!-- ─── GROUP 1: AFFICHAGE PHOTOS (x=10-498) ─── -->
+  <rect x="10" y="216" width="490" height="356" rx="8" fill="#F1F8E9" stroke="#81C784" stroke-width="1.5"/>
+  <text x="255" y="233" text-anchor="middle" font-size="11" font-weight="700" fill="#2E7D32" letter-spacing="1">AFFICHAGE PHOTOS</text>
+
+  <!-- PhotoGrid (cx=130, top=250) -->
+  <rect x="20" y="250" width="220" height="82" rx="6" fill="#C8E6C9" stroke="#2E7D32" stroke-width="1.5"/>
+  <text x="130" y="268" text-anchor="middle" font-size="12" font-weight="700" fill="#1B5E20">PhotoGrid.vue</text>
+  <text x="130" y="283" text-anchor="middle" font-size="10" fill="#2E7D32">Grille responsive de photos</text>
+  <text x="130" y="296" text-anchor="middle" font-size="10" fill="#2E7D32">overlay slot personnalisable</text>
+  <text x="130" y="309" text-anchor="middle" font-size="10" fill="#1B5E20">★ Tous : Photos, Unpub, ViewDetail, ViewCreate</text>
+
+  <!-- DisplayPhoto (cx=375, top=250) -->
+  <rect x="258" y="250" width="230" height="82" rx="6" fill="#C8E6C9" stroke="#2E7D32" stroke-width="1.5"/>
+  <text x="373" y="268" text-anchor="middle" font-size="12" font-weight="700" fill="#1B5E20">DisplayPhoto.vue</text>
+  <text x="373" y="283" text-anchor="middle" font-size="10" fill="#2E7D32">Carousel plein écran</text>
+  <text x="373" y="296" text-anchor="middle" font-size="10" fill="#2E7D32">zoom + navigation clavier</text>
+  <text x="373" y="309" text-anchor="middle" font-size="10" fill="#1B5E20">Photos, ViewDetail, ViewCreate</text>
+
+  <!-- PhotoDetailPanel (cx=130, top=350) -->
+  <rect x="20" y="350" width="220" height="90" rx="6" fill="#C8E6C9" stroke="#2E7D32" stroke-width="1.5"/>
+  <text x="130" y="368" text-anchor="middle" font-size="12" font-weight="700" fill="#1B5E20">PhotoDetailPanel.vue</text>
+  <text x="130" y="383" text-anchor="middle" font-size="10" fill="#2E7D32">Panneau latéral détail photo:</text>
+  <text x="130" y="396" text-anchor="middle" font-size="10" fill="#2E7D32">EXIF, tags, favoris, note</text>
+  <text x="130" y="409" text-anchor="middle" font-size="10" fill="#2E7D32">Contient: PhotoDetailBody</text>
+  <text x="130" y="422" text-anchor="middle" font-size="10" fill="#1B5E20">Photos, Unpub, ViewDetail</text>
+
+  <!-- PhotoDetailBody (cx=373, top=350) -->
+  <rect x="258" y="350" width="230" height="70" rx="6" fill="#C8E6C9" stroke="#2E7D32" stroke-width="1.5"/>
+  <text x="373" y="368" text-anchor="middle" font-size="12" font-weight="700" fill="#1B5E20">PhotoDetailBody.vue</text>
+  <text x="373" y="383" text-anchor="middle" font-size="10" fill="#2E7D32">Corps du panneau détail:</text>
+  <text x="373" y="396" text-anchor="middle" font-size="10" fill="#2E7D32">description, EXIF, rating</text>
+  <text x="373" y="409" text-anchor="middle" font-size="10" fill="#1B5E20">→ PhotoDetailPanel</text>
+
+  <!-- Arrow: PhotoDetailPanel → PhotoDetailBody -->
+  <line x1="240" y1="390" x2="258" y2="390" stroke="#2E7D32" stroke-width="1.5" marker-end="url(#ar-green)"/>
+
+  <!-- EditTagsDialog (cx=373, top=435) -->
+  <rect x="258" y="435" width="230" height="82" rx="6" fill="#FFE0B2" stroke="#E65100" stroke-width="1.5"/>
+  <text x="373" y="453" text-anchor="middle" font-size="12" font-weight="700" fill="#BF360C">EditTagsDialog.vue</text>
+  <text x="373" y="468" text-anchor="middle" font-size="10" fill="#BF360C">Dialog édition tags</text>
+  <text x="373" y="481" text-anchor="middle" font-size="10" fill="#BF360C">d'une seule photo</text>
+  <text x="373" y="494" text-anchor="middle" font-size="10" fill="#BF360C">Contient: TagGroupsEditor</text>
+  <text x="373" y="507" text-anchor="middle" font-size="10" fill="#1B5E20">→ PhotoDetailPanel</text>
+
+  <!-- Arrow: PhotoDetailPanel → EditTagsDialog -->
+  <path d="M 130,440 C 130,455 258,460 258,453" fill="none" stroke="#E65100" stroke-width="1.2" marker-end="url(#ar-orange)"/>
+
+  <!-- ViewMap (cx=130, top=460) -->
+  <rect x="20" y="460" width="220" height="70" rx="6" fill="#C8E6C9" stroke="#2E7D32" stroke-width="1.5"/>
+  <text x="130" y="478" text-anchor="middle" font-size="12" font-weight="700" fill="#1B5E20">ViewMap.vue</text>
+  <text x="130" y="493" text-anchor="middle" font-size="10" fill="#2E7D32">Carte Leaflet + OpenStreetMap</text>
+  <text x="130" y="506" text-anchor="middle" font-size="10" fill="#2E7D32">pins photos géolocalisées</text>
+  <text x="130" y="519" text-anchor="middle" font-size="10" fill="#1B5E20">Photos, ViewDetail</text>
+
+  <!-- ─── GROUP 2: FILTRES & NAVIGATION (x=508-996) ─── -->
+  <rect x="508" y="216" width="490" height="356" rx="8" fill="#FFFDE7" stroke="#FFD54F" stroke-width="1.5"/>
+  <text x="753" y="233" text-anchor="middle" font-size="11" font-weight="700" fill="#F57F17" letter-spacing="1">FILTRES &amp; NAVIGATION</text>
+
+  <!-- FilterBar (cx=633, top=250) -->
+  <rect x="518" y="250" width="230" height="100" rx="6" fill="#FFF9C4" stroke="#F9A825" stroke-width="2"/>
+  <text x="633" y="268" text-anchor="middle" font-size="12" font-weight="700" fill="#E65100">FilterBar.vue</text>
+  <text x="633" y="283" text-anchor="middle" font-size="10" fill="#BF360C">Barre filtres complète:</text>
+  <text x="633" y="296" text-anchor="middle" font-size="10" fill="#BF360C">mode, favoris, étoiles,</text>
+  <text x="633" y="309" text-anchor="middle" font-size="10" fill="#BF360C">type media, owner (désactivé)</text>
+  <text x="633" y="322" text-anchor="middle" font-size="10" fill="#BF360C">Contient: FilterModeToggle + TagFilter</text>
+  <text x="633" y="335" text-anchor="middle" font-size="10" fill="#1B5E20">Photos, ViewCreate</text>
+
+  <!-- FilterModeToggle (cx=875, top=250) -->
+  <rect x="760" y="250" width="226" height="70" rx="6" fill="#FFF9C4" stroke="#F9A825" stroke-width="1.5"/>
+  <text x="873" y="268" text-anchor="middle" font-size="12" font-weight="700" fill="#E65100">FilterModeToggle.vue</text>
+  <text x="873" y="283" text-anchor="middle" font-size="10" fill="#BF360C">Boutons mode filtre:</text>
+  <text x="873" y="296" text-anchor="middle" font-size="10" fill="#BF360C">quick / detail / notags / none</text>
+  <text x="873" y="309" text-anchor="middle" font-size="10" fill="#1B5E20">→ FilterBar</text>
+
+  <!-- Arrow: FilterBar → FilterModeToggle -->
+  <line x1="748" y1="280" x2="760" y2="280" stroke="#F9A825" stroke-width="1.5" marker-end="url(#ar-yellow)"/>
+
+  <!-- TagFilter (cx=633, top=368) — dashed duplication -->
+  <rect x="518" y="368" width="230" height="92" rx="6" fill="#FFE0B2" stroke="#E53935" stroke-dasharray="5,3" stroke-width="2"/>
+  <text x="633" y="386" text-anchor="middle" font-size="12" font-weight="700" fill="#C62828">TagFilter.vue ⚠</text>
+  <text x="633" y="401" text-anchor="middle" font-size="10" fill="#BF360C">Sélection tags par groupes:</text>
+  <text x="633" y="414" text-anchor="middle" font-size="10" fill="#BF360C">chips checkbox + combobox</text>
+  <text x="633" y="427" text-anchor="middle" font-size="10" fill="#BF360C">Filtre: tags présents sur les photos</text>
+  <text x="633" y="440" text-anchor="middle" font-size="10" fill="#1B5E20">→ FilterBar (mode detail)</text>
+
+  <!-- Arrow: FilterBar → TagFilter -->
+  <line x1="633" y1="350" x2="633" y2="368" stroke="#E53935" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#ar-red)"/>
+
+  <!-- PageTitle (cx=875, top=340) -->
+  <rect x="760" y="340" width="226" height="82" rx="6" fill="#FFF9C4" stroke="#F9A825" stroke-width="1.5"/>
+  <text x="873" y="358" text-anchor="middle" font-size="12" font-weight="700" fill="#E65100">PageTitle.vue</text>
+  <text x="873" y="373" text-anchor="middle" font-size="10" fill="#BF360C">Titre + chips compteur</text>
+  <text x="873" y="386" text-anchor="middle" font-size="10" fill="#BF360C">+ sous-titre</text>
+  <text x="873" y="399" text-anchor="middle" font-size="10" fill="#BF360C">Slots: prepend, chips</text>
+  <text x="873" y="412" text-anchor="middle" font-size="10" fill="#1B5E20">Photos, Unpub, ViewDetail, ViewCreate</text>
+
+  <!-- SortControls (cx=875, top=440) -->
+  <rect x="760" y="440" width="226" height="60" rx="6" fill="#FFF9C4" stroke="#F9A825" stroke-width="1.5"/>
+  <text x="873" y="458" text-anchor="middle" font-size="12" font-weight="700" fill="#E65100">SortControls.vue</text>
+  <text x="873" y="473" text-anchor="middle" font-size="10" fill="#BF360C">Tri par champ + direction</text>
+  <text x="873" y="486" text-anchor="middle" font-size="10" fill="#1B5E20">Photos, Unpub, ViewDetail</text>
+
+  <!-- ─── GROUP 3: GESTION TAGS (x=1006-1494) ─── -->
+  <rect x="1006" y="216" width="490" height="356" rx="8" fill="#FBE9E7" stroke="#FF8A65" stroke-width="1.5"/>
+  <text x="1251" y="233" text-anchor="middle" font-size="11" font-weight="700" fill="#BF360C" letter-spacing="1">GESTION TAGS</text>
+
+  <!-- TagPhotos (cx=1126, top=250) -->
+  <rect x="1016" y="250" width="220" height="110" rx="6" fill="#FFE0B2" stroke="#E65100" stroke-width="1.5"/>
+  <text x="1126" y="268" text-anchor="middle" font-size="12" font-weight="700" fill="#BF360C">TagPhotos.vue</text>
+  <text x="1126" y="283" text-anchor="middle" font-size="10" fill="#BF360C">Éditeur tags en masse:</text>
+  <text x="1126" y="296" text-anchor="middle" font-size="10" fill="#BF360C">grille photos sélectionnées</text>
+  <text x="1126" y="309" text-anchor="middle" font-size="10" fill="#BF360C">tag commun ou par photo</text>
+  <text x="1126" y="322" text-anchor="middle" font-size="10" fill="#BF360C">Contient: TagGroupsEditor</text>
+  <text x="1126" y="340" text-anchor="middle" font-size="10" fill="#1B5E20">Photos, Unpub, ViewCreate</text>
+
+  <!-- TagGroupsEditor (cx=1368, top=250) — dashed duplication -->
+  <rect x="1254" y="250" width="232" height="110" rx="6" fill="#FFE0B2" stroke="#E53935" stroke-dasharray="5,3" stroke-width="2"/>
+  <text x="1370" y="268" text-anchor="middle" font-size="12" font-weight="700" fill="#C62828">TagGroupsEditor.vue ⚠</text>
+  <text x="1370" y="283" text-anchor="middle" font-size="10" fill="#BF360C">Rendu groupes de tags:</text>
+  <text x="1370" y="296" text-anchor="middle" font-size="10" fill="#BF360C">chips checkbox + combobox</text>
+  <text x="1370" y="309" text-anchor="middle" font-size="10" fill="#BF360C">Édition: toutes tags DB</text>
+  <text x="1370" y="322" text-anchor="middle" font-size="10" fill="#BF360C">sans filtrage par photo</text>
+  <text x="1370" y="340" text-anchor="middle" font-size="10" fill="#1B5E20">TagPhotos, EditTagsDialog, Admin</text>
+
+  <!-- Arrows: TagPhotos → TagGroupsEditor -->
+  <line x1="1236" y1="298" x2="1254" y2="298" stroke="#E53935" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#ar-red)"/>
+
+  <!-- EditTagsDialog internal arrow → TagGroupsEditor -->
+  <path d="M 373,517 C 373,550 1254,530 1254,340" fill="none" stroke="#E53935" stroke-width="1" stroke-dasharray="4,2" opacity="0.5" marker-end="url(#ar-red)"/>
+
+  <!-- Admin note -->
+  <rect x="1016" y="378" width="468" height="50" rx="5" fill="white" stroke="#FFAB91" stroke-width="1"/>
+  <text x="1250" y="397" text-anchor="middle" font-size="10" font-weight="600" fill="#BF360C">ℹ Admin.vue (onglet Tags)</text>
+  <text x="1250" y="412" text-anchor="middle" font-size="10" fill="#BF360C">utilise aussi TagGroupsEditor pour la prévisualisation des tags</text>
+
+  <!-- ══ UTILITAIRES SECTION ══ -->
+  <text x="14" y="598" font-size="11" font-weight="700" fill="#666" letter-spacing="1.5">UTILITAIRES &amp; LAYOUT</text>
+  <line x1="150" y1="594" x2="1540" y2="594" stroke="#CCC" stroke-width="1"/>
+
+  <rect x="10" y="604" width="1280" height="96" rx="8" fill="#EDE7F6" stroke="#9E9AC8" stroke-width="1.5"/>
+
+  <!-- AppBar -->
+  <rect x="20" y="618" width="210" height="72" rx="6" fill="#E8EAF6" stroke="#3949AB" stroke-width="1.5"/>
+  <text x="125" y="636" text-anchor="middle" font-size="12" font-weight="700" fill="#1A237E">AppBar.vue</text>
+  <text x="125" y="651" text-anchor="middle" font-size="10" fill="#303F9F">Barre navigation globale</text>
+  <text x="125" y="664" text-anchor="middle" font-size="10" fill="#303F9F">logo, menu, user badge, rôle</text>
+  <text x="125" y="677" text-anchor="middle" font-size="10" fill="#388E3C">→ Default layout (toutes pages)</text>
+
+  <!-- Alert -->
+  <rect x="242" y="618" width="210" height="72" rx="6" fill="#E8EAF6" stroke="#3949AB" stroke-width="1.5"/>
+  <text x="347" y="636" text-anchor="middle" font-size="12" font-weight="700" fill="#1A237E">Alert.vue</text>
+  <text x="347" y="651" text-anchor="middle" font-size="10" fill="#303F9F">Snackbar alertes global</text>
+  <text x="347" y="664" text-anchor="middle" font-size="10" fill="#303F9F">error / success / info</text>
+  <text x="347" y="677" text-anchor="middle" font-size="10" fill="#388E3C">→ Default layout (toutes pages)</text>
+
+  <!-- ConfirmDialog (cx=579) -->
+  <rect x="464" y="618" width="230" height="72" rx="6" fill="#E8EAF6" stroke="#3949AB" stroke-width="1.5"/>
+  <text x="579" y="636" text-anchor="middle" font-size="12" font-weight="700" fill="#1A237E">ConfirmDialog.vue</text>
+  <text x="579" y="651" text-anchor="middle" font-size="10" fill="#303F9F">Dialog confirmation générique</text>
+  <text x="579" y="664" text-anchor="middle" font-size="10" fill="#303F9F">titre + message + actions</text>
+  <text x="579" y="677" text-anchor="middle" font-size="10" fill="#388E3C">Views, Admin</text>
+
+  <!-- ExpiryPicker (cx=803) -->
+  <rect x="706" y="618" width="210" height="72" rx="6" fill="#E8EAF6" stroke="#3949AB" stroke-width="1.5"/>
+  <text x="811" y="636" text-anchor="middle" font-size="12" font-weight="700" fill="#1A237E">ExpiryPicker.vue</text>
+  <text x="811" y="651" text-anchor="middle" font-size="10" fill="#303F9F">Sélecteur date expiration</text>
+  <text x="811" y="664" text-anchor="middle" font-size="10" fill="#303F9F">pour liens partage / upload</text>
+  <text x="811" y="677" text-anchor="middle" font-size="10" fill="#388E3C">ViewDetail</text>
+
+  <!-- ══ DUPLICATION NOTE ══ -->
+  <rect x="10" y="714" width="1520" height="58" rx="8" fill="#FFEBEE" stroke="#E53935" stroke-dasharray="6,3" stroke-width="2"/>
+  <text x="23" y="732" font-size="11" font-weight="700" fill="#C62828">⚠  Duplication identifiée — TagFilter.vue vs TagGroupsEditor.vue</text>
+  <text x="23" y="748" font-size="10" fill="#C62828">Ces deux composants implémentent le même rendu : groupes de tags avec chips checkbox (v-chip-group) et combobox dynamique. Différence : TagFilter filtre les tags selon les photos disponibles et utilise des objets tag (vs strings). À refactoriser en un composant commun.</text>
+  <text x="23" y="763" font-size="10" fill="#888">TagFilter → pour le filtrage (FilterBar → Photos, ViewCreate)    |    TagGroupsEditor → pour l'édition (TagPhotos, EditTagsDialog, Admin)</text>
+
+</svg>

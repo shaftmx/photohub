@@ -130,11 +130,13 @@
     <!-- Detailed filter panel (collapsible) -->
     <v-expand-transition>
       <div v-if="filterTagMode === 'detail' && filterPanelOpen" class="filter-panel pl-3 mt-1">
-        <TagFilter
+        <TagGroupsWidget
           :model-value="filterDetail"
           :tag-groups="tagGroups"
           :photos="showAllTags ? [] : photos"
           :show-all="showAllTags"
+          :is-mobile="isMobile"
+          :allow-new="false"
           @update:modelValue="$emit('update:filterDetail', $event); $emit('change')"
         />
       </div>
@@ -144,11 +146,11 @@
 
 <script>
 import FilterModeToggle from '@/components/FilterModeToggle.vue'
-import TagFilter from '@/components/TagFilter.vue'
+import TagGroupsWidget from '@/components/TagGroupsWidget.vue'
 
 export default {
   name: 'FilterBar',
-  components: { FilterModeToggle, TagFilter },
+  components: { FilterModeToggle, TagGroupsWidget },
 
   props: {
     filterTagMode:   { type: String,  default: 'quick' },

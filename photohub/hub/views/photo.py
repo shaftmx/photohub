@@ -37,9 +37,10 @@ def get_photos(request):
     # Get all tags entities
     filter_tags = {}
     for tag_name in filter_tag_names:
-        _tag = models.Tag.objects.get(name=tag_name)
-
-        if _tag is None: continue
+        try:
+            _tag = models.Tag.objects.get(name=tag_name)
+        except models.Tag.DoesNotExist:
+            continue
 
         if _tag.tag_group.name not in filter_tags:
             filter_tags[_tag.tag_group.name] = []

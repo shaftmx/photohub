@@ -38,9 +38,8 @@
       </div>
 
       <v-card-text v-else class="pa-4">
-        <!-- TagGroupsEditor handles all the tag UI.
-             stagingTags is the working copy — only saved on Apply. -->
-        <TagGroupsEditor v-model="stagingTags" :tag-groups="tagGroups" />
+        <!-- stagingTags is the working copy — only saved on Apply -->
+        <TagGroupsWidget v-model="stagingTags" :tag-groups="tagGroups" />
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -49,12 +48,12 @@
 <script>
 import { useAlertStore } from '../stores/alert'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
-import TagGroupsEditor from './TagGroupsEditor.vue'
+import TagGroupsWidget from './TagGroupsWidget.vue'
 
 export default {
   name: 'EditTagsDialog',
 
-  components: { TagGroupsEditor },
+  components: { TagGroupsWidget },
 
   props: {
     // v-model: controls dialog visibility
@@ -81,27 +80,25 @@ export default {
   },
 
   watch: {
-    // When the dialog opens (modelValue goes true), load tags and init staging state
-    modelValue(opened) {
+    // When the dialog opens, load tags first then init staging state
+    async modelValue(opened) {
       if (opened && this.photo) {
-        this.doGetTags()
+        await this.doGetTags()
         this.initStagingTags()
       }
     },
   },
 
   methods: {
-    // Build the initial staging tags from the photo's current tags.
-    // Photo tags from get_photo come as { groupName: { color, tags: [{name, color}] } }
-    // but apply_tags expects { groupName: [tagName, ...] } — so we flatten here.
+    // photo.tags from get_photo: { groupName: { color, tags: [{name, color}] } }
+    // Convert to unified object format: { groupName: [tagObj, ...] }
     initStagingTags() {
       const flat = {}
       if (this.photo && this.photo.tags) {
         for (const [groupName, group] of Object.entries(this.photo.tags)) {
-          flat[groupName] = group.tags.map(t => t.name)
+          flat[groupName] = group.tags  // already tagObj: [{name, color, ...}]
         }
       }
-      // Keep a deep copy as original to compare later
       this.originalTags = JSON.parse(JSON.stringify(flat))
       this.stagingTags = JSON.parse(JSON.stringify(flat))
     },
@@ -147,14 +144,11 @@ export default {
       this.loading = false
     },
 
-    // apply_tags single mode expects tags as { groupName: [tagName, ...] }
-    // (flat string array, same format as get_photos — not the enriched format of get_photo)
+    // Convert { groupName: [tagObj, ...] } → { groupName: [tagName, ...] } for API
     flattenTags(tagsObj) {
       const result = {}
-      for (const [groupName, tagNames] of Object.entries(tagsObj)) {
-        if (tagNames && tagNames.length > 0) {
-          result[groupName] = tagNames
-        }
+      for (const [groupName, tags] of Object.entries(tagsObj)) {
+        if (tags?.length) result[groupName] = tags.map(t => t.name ?? t)
       }
       return result
     },
