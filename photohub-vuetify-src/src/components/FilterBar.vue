@@ -2,11 +2,28 @@
   <v-sheet class="mb-2">
     <!-- Single filter row -->
     <div class="d-flex align-center ga-2 mb-2">
-      <FilterModeToggle
+      <v-btn-toggle
         :model-value="filterTagMode"
-        :size="isMobile ? 'x-small' : 'small'"
-        @update:modelValue="$emit('update:filterTagMode', $event); $emit('change')"
-      ></FilterModeToggle>
+        density="compact" variant="outlined" color="primary" mandatory
+        @update:model-value="$emit('update:filterTagMode', $event); $emit('change')"
+      >
+        <v-btn value="none" :size="isMobile ? 'x-small' : 'small'">
+          <v-icon :size="isMobile ? 14 : 18">mdi-filter-off-outline</v-icon>
+          <v-tooltip activator="parent" location="top">No filter</v-tooltip>
+        </v-btn>
+        <v-btn value="quick" :size="isMobile ? 'x-small' : 'small'">
+          <v-icon :size="isMobile ? 14 : 18">mdi-text-search-variant</v-icon>
+          <v-tooltip activator="parent" location="top">Quick filter</v-tooltip>
+        </v-btn>
+        <v-btn value="detail" :size="isMobile ? 'x-small' : 'small'">
+          <v-icon :size="isMobile ? 14 : 18">mdi-tag-search</v-icon>
+          <v-tooltip activator="parent" location="top">Detailed filter</v-tooltip>
+        </v-btn>
+        <v-btn value="notags" :size="isMobile ? 'x-small' : 'small'">
+          <v-icon :size="isMobile ? 14 : 18">mdi-tag-off-outline</v-icon>
+          <v-tooltip activator="parent" location="top">No tags</v-tooltip>
+        </v-btn>
+      </v-btn-toggle>
 
       <!-- Tag scope toggle (optional, Photos only) -->
       <v-btn
@@ -145,12 +162,11 @@
 </template>
 
 <script>
-import FilterModeToggle from '@/components/FilterModeToggle.vue'
 import TagGroupsWidget from '@/components/TagGroupsWidget.vue'
 
 export default {
   name: 'FilterBar',
-  components: { FilterModeToggle, TagGroupsWidget },
+  components: { TagGroupsWidget },
 
   props: {
     filterTagMode:   { type: String,  default: 'quick' },
