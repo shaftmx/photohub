@@ -1,10 +1,11 @@
 <template>
-  <v-sheet class="d-flex align-content-start flex-wrap">
+  <v-sheet :class="isMobile ? 'd-flex flex-column' : 'd-flex align-content-start flex-wrap'">
     <v-sheet
       v-for="group in filteredTagGroups"
       :key="group.name"
-      class="mr-2 pa-0"
-      :style="isMobile ? 'min-width: 12ch' : 'min-width: 18ch'"
+      class="pa-0"
+      :class="isMobile ? 'mb-2' : 'mr-2'"
+      :style="isMobile ? 'width: 100%' : 'min-width: 18ch'"
     >
       <!-- Group header -->
       <h4 class="d-flex align-center ga-1" style="line-height:1">
@@ -23,8 +24,8 @@
         v-if="group.type === 'checkbox'"
         return-object
         multiple
-        :direction="isMobile ? 'horizontal' : 'vertical'"
-        :class="isMobile ? 'd-flex flex-wrap mb-2' : 'd-flex flex-column mb-6'"
+        direction="vertical"
+        class="d-flex flex-column mb-6"
         :model-value="modelValue[group.name] || []"
         @update:model-value="onGroupUpdate(group.name, $event)"
       >
@@ -32,13 +33,14 @@
           v-for="tag in group.tags"
           :key="tag.name"
           :value="tag"
-          :size="isMobile ? 'x-small' : 'default'"
+          :size="isMobile ? 'small' : 'default'"
           rounded="lg"
           density="compact"
           variant="outlined"
           filter
           :disabled="disabled"
           :color="tag.color"
+          style="align-self: flex-start"
         >{{ tag.name }}
           <v-tooltip v-if="tag.description" activator="parent" location="top" max-width="220" content-class="tag-desc-tooltip">{{ tag.description }}</v-tooltip>
         </v-chip>
@@ -49,26 +51,26 @@
         v-if="group.type === 'combobox' && allowNew"
         closable-chips chips clearable multiple
         density="compact" variant="outlined" hide-details
-        return-object
-        item-title="name"
         autocomplete="new-password"
         name="tag-combobox-nofill"
         class="mb-4 combobox-compact"
+        :style="isMobile ? 'max-width: 220px' : ''"
         :disabled="disabled"
         :color="group.color"
         :menu-props="{ contentClass: 'combobox-menu' }"
-        :items="group.tags"
-        :model-value="modelValue[group.name] || []"
+        :items="group.tags.map(t => t.name)"
+        :model-value="(modelValue[group.name] || []).map(t => t.name ?? t)"
         @update:model-value="onComboUpdate(group.name, group.tags, $event)"
       >
         <template #chip="{ item, index, props }">
           <v-chip
             v-if="index < 1"
-            v-bind="props"
             variant="outlined"
-            :size="isMobile ? 'x-small' : 'small'"
+            size="small"
             rounded="lg"
-            :color="item?.color || group.color"
+            closable
+            :color="group.tags.find(t => t.name === (item?.name ?? item))?.color || group.color"
+            @click:close="(e) => props['onClick:close']?.(e)"
           >{{ item?.name ?? item }}</v-chip>
           <span v-else-if="index === 1" class="text-caption text-medium-emphasis align-self-center">
             +{{ (modelValue[group.name] || []).length - 1 }}
@@ -79,26 +81,26 @@
         v-if="group.type === 'combobox' && !allowNew"
         closable-chips chips clearable multiple
         density="compact" variant="outlined" hide-details
-        return-object
-        item-title="name"
         autocomplete="new-password"
         name="tag-autocomplete-nofill"
         class="mb-4 combobox-compact"
+        :style="isMobile ? 'max-width: 220px' : ''"
         :disabled="disabled"
         :color="group.color"
         :menu-props="{ contentClass: 'combobox-menu' }"
-        :items="group.tags"
-        :model-value="modelValue[group.name] || []"
-        @update:model-value="onGroupUpdate(group.name, $event)"
+        :items="group.tags.map(t => t.name)"
+        :model-value="(modelValue[group.name] || []).map(t => t.name ?? t)"
+        @update:model-value="onComboUpdate(group.name, group.tags, $event)"
       >
         <template #chip="{ item, index, props }">
           <v-chip
             v-if="index < 1"
-            v-bind="props"
             variant="outlined"
-            :size="isMobile ? 'x-small' : 'small'"
+            size="small"
             rounded="lg"
-            :color="item?.color || group.color"
+            closable
+            :color="group.tags.find(t => t.name === (item?.name ?? item))?.color || group.color"
+            @click:close="(e) => props['onClick:close']?.(e)"
           >{{ item?.name ?? item }}</v-chip>
           <span v-else-if="index === 1" class="text-caption text-medium-emphasis align-self-center">
             +{{ (modelValue[group.name] || []).length - 1 }}
@@ -177,3 +179,4 @@ export default {
   opacity: 1 !important;
 }
 </style>
+

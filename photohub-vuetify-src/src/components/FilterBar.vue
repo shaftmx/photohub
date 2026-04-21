@@ -125,7 +125,7 @@
       >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
       <template v-if="!filterPanelOpen">
         <v-chip v-for="tag in activeDetailTags" :key="tag"
-          size="x-small" color="primary" closable
+          size="x-small" color="secondary" closable
           @click:close="removeDetailTag(tag)">{{ tag }}</v-chip>
       </template>
     </div>
