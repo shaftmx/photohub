@@ -51,6 +51,8 @@
         v-if="group.type === 'combobox' && allowNew"
         closable-chips chips clearable multiple
         density="compact" variant="outlined" hide-details
+        return-object
+        item-title="name"
         autocomplete="new-password"
         name="tag-combobox-nofill"
         class="mb-4 combobox-compact"
@@ -58,8 +60,8 @@
         :disabled="disabled"
         :color="group.color"
         :menu-props="{ contentClass: 'combobox-menu' }"
-        :items="group.tags.map(t => t.name)"
-        :model-value="(modelValue[group.name] || []).map(t => t.name ?? t)"
+        :items="group.tags"
+        :model-value="modelValue[group.name] || []"
         @update:model-value="onComboUpdate(group.name, group.tags, $event)"
       >
         <template #chip="{ item, index, props }">
@@ -69,7 +71,7 @@
             size="small"
             rounded="lg"
             closable
-            :color="group.tags.find(t => t.name === (item?.name ?? item))?.color || group.color"
+            :color="item?.color || group.color"
             @click:close="(e) => props['onClick:close']?.(e)"
           >{{ item?.name ?? item }}</v-chip>
           <span v-else-if="index === 1" class="text-caption text-medium-emphasis align-self-center">
@@ -81,6 +83,8 @@
         v-if="group.type === 'combobox' && !allowNew"
         closable-chips chips clearable multiple
         density="compact" variant="outlined" hide-details
+        return-object
+        item-title="name"
         autocomplete="new-password"
         name="tag-autocomplete-nofill"
         class="mb-4 combobox-compact"
@@ -88,9 +92,9 @@
         :disabled="disabled"
         :color="group.color"
         :menu-props="{ contentClass: 'combobox-menu' }"
-        :items="group.tags.map(t => t.name)"
-        :model-value="(modelValue[group.name] || []).map(t => t.name ?? t)"
-        @update:model-value="onComboUpdate(group.name, group.tags, $event)"
+        :items="group.tags"
+        :model-value="modelValue[group.name] || []"
+        @update:model-value="onGroupUpdate(group.name, $event)"
       >
         <template #chip="{ item, index, props }">
           <v-chip
@@ -99,7 +103,7 @@
             size="small"
             rounded="lg"
             closable
-            :color="group.tags.find(t => t.name === (item?.name ?? item))?.color || group.color"
+            :color="item?.color || group.color"
             @click:close="(e) => props['onClick:close']?.(e)"
           >{{ item?.name ?? item }}</v-chip>
           <span v-else-if="index === 1" class="text-caption text-medium-emphasis align-self-center">
