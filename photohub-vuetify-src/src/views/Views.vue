@@ -78,6 +78,7 @@
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
 import { requireAuth } from '../authrequired.js'
 import { getSharedDatas } from '../sharedDatas.js'
+import { useAppConfigStore } from '../stores/appConfig.js'
 import { useAuthStore } from '../stores/auth.js'
 
 export default {
@@ -99,8 +100,9 @@ export default {
     },
   },
 
-  mounted() {
+  async mounted() {
     requireAuth(this)
+    await useAppConfigStore().load()
     this.sharedDatas = getSharedDatas(this)
     this.loadViews()
   },

@@ -366,8 +366,8 @@ export default {
 
   async mounted() {
     requireAuth(this)
-    this.sharedDatas = getSharedDatas(this)
     await useAppConfigStore().load()
+    this.sharedDatas = getSharedDatas(this)
     this.init()
   },
 

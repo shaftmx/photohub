@@ -81,7 +81,7 @@ export default defineComponent({
     // from SAMPLE_PHOTOS_SETTINGS in settings.py) — no hardcoded values here.
     adaptivePhotoSize() {
       const sizes = this.paths._sizes
-      if (!sizes) return this.sharedDatas.gridPhotoSize || 's'
+      if (!sizes) return Object.keys(this.paths).find(k => k !== 'raw' && k !== '_sizes') || 's'
       const target = (this.sharedDatas.gridSize || 0) * 2
       const sorted = Object.entries(sizes).sort((a, b) => a[1] - b[1])
       for (const [name, maxSize] of sorted) {

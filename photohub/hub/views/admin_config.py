@@ -18,7 +18,7 @@ from .. import models
 
 
 # Keys managed via AppConfig
-CONFIG_KEYS = ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'SAMPLE_PHOTOS_SETTINGS', 'ALLOW_VIDEO_UPLOAD', 'KEEP_ORIGINAL_VIDEO', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT', 'GALLERY_PAGE_SIZE_DESKTOP', 'GALLERY_PAGE_SIZE_MOBILE']
+CONFIG_KEYS = ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'SAMPLE_PHOTOS_SETTINGS', 'ALLOW_VIDEO_UPLOAD', 'KEEP_ORIGINAL_VIDEO', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT', 'GALLERY_PAGE_SIZE_DESKTOP', 'GALLERY_PAGE_SIZE_MOBILE', 'DISPLAY_PHOTO_SIZE', 'DISPLAY_PHOTO_SIZE_MOBILE', 'GRID_SIZE', 'GRID_MIN', 'GRID_MAX', 'GRID_SIZE_MOBILE', 'GRID_MIN_MOBILE', 'GRID_MAX_MOBILE']
 
 
 def _get_config_value(key):
@@ -67,6 +67,14 @@ def _get_config(request):
         "TRANSCODE_TIMEOUT":           _get_config_value('TRANSCODE_TIMEOUT'),
         "GALLERY_PAGE_SIZE_DESKTOP":   _get_config_value('GALLERY_PAGE_SIZE_DESKTOP'),
         "GALLERY_PAGE_SIZE_MOBILE":    _get_config_value('GALLERY_PAGE_SIZE_MOBILE'),
+        "DISPLAY_PHOTO_SIZE":          _get_config_value('DISPLAY_PHOTO_SIZE'),
+        "DISPLAY_PHOTO_SIZE_MOBILE":   _get_config_value('DISPLAY_PHOTO_SIZE_MOBILE'),
+        "GRID_SIZE":                   _get_config_value('GRID_SIZE'),
+        "GRID_MIN":                    _get_config_value('GRID_MIN'),
+        "GRID_MAX":                    _get_config_value('GRID_MAX'),
+        "GRID_SIZE_MOBILE":            _get_config_value('GRID_SIZE_MOBILE'),
+        "GRID_MIN_MOBILE":             _get_config_value('GRID_MIN_MOBILE'),
+        "GRID_MAX_MOBILE":             _get_config_value('GRID_MAX_MOBILE'),
         # Read-only info
         "MEDIA_ROOT": settings.MEDIA_ROOT,
         "DUMP_ROOT":  settings.DUMP_ROOT,
@@ -105,7 +113,7 @@ def _set_config(request):
     if err:
         return ErrorRequest(details=err)
 
-    for key in ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD', 'KEEP_ORIGINAL_VIDEO', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT', 'GALLERY_PAGE_SIZE_DESKTOP', 'GALLERY_PAGE_SIZE_MOBILE']:
+    for key in ['RAW_PHOTOS_QUALITY', 'RAW_PHOTOS_MAX_SIZE', 'RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD', 'KEEP_ORIGINAL_VIDEO', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_PRESET', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT', 'GALLERY_PAGE_SIZE_DESKTOP', 'GALLERY_PAGE_SIZE_MOBILE', 'DISPLAY_PHOTO_SIZE', 'DISPLAY_PHOTO_SIZE_MOBILE', 'GRID_SIZE', 'GRID_MIN', 'GRID_MAX', 'GRID_SIZE_MOBILE', 'GRID_MIN_MOBILE', 'GRID_MAX_MOBILE']:
         if key in body:
             _set_config_value(key, body[key])
 
@@ -164,6 +172,14 @@ def flush_samples(request):
 def app_config(request):
     """Public endpoint — non-sensitive display settings, no auth required."""
     return Response(200, data={
-        "GALLERY_PAGE_SIZE_DESKTOP": int(_get_config_value('GALLERY_PAGE_SIZE_DESKTOP') or 1000),
-        "GALLERY_PAGE_SIZE_MOBILE":  int(_get_config_value('GALLERY_PAGE_SIZE_MOBILE') or 500),
+        "GALLERY_PAGE_SIZE_DESKTOP":  int(_get_config_value('GALLERY_PAGE_SIZE_DESKTOP') or 600),
+        "GALLERY_PAGE_SIZE_MOBILE":   int(_get_config_value('GALLERY_PAGE_SIZE_MOBILE') or 500),
+        "DISPLAY_PHOTO_SIZE":         _get_config_value('DISPLAY_PHOTO_SIZE') or 'l',
+        "DISPLAY_PHOTO_SIZE_MOBILE":  _get_config_value('DISPLAY_PHOTO_SIZE_MOBILE') or 'm',
+        "GRID_SIZE":                  int(_get_config_value('GRID_SIZE') or 350),
+        "GRID_MIN":                   int(_get_config_value('GRID_MIN') or 100),
+        "GRID_MAX":                   int(_get_config_value('GRID_MAX') or 600),
+        "GRID_SIZE_MOBILE":           int(_get_config_value('GRID_SIZE_MOBILE') or 60),
+        "GRID_MIN_MOBILE":            int(_get_config_value('GRID_MIN_MOBILE') or 40),
+        "GRID_MAX_MOBILE":            int(_get_config_value('GRID_MAX_MOBILE') or 120),
     })

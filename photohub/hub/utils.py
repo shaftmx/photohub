@@ -24,7 +24,8 @@ def get_setting(key):
         raw = models.AppConfig.objects.get(key=key).value
         if key == 'SAMPLE_PHOTOS_SETTINGS':
             return yaml.safe_load(raw)
-        if key in ('RAW_PHOTOS_MAX_SIZE', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT'):
+        if key in ('RAW_PHOTOS_MAX_SIZE', 'TRANSCODE_POLL_INTERVAL', 'TRANSCODE_THREADS', 'TRANSCODE_CRF', 'TRANSCODE_TIMEOUT',
+                   'GRID_SIZE', 'GRID_MIN', 'GRID_MAX', 'GRID_SIZE_MOBILE', 'GRID_MIN_MOBILE', 'GRID_MAX_MOBILE'):
             return int(raw) if raw else None
         if key in ('RAW_PHOTO_OVERRIDE_EXISTS', 'GENERATE_SAMPLES_ON_UPLOAD', 'ALLOW_VIDEO_UPLOAD', 'KEEP_ORIGINAL_VIDEO'):
             return raw in ('True', 'true', '1')
@@ -334,7 +335,10 @@ def write_raw_photo(file, photo_path):
     # If no QUALITY or MAX SIZE restriction defined, simply save the raw file
     raw_quality = get_setting('RAW_PHOTOS_QUALITY')
     raw_max_size = get_setting('RAW_PHOTOS_MAX_SIZE')
-    if raw_quality is not None or raw_max_size is not None:
+    mime = getattr(file, 'content_type', '') or ''
+    is_video = mime.startswith('video/') or photo_path.endswith('.mp4')
+    # Videos are always stored as-is; PIL reprocessing only applies to images
+    if not is_video and (raw_quality is not None or raw_max_size is not None):
         quality = raw_quality or "keep"
         with Image.open(file) as image_raw:
             icc_profile = image_raw.info.get("icc_profile")

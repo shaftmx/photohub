@@ -299,6 +299,79 @@
             ></v-text-field>
 
             <v-divider class="mb-4"></v-divider>
+            <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-3" style="letter-spacing:.08em">Grid &amp; display sizes</p>
+
+            <p class="text-subtitle-2 mb-1">Photo display (fullscreen)</p>
+            <p class="text-caption text-medium-emphasis mb-2">Sample name used when opening a photo fullscreen. Use <code>raw</code> to serve the original file directly.</p>
+            <v-row dense class="mb-3">
+              <v-col cols="6">
+                <v-text-field v-model="qualityConfig.DISPLAY_PHOTO_SIZE" label="Desktop" density="compact"
+                  hint="DISPLAY_PHOTO_SIZE — sample name or raw (default: l)" persistent-hint></v-text-field>
+              </v-col>
+              <v-col cols="6">
+                <v-text-field v-model="qualityConfig.DISPLAY_PHOTO_SIZE_MOBILE" label="Mobile" density="compact"
+                  hint="DISPLAY_PHOTO_SIZE_MOBILE — sample name or raw (default: m)" persistent-hint></v-text-field>
+              </v-col>
+            </v-row>
+
+            <p class="text-subtitle-2 mb-1">Grid slider</p>
+            <p class="text-caption text-medium-emphasis mb-2">Height in pixels of grid thumbnails. The grid picks the smallest sample whose <code>max_size ≥ height × 2</code> (×2 for Retina screens).</p>
+            <v-row dense class="mb-1">
+              <v-col cols="4">
+                <v-text-field v-model="qualityConfig.GRID_MIN" label="Min (desktop)" type="number" density="compact"
+                  hint="GRID_MIN (default: 100)" persistent-hint></v-text-field>
+              </v-col>
+              <v-col cols="4">
+                <v-text-field v-model="qualityConfig.GRID_SIZE" label="Default (desktop)" type="number" density="compact"
+                  hint="GRID_SIZE (default: 350)" persistent-hint></v-text-field>
+              </v-col>
+              <v-col cols="4">
+                <v-text-field v-model="qualityConfig.GRID_MAX" label="Max (desktop)" type="number" density="compact"
+                  hint="GRID_MAX (default: 600)" persistent-hint></v-text-field>
+              </v-col>
+            </v-row>
+            <v-row dense class="mb-3">
+              <v-col cols="4">
+                <v-text-field v-model="qualityConfig.GRID_MIN_MOBILE" label="Min (mobile)" type="number" density="compact"
+                  hint="GRID_MIN_MOBILE (default: 40)" persistent-hint></v-text-field>
+              </v-col>
+              <v-col cols="4">
+                <v-text-field v-model="qualityConfig.GRID_SIZE_MOBILE" label="Default (mobile)" type="number" density="compact"
+                  hint="GRID_SIZE_MOBILE (default: 60)" persistent-hint></v-text-field>
+              </v-col>
+              <v-col cols="4">
+                <v-text-field v-model="qualityConfig.GRID_MAX_MOBILE" label="Max (mobile)" type="number" density="compact"
+                  hint="GRID_MAX_MOBILE (default: 120)" persistent-hint></v-text-field>
+              </v-col>
+            </v-row>
+
+            <v-expansion-panels variant="accordion" class="mb-4">
+              <v-expansion-panel>
+                <v-expansion-panel-title class="text-caption text-medium-emphasis py-2" style="min-height:36px">
+                  How sample selection works
+                </v-expansion-panel-title>
+                <v-expansion-panel-text class="text-caption text-medium-emphasis">
+                  <p class="mb-2"><strong>Grid (adaptive)</strong> — the sample chosen depends on the slider position:</p>
+                  <pre style="background:rgba(0,0,0,0.06); border-radius:4px; padding:8px; font-size:0.8em; margin-bottom:8px">target = slider height (px) × 2   ← ×2 for Retina
+→ pick the smallest sample where max_size ≥ target
+→ if none fits, use the largest available sample</pre>
+                  <p class="mb-1">Example with samples <code>xs=400, s=800, m=1200, l=2000</code> and desktop slider 100–600 px:</p>
+                  <table style="border-collapse:collapse; margin-bottom:8px; font-size:0.9em">
+                    <tr style="opacity:0.6"><th style="text-align:left; padding-right:16px">Slider</th><th style="text-align:left; padding-right:16px">Target</th><th style="text-align:left">Sample used</th></tr>
+                    <tr><td>100 px (min)</td><td>200 px</td><td><code>xs</code></td></tr>
+                    <tr><td>200 px</td><td>400 px</td><td><code>xs</code></td></tr>
+                    <tr><td>201 px</td><td>402 px</td><td><code>s</code></td></tr>
+                    <tr><td>400 px</td><td>800 px</td><td><code>s</code></td></tr>
+                    <tr><td>401 px</td><td>802 px</td><td><code>m</code></td></tr>
+                    <tr><td>600 px (max)</td><td>1200 px</td><td><code>m</code></td></tr>
+                  </table>
+                  <p>→ <code>l</code> is never used in the grid with this config — only in fullscreen display.</p>
+                  <p class="mt-2"><strong>Photo display (fixed)</strong> — always uses the sample name set in <em>DISPLAY_PHOTO_SIZE</em> above, regardless of the slider. Set to <code>raw</code> to skip samples entirely.</p>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
+
+            <v-divider class="mb-4"></v-divider>
             <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-4" style="letter-spacing:.08em">Raw photo processing</p>
 
             <v-select
@@ -366,8 +439,8 @@
             <p class="text-body-2 text-medium-emphasis mb-3">
               YAML list defining the sample sizes to generate for each photo. You can define as many samples as needed (e.g. thumbnail, preview, fullscreen).
             </p>
-            <v-alert type="warning" density="compact" variant="tonal" class="mb-3 text-caption">
-              The following names are used by the UI and <strong>must be present</strong>: <code>xs</code>, <code>s</code>, <code>m</code>, <code>l</code>. Removing any of them will cause broken images.
+            <v-alert type="info" density="compact" variant="tonal" class="mb-3 text-caption">
+              Sample names can be anything. The grid picks sizes automatically (see <em>Grid &amp; display</em> below). Only make sure your <strong>DISPLAY_PHOTO_SIZE</strong> names exist here, or set them to <code>raw</code>.
             </v-alert>
             <v-expansion-panels variant="accordion" class="mb-3">
               <v-expansion-panel>
@@ -1141,6 +1214,14 @@ export default {
         TRANSCODE_TIMEOUT:          this.qualityConfig.TRANSCODE_TIMEOUT || '',
         GALLERY_PAGE_SIZE_DESKTOP:  this.qualityConfig.GALLERY_PAGE_SIZE_DESKTOP || '',
         GALLERY_PAGE_SIZE_MOBILE:   this.qualityConfig.GALLERY_PAGE_SIZE_MOBILE || '',
+        DISPLAY_PHOTO_SIZE:         this.qualityConfig.DISPLAY_PHOTO_SIZE || '',
+        DISPLAY_PHOTO_SIZE_MOBILE:  this.qualityConfig.DISPLAY_PHOTO_SIZE_MOBILE || '',
+        GRID_SIZE:                  this.qualityConfig.GRID_SIZE || '',
+        GRID_MIN:                   this.qualityConfig.GRID_MIN || '',
+        GRID_MAX:                   this.qualityConfig.GRID_MAX || '',
+        GRID_SIZE_MOBILE:           this.qualityConfig.GRID_SIZE_MOBILE || '',
+        GRID_MIN_MOBILE:            this.qualityConfig.GRID_MIN_MOBILE || '',
+        GRID_MAX_MOBILE:            this.qualityConfig.GRID_MAX_MOBILE || '',
         SAMPLE_PHOTOS_SETTINGS:    this.qualitySampleYaml,
       }
       const { data } = await useAsyncPost('/api/admin/config', payload)

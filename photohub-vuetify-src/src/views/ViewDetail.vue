@@ -403,8 +403,8 @@ export default {
   }),
 
   async mounted() {
-    this.sharedDatas = getSharedDatas(this)
     await useAppConfigStore().load()
+    this.sharedDatas = getSharedDatas(this)
     this.loadView()
   },
 

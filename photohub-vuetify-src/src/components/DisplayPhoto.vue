@@ -48,7 +48,7 @@
                 ></video>
                 <img
                   v-else
-                  :src="paths[sharedDatas.displayPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']"
+                  :src="(sharedDatas.displayPhotoSize === 'raw' ? paths.raw : (paths[sharedDatas.displayPhotoSize] || paths.raw)) + '/' + photo['hash_path'] + '/' + photo['filename']"
                   style="width:100%; height:100%; object-fit:contain;"
                 />
               </v-carousel-item>

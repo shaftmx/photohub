@@ -56,6 +56,7 @@
 <script>
 import { useAsyncFetch } from '../reactivefetch.js'
 import { getSharedDatas } from '../sharedDatas.js'
+import { useAppConfigStore } from '../stores/appConfig.js'
 
 export default {
   data: () => ({
@@ -75,7 +76,8 @@ export default {
     },
   },
 
-  mounted() {
+  async mounted() {
+    await useAppConfigStore().load()
     this.sharedDatas = getSharedDatas(this)
     this.loadViews()
   },

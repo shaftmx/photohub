@@ -215,6 +215,16 @@ TRANSCODE_TIMEOUT       = int(os.environ.get('TRANSCODE_TIMEOUT', '3600'))
 GALLERY_PAGE_SIZE_DESKTOP = int(os.environ.get('GALLERY_PAGE_SIZE_DESKTOP', '600'))
 GALLERY_PAGE_SIZE_MOBILE  = int(os.environ.get('GALLERY_PAGE_SIZE_MOBILE', '500'))
 
+DISPLAY_PHOTO_SIZE        = os.environ.get('DISPLAY_PHOTO_SIZE', 'l')
+DISPLAY_PHOTO_SIZE_MOBILE = os.environ.get('DISPLAY_PHOTO_SIZE_MOBILE', 'm')
+
+GRID_SIZE         = int(os.environ.get('GRID_SIZE', '350'))
+GRID_MIN          = int(os.environ.get('GRID_MIN', '100'))
+GRID_MAX          = int(os.environ.get('GRID_MAX', '600'))
+GRID_SIZE_MOBILE  = int(os.environ.get('GRID_SIZE_MOBILE', '60'))
+GRID_MIN_MOBILE   = int(os.environ.get('GRID_MIN_MOBILE', '40'))
+GRID_MAX_MOBILE   = int(os.environ.get('GRID_MAX_MOBILE', '120'))
+
 # Sample (resized) versions generated for each uploaded photo.
 # The frontend picks the appropriate sample automatically based on the grid
 # slider value (PhotoGrid.vue computed adaptivePhotoSize), using the max_size
