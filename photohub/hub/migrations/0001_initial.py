@@ -5,11 +5,23 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def create_groups(apps, schema_editor):
+    Group = apps.get_model('auth', 'Group')
+    Group.objects.get_or_create(name='contributor')
+    Group.objects.get_or_create(name='member')
+
+
+def delete_groups(apps, schema_editor):
+    Group = apps.get_model('auth', 'Group')
+    Group.objects.filter(name__in=['contributor', 'member']).delete()
+
+
 class Migration(migrations.Migration):
 
     initial = True
 
     dependencies = [
+        ('auth', '0012_alter_user_first_name_max_length'),
     ]
 
     operations = [
@@ -115,4 +127,5 @@ class Migration(migrations.Migration):
                 'unique_together': {('view', 'photo')},
             },
         ),
+        migrations.RunPython(create_groups, delete_groups),
     ]
