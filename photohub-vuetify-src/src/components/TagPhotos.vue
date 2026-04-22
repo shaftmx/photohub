@@ -41,7 +41,7 @@
         <div :style="'--ratio: ' + photo['height'] / photo['width'] + ';  --height: ' + sharedDatas.gridSize" class="item"
           v-for="(photo) in photos" :key="photo.filename">
           <v-card class="mx-auto">
-            <v-img :src="paths[sharedDatas.gridPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']">
+            <v-img :src="paths[adaptivePhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']">
             </v-img>
           </v-card>
         </div>
@@ -69,7 +69,7 @@
           <div :style="'--ratio: ' + photo['height'] / photo['width'] + ';  --height: ' + sharedDatas.gridSize"
             class="item">
             <v-card class="mx-auto">
-              <v-img :src="paths[sharedDatas.gridPhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']">
+              <v-img :src="paths[adaptivePhotoSize] + '/' + photo['hash_path'] + '/' + photo['filename']">
               </v-img>
             </v-card>
           </div>
@@ -95,6 +95,7 @@
 <script>
 import { defineComponent } from 'vue';
 import { getSharedDatas } from '../sharedDatas.js'
+import { useAppConfigStore } from '../stores/appConfig.js'
 import '../styles/galleryGrid.css'
 import { useAlertStore } from '../stores/alert'
 import { useAsyncFetch, useAsyncPost } from '../reactivefetch.js'
@@ -125,7 +126,21 @@ export default defineComponent({
     loading: false,
   }),
 
-  mounted() {
+  computed: {
+    adaptivePhotoSize() {
+      const sizes = this.paths?._sizes
+      if (!sizes) return Object.keys(this.paths || {}).find(k => k !== 'raw' && k !== '_sizes') || 's'
+      const target = (this.sharedDatas.gridSize || 0) * 2
+      const sorted = Object.entries(sizes).sort((a, b) => a[1] - b[1])
+      for (const [name, maxSize] of sorted) {
+        if (maxSize >= target) return name
+      }
+      return sorted[sorted.length - 1][0]
+    },
+  },
+
+  async mounted() {
+    await useAppConfigStore().load()
     this.sharedDatas = getSharedDatas(this)
     // Override default grid size in order to display all as small pictures
     this.sharedDatas.gridSize = this.sharedDatas.gridMin

@@ -138,15 +138,17 @@ def get_photo_root_paths():
 
 # GPS From https://gis.stackexchange.com/questions/379093/identifying-coordinate-format-from-exif-data
 def dms_to_dd(gps_coords, gps_coords_ref):
-    d, m, s =  gps_coords
-    dd = d + m / 60 + s / 3600
+    try:
+        d, m, s = gps_coords
+        dd = float(d) + float(m) / 60 + float(s) / 3600
+    except (ZeroDivisionError, TypeError, ValueError):
+        return None
     ref = (gps_coords_ref or '').strip('\x00').strip().upper()
     if ref in ('S', 'W'):
-        return float(-dd)
+        return -dd
     elif ref in ('N', 'E'):
-        return float(dd)
-    else:
-        raise RuntimeError('Incorrect gps_coords_ref {!r}'.format(gps_coords_ref))
+        return dd
+    return None
 
 #
 # Write photos
@@ -352,7 +354,7 @@ def write_raw_photo(file, photo_path):
             # I tried first to image_raw.save in the original raw_file. But it produce a file bigger than simple save wierd
             # So doing the same thing as the sample going through a BytesIO
             sample_file = File(BytesIO(), name=photo_path)
-            image_raw.save(sample_file, quality=quality, icc_profile=icc_profile, exif=exif)
+            image_raw.save(sample_file, quality=quality, icc_profile=icc_profile, exif=exif or b'')
             default_storage.save(photo_path, sample_file)
             return
     default_storage.save(photo_path, file)
@@ -386,26 +388,33 @@ def get_exif(file):
         if exifs["ExposureTime"] is not None: exifs["ExposureTime"]  = str(exifs["ExposureTime"].real)
 
         # GPS
+        def _safe_float(rational):
+            try:
+                return float(rational)
+            except (ZeroDivisionError, Exception):
+                return 0.0
+
         gps_ifd = exif.get_ifd(ExifTags.Base.GPSInfo)
-        if gps_ifd != {}:            
+        if gps_ifd != {}:
             exifs["GPSAltitude"] = gps_ifd.get(ExifTags.GPS.GPSAltitude, 0)
 
             if gps_ifd.get(ExifTags.GPS.GPSLatitudeRef) is not None:
                 exifs["GPSLatitudeRef"] = gps_ifd.get(ExifTags.GPS.GPSLatitudeRef)
-                lat = [str(float(i)) for i in gps_ifd.get(ExifTags.GPS.GPSLatitude)]
+                lat = [str(_safe_float(i)) for i in gps_ifd.get(ExifTags.GPS.GPSLatitude)]
                 exifs["GPSLatitude"] = ";".join(lat)
 
             if gps_ifd.get(ExifTags.GPS.GPSLongitudeRef) is not None:
                 exifs["GPSLongitudeRef"] = gps_ifd.get(ExifTags.GPS.GPSLongitudeRef)
-                long =  [str(float(i)) for i in gps_ifd.get(ExifTags.GPS.GPSLongitude)]
+                long = [str(_safe_float(i)) for i in gps_ifd.get(ExifTags.GPS.GPSLongitude)]
                 exifs["GPSLongitude"] = ";".join(long)
 
             LOG.error(exifs)
 
             if "GPSLatitudeRef" in exifs and "GPSLongitudeRef" in exifs:
-                # DD format
-                exifs["GPSDDFormat"] = "%s %s" % (dms_to_dd(gps_ifd.get(ExifTags.GPS.GPSLatitude), exifs["GPSLatitudeRef"]),
-                                                dms_to_dd(gps_ifd.get(ExifTags.GPS.GPSLongitude), exifs["GPSLongitudeRef"]))
+                lat_dd = dms_to_dd(gps_ifd.get(ExifTags.GPS.GPSLatitude), exifs["GPSLatitudeRef"])
+                lon_dd = dms_to_dd(gps_ifd.get(ExifTags.GPS.GPSLongitude), exifs["GPSLongitudeRef"])
+                if lat_dd is not None and lon_dd is not None:
+                    exifs["GPSDDFormat"] = "%s %s" % (lat_dd, lon_dd)
     
             # Not working DMS Gmap 48°56'05.4"N 2°12'21.1"E
             # exifs["GPSDMS"] = "%s°%s'%s\"%s %s°%s'%s\"%s" % (int(float(lat[0])), int(float(lat[1])), lat[2], exifs["GPSLatitudeRef"],
