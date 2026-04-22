@@ -4,6 +4,13 @@ Implementation notes and references collected during development.
 
 ---
 
+## Build and push
+
+```
+docker build -t shaftmx/photohub:latest .
+docker push shaftmx/photohub:latest
+```
+
 ## Architecture — dev stack
 
 ![Architecture dev](docs/architecture-dev.svg)
