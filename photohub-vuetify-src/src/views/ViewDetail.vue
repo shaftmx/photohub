@@ -205,7 +205,7 @@
     <!-- Sort + grid size slider -->
     <v-sheet class="d-flex align-center mb-2 ga-2">
       <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir"
-        :show-custom-order="!isUploadMode && (view.has_custom_order || false)"
+        :show-custom-order="view.has_custom_order || false"
         @update:sortBy="applySort()" @update:sortDir="applySort()">
       </SortControls>
       <v-btn

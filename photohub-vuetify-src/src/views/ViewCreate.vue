@@ -54,8 +54,8 @@
       ></v-switch>
       <div v-if="isEditMode && coverFilename" class="d-inline-flex align-center ga-2 pa-1 rounded border" style="width: fit-content">
         <v-img
-          v-if="paths[sharedDatas.gridPhotoSize]"
-          :src="paths[sharedDatas.gridPhotoSize] + '/' + coverHashPath + '/' + coverFilename.replace(/\.[^.]+$/, '.jpg')"
+          v-if="coverThumbBase"
+          :src="coverThumbBase + '/' + coverHashPath + '/' + coverFilename.replace(/\.[^.]+$/, '.jpg')"
           width="40" height="40" cover class="rounded flex-shrink-0"
         ></v-img>
         <span class="text-caption text-medium-emphasis">Cover</span>
@@ -343,6 +343,14 @@ export default {
   computed: {
     isEditMode() {
       return !!this.$route.params.id
+    },
+
+    coverThumbBase() {
+      const sizes = this.paths?._sizes
+      if (!sizes) return Object.values(this.paths || {}).find(v => typeof v === 'string' && v !== this.paths.raw) || null
+      const sorted = Object.entries(sizes).sort((a, b) => a[1] - b[1])
+      const name = sorted[0]?.[0]
+      return name ? this.paths[name] : this.paths.raw
     },
 
     // Flat list of selected tag names (used for API call and saving)

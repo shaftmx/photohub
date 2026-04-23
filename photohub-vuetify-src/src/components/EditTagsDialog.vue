@@ -91,12 +91,16 @@ export default {
 
   methods: {
     // photo.tags from get_photo: { groupName: { color, tags: [{name, color}] } }
-    // Convert to unified object format: { groupName: [tagObj, ...] }
+    // Resolve each tag against tagGroups so the objects match exactly what the chips use.
+    // v-chip-group uses deepEqual — partial objects from the detail API won't match.
     initStagingTags() {
       const flat = {}
       if (this.photo && this.photo.tags) {
         for (const [groupName, group] of Object.entries(this.photo.tags)) {
-          flat[groupName] = group.tags  // already tagObj: [{name, color, ...}]
+          const tagGroup = this.tagGroups.find(g => g.name === groupName)
+          flat[groupName] = (group.tags || []).map(t =>
+            tagGroup?.tags.find(gt => gt.name === t.name) || t
+          )
         }
       }
       this.originalTags = JSON.parse(JSON.stringify(flat))

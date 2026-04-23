@@ -61,7 +61,26 @@
         </v-sheet>
       </v-sheet>
 
-      <!-- Row 2: sort + grid size slider -->
+      <!-- Row 2: tag filter -->
+      <v-sheet class="d-flex mb-2 align-center">
+        <v-btn-toggle v-model="tagFilter" mandatory density="compact" variant="outlined" color="primary"
+          @update:modelValue="doGetPhotos()">
+          <v-btn value="all" :size="sharedDatas.isMobile ? 'x-small' : 'small'">
+            <v-icon :size="sharedDatas.isMobile ? 14 : 18">mdi-tag-multiple-outline</v-icon>
+            <v-tooltip activator="parent" location="top">All</v-tooltip>
+          </v-btn>
+          <v-btn value="untagged" :size="sharedDatas.isMobile ? 'x-small' : 'small'">
+            <v-icon :size="sharedDatas.isMobile ? 14 : 18">mdi-tag-off-outline</v-icon>
+            <v-tooltip activator="parent" location="top">Untagged</v-tooltip>
+          </v-btn>
+          <v-btn value="tagged" :size="sharedDatas.isMobile ? 'x-small' : 'small'">
+            <v-icon :size="sharedDatas.isMobile ? 14 : 18">mdi-tag-check-outline</v-icon>
+            <v-tooltip activator="parent" location="top">Tagged</v-tooltip>
+          </v-btn>
+        </v-btn-toggle>
+      </v-sheet>
+
+      <!-- Row 3: sort + grid size slider -->
       <v-sheet class="d-flex mb-2 align-center">
         <SortControls v-model:sortBy="sortBy" v-model:sortDir="sortDir" @update:sortBy="doGetPhotos()" @update:sortDir="doGetPhotos()"></SortControls>
         <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
@@ -152,6 +171,7 @@ export default {
     loading: false,
     sortBy: 'date',
     sortDir: 'desc',
+    tagFilter: 'all',
   }),
 
   async mounted() {
@@ -269,7 +289,7 @@ export default {
       const { triggerAlert } = useAlertStore()
       const appConfig = useAppConfigStore()
       const limit = appConfig.galleryLimit(this.sharedDatas.isMobile)
-      const { data, error } = await useAsyncFetch(`/api/unpublished?sort_by=${this.sortBy}&sort_dir=${this.sortDir}&limit=${limit}`)
+      const { data, error } = await useAsyncFetch(`/api/unpublished?sort_by=${this.sortBy}&sort_dir=${this.sortDir}&limit=${limit}&tag_filter=${this.tagFilter}`)
       if (error.value) {
         triggerAlert('error', 'Request failure', error.value)
       } else if (data.value.ERROR) {
