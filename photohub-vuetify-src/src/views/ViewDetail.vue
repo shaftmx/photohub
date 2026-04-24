@@ -627,7 +627,7 @@ export default {
         formData.append('picture.jpg', file)
         const { data, error } = await useAsyncUploadFile(`/api/upload_view/${token}/upload`, formData)
         if (error.value || data.value?.ERROR) {
-          triggerAlert('error', `Upload failed: ${file.name}`, '')
+          triggerAlert('error', `Upload failed: ${file.name}`, data.value?.details || error.value || '')
           this.uploading = false
           return
         }

@@ -9,17 +9,14 @@ export const useAlertStore = defineStore('alert', {
     detail: '',
     type: 'error', // Could be error or success
     code: 500,
+    triggerKey: 0, // incremented on each trigger to force snackbar re-mount and reset its timer
   }),
-  // getters: {
-  //   getAlert: (state) => {
-  //     return (authorId) => state.posts.filter((post) => post.userId === authorId)
-  //   }
-  // }, 
   actions: {
     triggerAlert(t, msg, d) {
       this.type = t
       this.message = msg
-      this.detail = d      
+      this.detail = d
+      this.triggerKey++
       this.showAlert = true
     }
   }

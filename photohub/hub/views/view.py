@@ -9,6 +9,7 @@ from ..utils import *
 from django.views.decorators.http import require_http_methods
 from .. import models
 from django.forms.models import model_to_dict
+from PIL import UnidentifiedImageError
 
 
 def _serialize_view(v):
@@ -543,6 +544,10 @@ def upload_view_photo(request, token):
 
     uploaded = []
     for field_name, file in request.FILES.items():
+        if is_system_file(file.name):
+            LOG.info("Skipping system file: %s" % file.name)
+            continue
+
         photo_filename = "%s.jpg" % getMd5(file)
         photo_path = getRawPath(photo_filename)
 
@@ -554,6 +559,8 @@ def upload_view_photo(request, token):
 
         err = save_photo(file, photo_path, owner="guest")
         if err is not None:
+            if isinstance(err, UnidentifiedImageError):
+                return ErrorRequest(message="Unsupported file format", details="'%s' is not a supported image file" % file.name)
             return ErrorUnexpected(details="save_photo '%s' - %s" % (file.name, err), trace=err)
 
         if get_setting('GENERATE_SAMPLES_ON_UPLOAD'):

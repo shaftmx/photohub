@@ -10,6 +10,7 @@ from django.core.files.storage import default_storage
 from os.path import basename
 from .. import models
 from django.forms.models import model_to_dict
+from PIL import UnidentifiedImageError
 # from django.db.models import Q
 
 #
@@ -145,6 +146,10 @@ def get_photos(request):
 def upload_photo(request):
     LOG.debug("--upload_photo")
     for field_name, file in request.FILES.items():
+        if is_system_file(file.name):
+            LOG.info("Skipping system file: %s" % file.name)
+            continue
+
         mime = getattr(file, 'content_type', '') or ''
         is_video = mime.startswith('video/')
 
@@ -167,6 +172,8 @@ def upload_photo(request):
 
         _err = save_photo(file, photo_path, owner=request.user.username)
         if _err is not None:
+            if isinstance(_err, UnidentifiedImageError):
+                return ErrorRequest(message="Unsupported file format", details="'%s' is not a supported image or video file" % file.name)
             LOG.error("save_photo '%s' - %s" % (file.name, _err), exc_info=_err)
             return ErrorUnexpected(details="save_photo '%s' - %s" % (file.name, _err), trace=_err)
 

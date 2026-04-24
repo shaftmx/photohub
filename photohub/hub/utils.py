@@ -79,6 +79,11 @@ def admin_or_contributor_required(func):
 def Response(status=200, data={}):
     return JsonResponse({"status": status, "data": data}, status=status)
 
+_SYSTEM_FILENAMES = frozenset({'thumbs.db', '.ds_store', 'desktop.ini', 'ehthumbs.db', '.thumbsdb'})
+
+def is_system_file(filename):
+    return filename.lower() in _SYSTEM_FILENAMES
+
 #
 # Tools
 #
