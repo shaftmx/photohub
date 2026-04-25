@@ -192,41 +192,31 @@
 
     <!-- Bulk selection controls (hidden in drag mode) -->
     <v-sheet v-if="!dragMode" class="d-flex mb-2 align-center ga-2">
-      <span class="text-body-2 text-medium-emphasis">{{ selectedFilenames.length }} selected</span>
-      <v-btn
-        @click="selectedFilenames.length > 0 ? deselectAll() : selectAll()"
-        size="small" color="secondary" variant="tonal" density="compact"
-        :prepend-icon="selectedFilenames.length > 0 ? 'mdi-select-off' : 'mdi-select-all'"
-      >{{ selectedFilenames.length > 0 ? 'Deselect all' : 'Select all' }}</v-btn>
-      <v-menu>
-        <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" size="small" color="primary" variant="tonal" density="compact"
-            append-icon="mdi-chevron-down" :disabled="selectedFilenames.length < 1">Actions</v-btn>
-        </template>
-        <v-list density="compact">
-          <v-list-item @click="openBulkTag">
-            <template #prepend><v-icon color="primary" class="mr-4">mdi-tag-arrow-right</v-icon></template>
-            <v-list-item-title>Tag</v-list-item-title>
-          </v-list-item>
-          <v-list-item @click="bulkSetFavorite(true)">
-            <template #prepend><v-icon color="red" class="mr-4">mdi-heart</v-icon></template>
-            <v-list-item-title>Add to favorites</v-list-item-title>
-          </v-list-item>
-          <v-list-item @click="bulkSetFavorite(false)">
-            <template #prepend><v-icon class="mr-4">mdi-heart-off-outline</v-icon></template>
-            <v-list-item-title>Remove from favorites</v-list-item-title>
-          </v-list-item>
-          <v-list-item @click="confirmBulkUnpublishDialog = true">
-            <template #prepend><v-icon class="mr-4">mdi-cloud-off-outline</v-icon></template>
-            <v-list-item-title>Unpublish</v-list-item-title>
-          </v-list-item>
-          <v-divider></v-divider>
-          <v-list-item @click="confirmBulkDeleteDialog = true">
-            <template #prepend><v-icon color="error" class="mr-4">mdi-delete</v-icon></template>
-            <v-list-item-title>Delete</v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
+      <!-- BulkActionsMenu: count, select/deselect-all, favorites, rating built-in.
+           View-specific actions (Tag, Unpublish, Delete) in the default slot. -->
+      <BulkActionsMenu
+        :selected-count="selectedFilenames.length"
+        :filenames="selectedFilenames"
+        :is-mobile="sharedDatas.isMobile"
+        @select-all="selectAll"
+        @deselect-all="deselectAll"
+        @done="deselectAll(); fetchPreview()"
+      >
+        <v-list-item @click="openBulkTag">
+          <template #prepend><v-icon color="primary" class="mr-4">mdi-tag-arrow-right</v-icon></template>
+          <v-list-item-title>Tag</v-list-item-title>
+        </v-list-item>
+        <v-list-item @click="confirmBulkUnpublishDialog = true">
+          <template #prepend><v-icon class="mr-4">mdi-cloud-off-outline</v-icon></template>
+          <v-list-item-title>Unpublish</v-list-item-title>
+        </v-list-item>
+        <v-divider></v-divider>
+        <v-list-item @click="confirmBulkDeleteDialog = true">
+          <template #prepend><v-icon color="error" class="mr-4">mdi-delete</v-icon></template>
+          <v-list-item-title>Delete</v-list-item-title>
+        </v-list-item>
+        <v-divider></v-divider>
+      </BulkActionsMenu>
     </v-sheet>
 
     <!-- Confirm bulk unpublish -->
@@ -283,6 +273,7 @@ import DisplayPhoto from '@/components/DisplayPhoto.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
 import FilterBar from '@/components/FilterBar.vue'
 import PageTitle from '@/components/PageTitle.vue'
+import BulkActionsMenu from '@/components/BulkActionsMenu.vue'
 </script>
 
 <script>
@@ -534,23 +525,6 @@ export default {
     openBulkTag() {
       this.tagPhotosVisible = false
       this.$nextTick(() => this.$refs.tagPhotos.open())
-    },
-
-    async bulkSetFavorite(newValue) {
-      const { triggerAlert } = useAlertStore()
-      for (const filename of this.selectedFilenames) {
-        const { data, error } = await useAsyncPost(`/api/photos/${filename}/update`, { favorite: newValue })
-        if (error.value) {
-          triggerAlert('error', 'Save error', error.value)
-        } else if (data.value?.ERROR) {
-          triggerAlert('error', data.value.message, data.value.details)
-        } else {
-          const photo = this.photos.find(p => p.filename === filename)
-          if (photo) photo.favorite = newValue
-        }
-      }
-      this.deselectAll()
-      this.fetchPreview()
     },
 
     async bulkUnpublish() {

@@ -18,46 +18,36 @@
         />
       </v-sheet>
 
-      <!-- Row 1: selection controls + bulk actions menu -->
+      <!-- Row 1: selection controls + bulk actions menu
+           BulkActionsMenu provides: count display, select/deselect-all btn, Actions dropdown,
+           built-in favorites and rating items. View-specific actions go in the default slot. -->
       <v-sheet class="d-flex mb-2">
         <v-sheet class="ma-0 pa-0 me-auto"></v-sheet>
         <v-sheet class="d-flex ma-0 pa-0 align-center ga-2">
-          <span class="text-body-2 text-medium-emphasis">{{ selectedPhotosFilenames.length }} selected</span>
-          <v-btn
-            @click="selectedPhotosFilenames.length > 0 ? deselectAll() : selectAll()"
-            :size="sharedDatas.isMobile ? 'small' : 'default'"
-            color="secondary" variant="tonal" density="compact"
-            :prepend-icon="selectedPhotosFilenames.length > 0 ? 'mdi-select-off' : 'mdi-select-all'"
-          >{{ selectedPhotosFilenames.length > 0 ? 'Deselect all' : 'Select all' }}</v-btn>
-          <v-menu>
-            <template v-slot:activator="{ props }">
-              <v-btn v-bind="props" :size="sharedDatas.isMobile ? 'small' : 'default'" color="primary" variant="tonal"
-                density="compact" append-icon="mdi-chevron-down" :disabled="selectedPhotosFilenames.length < 1">Actions</v-btn>
-            </template>
-            <v-list density="compact">
-              <v-list-item @click="displayed = false; $refs.tagPhotos.open()">
-                <template #prepend><v-icon color="primary" class="mr-4">mdi-tag-arrow-right</v-icon></template>
-                <v-list-item-title>Tag</v-list-item-title>
-              </v-list-item>
-              <v-list-item @click="confirmPublishDialog = true; loading = true">
-                <template #prepend><v-icon color="secondary" class="mr-4">mdi-cloud-check</v-icon></template>
-                <v-list-item-title>Publish</v-list-item-title>
-              </v-list-item>
-              <v-list-item @click="bulkSetFavorite(true)">
-                <template #prepend><v-icon color="red" class="mr-4">mdi-heart</v-icon></template>
-                <v-list-item-title>Add to favorites</v-list-item-title>
-              </v-list-item>
-              <v-list-item @click="bulkSetFavorite(false)">
-                <template #prepend><v-icon class="mr-4">mdi-heart-off-outline</v-icon></template>
-                <v-list-item-title>Remove from favorites</v-list-item-title>
-              </v-list-item>
-              <v-divider></v-divider>
-              <v-list-item @click="confirmDeleteDialog = true">
-                <template #prepend><v-icon color="error" class="mr-4">mdi-delete</v-icon></template>
-                <v-list-item-title>Delete</v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-menu>
+          <BulkActionsMenu
+            :selected-count="selectedPhotosFilenames.length"
+            :filenames="selectedPhotosFilenames"
+            :is-mobile="sharedDatas.isMobile"
+            @select-all="selectAll"
+            @deselect-all="deselectAll"
+            @done="deselectAll(); doGetPhotos()"
+          >
+            <!-- Unpublished-specific actions: tag + publish at top, delete at bottom -->
+            <v-list-item @click="displayed = false; $refs.tagPhotos.open()">
+              <template #prepend><v-icon color="primary" class="mr-4">mdi-tag-arrow-right</v-icon></template>
+              <v-list-item-title>Tag</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="confirmPublishDialog = true; loading = true">
+              <template #prepend><v-icon color="secondary" class="mr-4">mdi-cloud-check</v-icon></template>
+              <v-list-item-title>Publish</v-list-item-title>
+            </v-list-item>
+            <v-divider></v-divider>
+            <v-list-item @click="confirmDeleteDialog = true">
+              <template #prepend><v-icon color="error" class="mr-4">mdi-delete</v-icon></template>
+              <v-list-item-title>Delete</v-list-item-title>
+            </v-list-item>
+            <v-divider></v-divider>
+          </BulkActionsMenu>
         </v-sheet>
       </v-sheet>
 
@@ -145,6 +135,7 @@ import PhotoDetail from '@/views/PhotoDetailPanel.vue'
 import SortControls from '@/components/SortControls.vue'
 import PhotoGrid from '@/components/PhotoGrid.vue'
 import PageTitle from '@/components/PageTitle.vue'
+import BulkActionsMenu from '@/components/BulkActionsMenu.vue'
 </script>
 
 
@@ -235,23 +226,6 @@ export default {
       } else {
         photo.favorite = newValue
       }
-    },
-
-    async bulkSetFavorite(newValue) {
-      const { triggerAlert } = useAlertStore()
-      for (const filename of this.selectedPhotosFilenames) {
-        const { data, error } = await useAsyncPost(`/api/photos/${filename}/update`, { favorite: newValue })
-        if (error.value) {
-          triggerAlert('error', 'Save error', error.value)
-        } else if (data.value && data.value.ERROR) {
-          triggerAlert('error', data.value.message, data.value.details)
-        } else {
-          const photo = this.photos.find(p => p.filename === filename)
-          if (photo) photo.favorite = newValue
-        }
-      }
-      this.selectedPhotosFilenames = []
-      this.doGetPhotos()
     },
 
     async deleteSelected() {
