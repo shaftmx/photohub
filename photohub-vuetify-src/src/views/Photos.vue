@@ -6,6 +6,7 @@
   :readonly="!authStore.canEdit"
   @photoDeleted="onPhotoDeleted"
   @photoUnpublished="onPhotoUnpublished"
+  @closed="onFullscreenClosed"
 ></DisplayPhoto>
 
 <TagPhotos
@@ -175,7 +176,7 @@
       @update:filterTagMode="onFilterModeChange"
     />
 
-    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" :show-favorite="!selectionMode && authStore.canEdit"
+    <PhotoGrid ref="photoGrid" :photos="photos" :paths="paths" :shared-datas="sharedDatas" :show-favorite="!selectionMode && authStore.canEdit"
       @item-click="(photo, index, event) => selectionMode ? selectDeselect(photo, index, event) : $refs.displayPhoto.displayPhoto(photo.filename)"
       @toggle-favorite="toggleFavorite">
       <template #overlay="{ photo, index }">
@@ -474,6 +475,10 @@ export default {
 
     onPhotoUnpublished(filename) {
       this.photos = this.photos.filter(p => p.filename !== filename)
+    },
+
+    onFullscreenClosed(filename) {
+      this.$refs.photoGrid?.scrollToPhoto(filename)
     },
 
     async init() {

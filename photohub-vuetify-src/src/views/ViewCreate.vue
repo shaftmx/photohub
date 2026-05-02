@@ -11,6 +11,7 @@
     :cover-filename="coverFilename"
     @photoDeleted="onPhotoDeleted"
     @photoUnpublished="onPhotoUnpublished"
+    @closed="onFullscreenClosed"
   />
 
   <v-sheet v-if="tagPhotosVisible" class="pa-4">
@@ -246,7 +247,7 @@
     </v-dialog>
 
     <!-- Preview grid -->
-    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas" show-favorite show-cover :cover-filename="coverFilename"
+    <PhotoGrid ref="photoGrid" :photos="photos" :paths="paths" :shared-datas="sharedDatas" show-favorite show-cover :cover-filename="coverFilename"
       :draggable="dragMode"
       @item-click="(photo, index, event) => dragMode ? null : selectDeselect(photo, index, event)"
       @toggle-favorite="toggleFavorite"
@@ -565,6 +566,10 @@ export default {
 
     onPhotoUnpublished(filename) {
       this.photos = this.photos.filter(p => p.filename !== filename)
+    },
+
+    onFullscreenClosed(filename) {
+      this.$refs.photoGrid?.scrollToPhoto(filename)
     },
 
     async toggleFavorite(photo) {

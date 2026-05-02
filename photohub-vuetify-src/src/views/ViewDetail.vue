@@ -9,6 +9,7 @@
     :photo-detail-endpoint="photoDetailEndpoint"
     @photoDeleted="onPhotoDeleted"
     @photoUnpublished="onPhotoUnpublished"
+    @closed="onFullscreenClosed"
   ></DisplayPhoto>
 
   <!-- TagPhotos overlay — only mounted for editors; hides main sheet while open -->
@@ -300,7 +301,7 @@
     </v-expand-transition>
 
     <!-- Photo grid -->
-    <PhotoGrid :photos="photos" :paths="paths" :shared-datas="sharedDatas"
+    <PhotoGrid ref="photoGrid" :photos="photos" :paths="paths" :shared-datas="sharedDatas"
       :show-favorite="authStore.canEdit && !isUploadMode && !selectionMode"
       @item-click="(photo, index, event) => selectionMode ? selectDeselect(photo, index, event) : $refs.displayPhoto.displayPhoto(photo.filename)"
       @toggle-favorite="toggleFavorite">
@@ -655,6 +656,10 @@ export default {
 
     onPhotoUnpublished(filename) {
       this.photos = this.photos.filter(p => p.filename !== filename)
+    },
+
+    onFullscreenClosed(filename) {
+      this.$refs.photoGrid?.scrollToPhoto(filename)
     },
 
     async deleteView() {

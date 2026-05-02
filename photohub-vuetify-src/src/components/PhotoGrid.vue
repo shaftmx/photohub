@@ -3,6 +3,7 @@
     <div
       v-for="(photo, index) in localPhotos"
       :key="photo.filename"
+      :data-filename="photo.filename"
       :style="'--ratio: ' + photo.height / photo.width + '; --height: ' + sharedDatas.gridSize"
       class="item"
       :class="{ 'drag-over': draggable && dragOverIndex === index }"
@@ -93,6 +94,14 @@ export default defineComponent({
   methods: {
     thumbFilename,
     formatDuration,
+    // Scroll the grid so the given photo is centered. Used to restore position
+    // after closing fullscreen. No-op if the photo isn't rendered (e.g. deleted).
+    scrollToPhoto(filename) {
+      this.$nextTick(() => {
+        const el = this.$el.querySelector(`[data-filename="${CSS.escape(filename)}"]`)
+        if (el) el.scrollIntoView({ block: 'center', behavior: 'auto' })
+      })
+    },
     onDragStart(index) {
       this.dragIndex = index
     },

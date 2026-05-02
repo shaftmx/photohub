@@ -1,6 +1,6 @@
 <template>
   <v-sheet>
-    <v-dialog v-model="displayed" fullscreen :scrim="false">
+    <v-dialog v-model="displayed" fullscreen :scrim="false" @afterLeave="onAfterLeave">
       <v-card class="d-flex flex-column" style="height: 100vh; overflow: hidden; background: #1a1a1a;">
 
         <div class="d-flex flex-grow-1 overflow-hidden" style="min-height: 0; position: relative;">
@@ -112,13 +112,17 @@ export default defineComponent({
     photoDetailEndpoint: { type: String, default: null },
   },
 
-  emits: ['photoDeleted', 'photoUnpublished'],
+  emits: ['photoDeleted', 'photoUnpublished', 'closed'],
 
   data: () => ({
     displayed: false,
     displayedPhoto: null,
     showDetail: false,
     sharedDatas: {},
+    // Filename to emit on `closed` once the dialog has fully closed.
+    // Set on closePhoto, consumed in @afterLeave so the parent's grid scroll
+    // happens AFTER v-dialog's body scroll lock has been released.
+    pendingClosedFilename: null,
   }),
 
   computed: {
@@ -185,10 +189,21 @@ if (this.$route.query.displayPhoto) {
     },
 
     closePhoto() {
+      // Capture the last viewed filename — emitted in onAfterLeave so the parent's
+      // grid scroll runs after v-dialog has released the body scroll lock.
+      // Guarded with `displayedPhoto` so the route-watcher's second call doesn't overwrite it.
+      if (this.displayedPhoto) this.pendingClosedFilename = this.displayedPhoto
       this.displayed = false
       this.displayedPhoto = null
       this.showDetail = false
       this.$router.replace(this.urlQueryDisplayPhoto(null))
+    },
+
+    onAfterLeave() {
+      if (this.pendingClosedFilename) {
+        this.$emit('closed', this.pendingClosedFilename)
+        this.pendingClosedFilename = null
+      }
     },
 
     displayPhoto(photoName) {
@@ -200,14 +215,23 @@ if (this.$route.query.displayPhoto) {
       this.showDetail = !this.showDetail
     },
 
+    // After delete/unpublish: stay in fullscreen on the next photo (fallback to previous,
+    // fallback to close if it was the only one). Pick the neighbour BEFORE emitting,
+    // because the parent removes the photo from the array on the emit.
     onDeleted(filename) {
+      const idx = this.photos.findIndex(p => p.filename === filename)
+      const next = this.photos[idx + 1] || this.photos[idx - 1] || null
       this.$emit('photoDeleted', filename)
-      this.closePhoto()
+      if (next) this.displayedPhoto = next.filename
+      else this.closePhoto()
     },
 
     onUnpublished(filename) {
+      const idx = this.photos.findIndex(p => p.filename === filename)
+      const next = this.photos[idx + 1] || this.photos[idx - 1] || null
       this.$emit('photoUnpublished', filename)
-      this.closePhoto()
+      if (next) this.displayedPhoto = next.filename
+      else this.closePhoto()
     },
 
     onKeyDown(e) {
