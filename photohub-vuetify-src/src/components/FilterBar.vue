@@ -149,7 +149,7 @@
       return-object closable-chips
       :model-value="filterQuick"
       item-title="name"
-      :items="availableTagsFlat"
+      :items="availableTagsGrouped"
       chips clearable multiple density="compact" hide-details
       direction="horizontal" variant="solo-inverted"
       :chip-props="{ size: 'x-small', density: 'compact' }"
@@ -223,6 +223,27 @@ export default {
       const tags = []
       Object.values(this.filterDetail).forEach(arr => arr.forEach(t => tags.push(t.name)))
       return tags
+    },
+
+    // Tags grouped by tag_group with a subheader (group name) and a divider
+    // between groups. Subheaders & dividers are non-selectable list items
+    // handled natively by v-list/v-autocomplete and filtered out on search.
+    availableTagsGrouped() {
+      const grouped = new Map()
+      for (const tag of this.availableTagsFlat || []) {
+        const g = tag.group_name || 'Other'
+        if (!grouped.has(g)) grouped.set(g, [])
+        grouped.get(g).push(tag)
+      }
+      const items = []
+      let first = true
+      for (const [groupName, tags] of grouped.entries()) {
+        if (!first) items.push({ type: 'divider' })
+        items.push({ type: 'subheader', name: groupName })
+        items.push(...tags)
+        first = false
+      }
+      return items
     },
   },
 
