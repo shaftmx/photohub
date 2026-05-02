@@ -192,7 +192,7 @@
     </v-dialog>
 
     <!-- Bulk selection controls (hidden in drag mode) -->
-    <v-sheet v-if="!dragMode" class="d-flex mb-2 align-center ga-2">
+    <v-sheet v-if="!dragMode" class="d-flex mb-2 align-center justify-end ga-2">
       <!-- BulkActionsMenu: count, select/deselect-all, favorites, rating built-in.
            View-specific actions (Tag, Unpublish, Delete) in the default slot. -->
       <BulkActionsMenu
