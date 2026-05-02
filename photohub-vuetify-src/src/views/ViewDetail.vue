@@ -59,17 +59,20 @@
 
       <!-- Normal mode: auth controls -->
       <template v-else-if="authStore.canEdit">
-        <!-- Share button (private views only) -->
-        <v-menu v-if="!view.public" v-model="shareMenu" :close-on-content-click="false" location="bottom end">
+        <!-- Share/upload menu — available for both private and public views.
+             Private views show the share-link section; public views skip it. -->
+        <v-menu v-model="shareMenu" :close-on-content-click="false" location="bottom end">
           <template v-slot:activator="{ props }">
             <v-btn v-bind="props"
-              :icon="view.share_link ? 'mdi-share-variant' : 'mdi-share-variant-outline'"
-              :color="view.share_link ? 'primary' : 'default'"
+              :icon="(view.share_link || view.upload_link) ? 'mdi-share-variant' : 'mdi-share-variant-outline'"
+              :color="(view.share_link || view.upload_link) ? 'primary' : 'default'"
               variant="text" density="compact" size="small"
-              title="Share link"
+              title="Share / upload link"
             ></v-btn>
           </template>
           <v-card min-width="380" class="pa-3">
+            <!-- Private share link section — private views only -->
+            <template v-if="!view.public">
             <div class="d-flex align-center mb-3 gap-2">
               <span class="text-body-2 font-weight-medium">Private share link</span>
               <template v-if="view.share_link && view.share_link_expires_at">
@@ -131,17 +134,26 @@
                 :loading="generatingLink" @click="generateShareLink">Generate link</v-btn>
             </template>
 
-            <!-- Upload link section (collapsible, requires share link) -->
             <v-divider class="mt-3 mb-2"></v-divider>
-            <div class="d-flex align-center" :style="view.share_link ? 'cursor: pointer' : 'opacity: 0.5'" @click="view.share_link && (uploadLinkOpen = !uploadLinkOpen)">
+            </template>
+
+            <!-- Upload link section — independent of share_link, available for any view -->
+            <div class="d-flex align-center" style="cursor: pointer" @click="uploadLinkOpen = !uploadLinkOpen">
               <v-icon size="16" class="mr-1" :color="view.upload_link ? 'primary' : 'default'">mdi-upload-outline</v-icon>
               <span class="text-body-2">Upload link</span>
               <v-chip v-if="view.upload_link" size="x-small" color="primary" variant="tonal" class="ml-2">Active</v-chip>
+              <!-- Expiry chip in upload header — only for public views (no share section to display it) -->
+              <template v-if="view.public && view.upload_link && view.share_link_expires_at">
+                <v-chip v-if="isExpired" size="x-small" color="error" variant="tonal" class="ml-2">Expired</v-chip>
+                <v-chip v-else size="x-small" color="warning" variant="tonal" class="ml-2">
+                  Expires {{ formatExpiry(view.share_link_expires_at) }}
+                </v-chip>
+              </template>
               <v-spacer></v-spacer>
               <v-icon size="18">{{ uploadLinkOpen ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
             </div>
             <v-expand-transition>
-              <div v-if="uploadLinkOpen && view.share_link" class="mt-3">
+              <div v-if="uploadLinkOpen" class="mt-3">
                 <template v-if="view.upload_link">
                   <v-text-field
                     :model-value="uploadUrl"
@@ -156,6 +168,17 @@
                       </v-btn>
                     </template>
                   </v-text-field>
+
+                  <!-- Expiry editor — only for public views (private views set it in the share section) -->
+                  <template v-if="view.public">
+                    <div class="text-caption text-medium-emphasis mb-1">Expiry</div>
+                    <ExpiryPicker v-model:preset="expiryPreset" v-model:date="expiryDate" class="mb-2"></ExpiryPicker>
+                    <v-btn size="small" variant="text" density="compact" color="primary" :loading="savingExpiry" class="mb-3 px-1" @click="saveExpiry">
+                      <v-icon size="14" class="mr-1">mdi-check</v-icon>Apply
+                    </v-btn>
+                    <v-divider class="mb-3"></v-divider>
+                  </template>
+
                   <div class="d-flex ga-2">
                     <v-btn size="small" variant="tonal" color="primary" prepend-icon="mdi-refresh"
                       :loading="generatingUploadLink" @click="confirmRevokeUpload = true">Regenerate</v-btn>
@@ -176,7 +199,7 @@
                 </template>
                 <template v-else>
                   <p class="text-caption text-medium-emphasis mb-3">
-                    Generate a link to let guests upload photos to this view. Inherits the share link expiry.
+                    Generate a link to let guests upload photos to this view.
                   </p>
                   <v-btn block variant="tonal" color="primary" prepend-icon="mdi-link-plus"
                     :loading="generatingUploadLink" @click="generateUploadLink">Generate upload link</v-btn>
@@ -494,6 +517,14 @@ export default {
     this.loadView()
   },
 
+  watch: {
+    // For public views the share menu only contains the upload section,
+    // so auto-expand it every time the menu opens.
+    shareMenu(val) {
+      if (val && this.view.public) this.uploadLinkOpen = true
+    },
+  },
+
   methods: {
     toggleSelectionMode() {
       this.selectionMode = !this.selectionMode
@@ -710,9 +741,8 @@ export default {
       const { data, error } = await useAsyncPost(`/api/views/${id}/share-link/revoke`, {})
       this.revokingLink = false
       if (!error.value && !data.value?.ERROR) {
-        this.view = { ...this.view, share_link: null, share_link_expires_at: null, upload_link: null }
-        this.shareMenu = false
-        this.uploadLinkOpen = false
+        // Upload link is now independent — preserve whatever the backend returned
+        this.view = { ...this.view, share_link: null, share_link_expires_at: null, upload_link: data.value.data.upload_link }
       }
     },
 

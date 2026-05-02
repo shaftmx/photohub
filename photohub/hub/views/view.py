@@ -86,7 +86,9 @@ def _apply_view_filters(v):
 
 def _resolve_token(token):
     """Return (view, error_response) for a share or upload token.
-    Checks existence and expiry. Returns (view, None) on success."""
+    Checks existence and expiry. Returns (view, None) on success.
+    Upload tokens are independent of share tokens — they can be issued on any view
+    (public or private), with or without a share_link."""
     v = (
         models.View.objects.filter(share_link=token).first() or
         models.View.objects.filter(upload_link=token).first()
@@ -95,9 +97,6 @@ def _resolve_token(token):
         return None, ErrorResponse("InvalidToken", 403, "Invalid or revoked token")
     if v.share_link_expires_at and v.share_link_expires_at < timezone.now():
         return None, ErrorResponse("Expired", 403, "Token has expired")
-    # Upload tokens also require the share_link to still be active
-    if models.View.objects.filter(upload_link=token).exists() and not v.share_link:
-        return None, ErrorResponse("Expired", 403, "Upload link has expired")
     return v, None
 
 
@@ -439,9 +438,8 @@ def revoke_share_link(request, view_id):
 
     v.share_link = ''
     v.share_link_expires_at = None
-    v.upload_link = ''
     v.save()
-    return Response(200, data={"share_link": None, "share_link_expires_at": None, "upload_link": None})
+    return Response(200, data={"share_link": None, "share_link_expires_at": None, "upload_link": v.upload_link or None})
 
 
 #
@@ -508,9 +506,6 @@ def generate_upload_link(request, view_id):
         v = models.View.objects.get(id=view_id)
     except models.View.DoesNotExist:
         return ErrorResponse("NotFound", 404, "View not found")
-
-    if not v.share_link:
-        return ErrorResponse("NoShareLink", 400, "A share link must exist before generating an upload link")
 
     v.upload_link = str(uuid.uuid4())
     v.save()
