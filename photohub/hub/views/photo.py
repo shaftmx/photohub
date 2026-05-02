@@ -74,6 +74,15 @@ def get_photos(request):
         except ValueError:
             pass
 
+    # Orphan filter — photos that match no view's filters.
+    # Heavy: iterates every view's filter queryset; intentionally not persistable on a View.
+    if request.GET.get('orphan_only') == 'true':
+        from .view import _apply_view_filters
+        covered = set()
+        for v in models.View.objects.all():
+            covered.update(_apply_view_filters(v).values_list('filename', flat=True))
+        photos_query = photos_query.exclude(filename__in=covered)
+
     # Generate filters
     # Smart: (OR on same groups, AND on other groups) Create a filter per group map
     if filter_tags != {} and filter_mode != "basic":

@@ -85,6 +85,19 @@
         @click="$emit('update:mediaType', mediaType === 'video' ? 'all' : 'video'); $emit('change')"
       ></v-btn>
 
+      <!-- Orphan filter (Photos only) — photos in no view -->
+      <template v-if="showOrphanFilter">
+        <v-divider vertical style="height: 24px; align-self: center;"></v-divider>
+        <v-btn
+          :icon="filterOrphan ? 'mdi-image-broken-variant' : 'mdi-image-broken'"
+          :color="filterOrphan ? 'warning' : 'default'"
+          :variant="filterOrphan ? 'tonal' : 'text'"
+          density="compact" size="small"
+          :title="filterOrphan ? 'Orphan photos only — click to remove' : 'Show orphan photos (in no view)'"
+          @click="$emit('update:filterOrphan', !filterOrphan); $emit('change')"
+        ></v-btn>
+      </template>
+
       <!-- Owner filter (optional, hidden until backend support) -->
       <template v-if="showOwnerFilter">
         <v-divider vertical style="height: 24px; align-self: center;"></v-divider>
@@ -187,12 +200,16 @@ export default {
     showOwnerFilter: { type: Boolean, default: false },
     filterOwners:    { type: Array,   default: () => [] },
     availableOwners: { type: Array,   default: () => [] },
+    // Orphan filter (Photos only) — heavy, intentionally not persisted on a View
+    showOrphanFilter:{ type: Boolean, default: false },
+    filterOrphan:    { type: Boolean, default: false },
   },
 
   emits: [
     'update:filterTagMode', 'update:filterFavorite', 'update:filterRating',
     'update:filterRatingMode', 'update:mediaType', 'update:filterQuick',
     'update:filterDetail', 'update:showAllTags', 'update:filterOwners',
+    'update:filterOrphan',
     'change',
   ],
 

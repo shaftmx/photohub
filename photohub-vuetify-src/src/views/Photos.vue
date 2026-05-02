@@ -170,6 +170,8 @@
       :show-owner-filter="false"
       v-model:filterOwners="filterOwners"
       :available-owners="availableOwners"
+      :show-orphan-filter="true"
+      v-model:filterOrphan="filterOrphan"
       @update:filterTagMode="onFilterModeChange"
     />
 
@@ -237,6 +239,9 @@ export default {
     filterRating: 0,       // 0 = no filter, 1-5 = filter by rating
     filterRatingMode: "lte", // lte = <= rating, eq = strictly equal
     mediaType: 'all',      // 'all' | 'photo' | 'video'
+    // Orphan filter — photos that match no view's filter. Heavy backend pass,
+    // not persistable on a View (would not make sense as a saved filter).
+    filterOrphan: false,
     // Owner filter (placeholder — hardcoded until backend support)
     filterOwners: [],
     availableOwners: ['user1', 'user2'],
@@ -328,6 +333,11 @@ export default {
     },
 
     "mediaType"() {
+      this.syncUrl()
+      this.doGetPhotos()
+    },
+
+    "filterOrphan"() {
       this.syncUrl()
       this.doGetPhotos()
     },
@@ -481,6 +491,8 @@ export default {
       }
       // Media type
       if (q.media_type && ['photo', 'video'].includes(q.media_type)) this.mediaType = q.media_type
+      // Orphan
+      if (q.orphan === 'true') this.filterOrphan = true
       // Filter mode
       if (q.filter_mode) {
         const modeMap = { basic: 'quick', smart: 'detail', notags: 'notags', none: 'none' }
@@ -525,6 +537,8 @@ export default {
       if (this.sortDir !== 'desc') q.sort_dir = this.sortDir
       // Media type (omit default 'all')
       if (this.mediaType !== 'all') q.media_type = this.mediaType
+      // Orphan
+      if (this.filterOrphan) q.orphan = 'true'
       this.$router.replace({ query: q })
     },
 
@@ -580,6 +594,7 @@ export default {
       params.sort_by = this.sortBy
       params.sort_dir = this.sortDir
       if (this.mediaType !== 'all') params.media_type = this.mediaType
+      if (this.filterOrphan) params.orphan_only = 'true'
 
       const appConfig = useAppConfigStore()
       params.limit = appConfig.galleryLimit(this.sharedDatas.isMobile)
