@@ -155,7 +155,7 @@ def create_view(request):
         description=post.get("description", ""),
         public=bool(post.get("public", False)),
         sort_by=post.get("sort_by", "date"),
-        sort_dir=post.get("sort_dir", "desc"),
+        sort_dir=post.get("sort_dir", "asc"),
         filter_mode=post.get("filter_mode", "basic"),
         filter_favorite=post.get("filter_favorite"),  # None / True
         filter_rating_value=int(post.get("filter_rating_value", 0)),

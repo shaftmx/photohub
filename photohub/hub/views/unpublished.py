@@ -25,7 +25,7 @@ def get_unpublished(request):
         qs = qs.filter(tags__isnull=True)
     elif tag_filter == 'tagged':
         qs = qs.filter(tags__isnull=False).distinct()
-    photos_qs = apply_sort(qs, request.GET.get('sort_by', 'date'), request.GET.get('sort_dir', 'desc')).all()
+    photos_qs = apply_sort(qs, request.GET.get('sort_by', 'date'), request.GET.get('sort_dir', 'asc')).all()
     total = photos_qs.count()
 
     limit = int(request.GET.get('limit') or get_setting('GALLERY_PAGE_SIZE_DESKTOP'))

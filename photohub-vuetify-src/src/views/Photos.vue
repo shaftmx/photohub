@@ -229,7 +229,7 @@ export default {
     confirmBulkUnpublishDialog: false,
     // Sort
     sortBy: 'date',
-    sortDir: 'desc',
+    sortDir: 'asc',
     // Filters
     filterTagMode: 'quick', // 'none' | 'quick' | 'detail' | 'notags'
     showAllTags: true,      // true = all published-photo tags / false = only tags in current selection
@@ -539,7 +539,7 @@ export default {
       }
       // Sort (omit defaults)
       if (this.sortBy !== 'date') q.sort_by = this.sortBy
-      if (this.sortDir !== 'desc') q.sort_dir = this.sortDir
+      if (this.sortDir !== 'asc') q.sort_dir = this.sortDir
       // Media type (omit default 'all')
       if (this.mediaType !== 'all') q.media_type = this.mediaType
       // Orphan

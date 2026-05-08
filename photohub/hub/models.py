@@ -72,7 +72,7 @@ class View(models.Model):
     upload_link = models.CharField(max_length=512, blank=True)
     cover = models.ForeignKey(Photo, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
     sort_by = models.CharField(max_length=50, default='date')    # date / upload_date / rating / filename
-    sort_dir = models.CharField(max_length=4, default='desc')    # asc / desc
+    sort_dir = models.CharField(max_length=4, default='asc')     # asc / desc
     # Filter state
     filter_mode = models.CharField(max_length=10, default='basic')  # basic / smart / notags
     filter_tags = models.ManyToManyField(Tag, blank=True)

@@ -467,7 +467,7 @@ export default {
     deleting: false,
     sharedDatas: {},
     sortBy: 'date',
-    sortDir: 'desc',
+    sortDir: 'asc',
     filtersOpen: false,
     descriptionOpen: false,
     isAuthenticated: false,

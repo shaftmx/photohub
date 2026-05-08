@@ -26,10 +26,12 @@
 
 <script>
 const BASE_OPTIONS = [
-  { label: 'Photo date',   value: 'date' },
-  { label: 'Upload date',  value: 'upload_date' },
-  { label: 'Rating',       value: 'rating' },
-  { label: 'Filename',     value: 'filename' },
+  { label: 'Photo date',      value: 'date' },
+  { label: 'Upload date',     value: 'upload_date' },
+  { label: 'Rating',          value: 'rating' },
+  { label: 'Origin filename', value: 'origin_filename' },
+  // 'filename' sorts by stored md5-hashed name → effectively random
+  { label: 'Random',          value: 'filename' },
 ]
 
 export default {
@@ -37,7 +39,7 @@ export default {
 
   props: {
     sortBy:          { type: String,  default: 'date' },
-    sortDir:         { type: String,  default: 'desc' },
+    sortDir:         { type: String,  default: 'asc' },
     showCustomOrder: { type: Boolean, default: false },
     disabled:        { type: Boolean, default: false },
     // Extra options injected by specific pages

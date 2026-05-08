@@ -161,7 +161,7 @@ export default {
     sharedDatas: {},
     loading: false,
     sortBy: 'date',
-    sortDir: 'desc',
+    sortDir: 'asc',
     tagFilter: 'all',
   }),
 

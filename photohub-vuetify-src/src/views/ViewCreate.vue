@@ -292,7 +292,7 @@ export default {
     isPublic: false,
     saving: false,
     sortBy: 'date',
-    sortDir: 'desc',
+    sortDir: 'asc',
     // Tags data
     allTagsFlat: [],   // flat list of all tags for quick filter
     tagGroups: [],     // grouped for detail filter

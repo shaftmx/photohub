@@ -95,7 +95,7 @@ def get_photos(request):
             for tag in tags:
                 photos_query = photos_query.filter(tags=tag)
 
-    photos_qs = apply_sort(photos_query, request.GET.get('sort_by', 'date'), request.GET.get('sort_dir', 'desc')).distinct()
+    photos_qs = apply_sort(photos_query, request.GET.get('sort_by', 'date'), request.GET.get('sort_dir', 'asc')).distinct()
     total = photos_qs.count()
 
     limit = int(request.GET.get('limit') or get_setting('GALLERY_PAGE_SIZE_DESKTOP'))
