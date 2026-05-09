@@ -119,14 +119,18 @@ def genHasingPath(filename):
     "Generate consistent hashing path for a filename eg for 01234.jpg 0/1"
     return p_join(filename[0], filename[1])
 
-# 'filename' sorts by md5-hashed stored filename (effectively random) — labelled "Random" in the UI.
+# 'filename' sorts by md5-hashed stored filename — uniform but stable across reloads ("Mixed" in UI).
+# 'random' is a true randomized order (DB ORDER BY RANDOM()) — fresh on each query ("Random" in UI).
 # 'origin_filename' sorts by the original uploaded filename.
-VALID_SORT_FIELDS = ('date', 'upload_date', 'rating', 'filename', 'origin_filename')
+VALID_SORT_FIELDS = ('date', 'upload_date', 'rating', 'filename', 'origin_filename', 'random')
 
 def apply_sort(queryset, sort_by, sort_dir):
     "Apply sort_by / sort_dir to a Photo queryset."
     if sort_by not in VALID_SORT_FIELDS:
         sort_by = 'date'
+    if sort_by == 'random':
+        # ORDER BY RANDOM() — sort_dir is ignored (no asc/desc concept for random)
+        return queryset.order_by('?')
     sort_field = sort_by if sort_dir == 'asc' else '-' + sort_by
     return queryset.order_by(sort_field)
 

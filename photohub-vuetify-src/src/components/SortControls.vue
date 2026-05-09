@@ -30,8 +30,10 @@ const BASE_OPTIONS = [
   { label: 'Upload date',     value: 'upload_date' },
   { label: 'Rating',          value: 'rating' },
   { label: 'Origin filename', value: 'origin_filename' },
-  // 'filename' sorts by stored md5-hashed name → effectively random
-  { label: 'Random',          value: 'filename' },
+  // 'filename' = md5-hashed stored name → uniform but stable across reloads
+  { label: 'Mixed',           value: 'filename' },
+  // 'random' = ORDER BY RANDOM() in SQL → fresh order each query
+  { label: 'Random',          value: 'random' },
 ]
 
 export default {
