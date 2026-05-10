@@ -91,8 +91,10 @@
         density="compact" variant="outlined" hide-details
         return-object
         item-title="name"
-        autocomplete="new-password"
-        name="tag-combobox-nofill"
+        autocomplete="off"
+        :name="`tag-${group.name}-${noAutofillId}`"
+        data-form-type="other"
+        data-lpignore="true"
         class="mb-4 combobox-compact"
         :style="isMobile ? 'max-width: 220px' : ''"
         :disabled="disabled"
@@ -123,8 +125,10 @@
         density="compact" variant="outlined" hide-details
         return-object
         item-title="name"
-        autocomplete="new-password"
-        name="tag-autocomplete-nofill"
+        autocomplete="off"
+        :name="`tag-${group.name}-${noAutofillId}`"
+        data-form-type="other"
+        data-lpignore="true"
         class="mb-4 combobox-compact"
         :style="isMobile ? 'max-width: 220px' : ''"
         :disabled="disabled"
@@ -179,6 +183,13 @@ export default {
   },
 
   emits: ['update:modelValue', 'update:modelValueExclude', 'update:noTagGroups'],
+
+  data: () => ({
+    // Random suffix appended to combobox/autocomplete `name` attrs to defeat
+    // browser saved-text autocomplete (Chrome ignores autocomplete="off" when
+    // the field name matches a known autofill key).
+    noAutofillId: Math.random().toString(36).slice(2, 10),
+  }),
 
   computed: {
     activeTagNames() {
