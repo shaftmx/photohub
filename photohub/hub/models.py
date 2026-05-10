@@ -74,8 +74,12 @@ class View(models.Model):
     sort_by = models.CharField(max_length=50, default='date')    # date / upload_date / rating / filename
     sort_dir = models.CharField(max_length=4, default='asc')     # asc / desc
     # Filter state
-    filter_mode = models.CharField(max_length=10, default='basic')  # basic / smart / notags
+    filter_mode = models.CharField(max_length=10, default='basic')  # basic / basic_or / smart / notags
     filter_tags = models.ManyToManyField(Tag, blank=True)
+    # Tags that the photo must NOT have (detail mode tri-state "exclude")
+    filter_tags_exclude = models.ManyToManyField(Tag, blank=True, related_name='excluded_in_views')
+    # Tag groups for which the photo must have NO tag at all (group-level "no tag" toggle)
+    filter_no_tag_groups = models.ManyToManyField(TagGroup, blank=True, related_name='no_tag_required_in_views')
     filter_favorite = models.BooleanField(null=True, blank=True)    # null=all, True=fav only
     filter_rating_value = models.IntegerField(default=0)
     filter_rating_mode = models.CharField(max_length=4, default='gte')  # lte / gte / eq

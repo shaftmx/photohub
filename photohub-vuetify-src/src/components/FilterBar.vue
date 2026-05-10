@@ -148,9 +148,20 @@
         @click="filterPanelOpen = !filterPanelOpen"
       >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
       <template v-if="!filterPanelOpen">
-        <v-chip v-for="tag in activeDetailTags" :key="tag"
+        <!-- Includes -->
+        <v-chip v-for="tag in activeDetailTags" :key="'inc-' + tag"
           size="x-small" color="secondary" closable
           @click:close="removeDetailTag(tag)">{{ tag }}</v-chip>
+        <!-- Excludes (strikethrough) -->
+        <v-chip v-for="tag in activeDetailExcludeTags" :key="'exc-' + tag"
+          size="x-small" color="secondary" closable
+          style="text-decoration: line-through;"
+          @click:close="removeDetailExcludeTag(tag)">{{ tag }}</v-chip>
+        <!-- No-tag-in-group toggles -->
+        <v-chip v-for="g in noTagGroups" :key="'no-' + g"
+          size="x-small" variant="outlined" closable
+          prepend-icon="mdi-tag-off-outline"
+          @click:close="removeNoTagGroup(g)">{{ g }}: none</v-chip>
       </template>
     </div>
 
@@ -173,12 +184,17 @@
       <div v-if="filterTagMode === 'detail' && filterPanelOpen" class="filter-panel pl-3 mt-1">
         <TagGroupsWidget
           :model-value="filterDetail"
+          :model-value-exclude="filterDetailExclude"
+          :no-tag-groups="noTagGroups"
           :tag-groups="tagGroups"
           :photos="showAllTags ? [] : photos"
           :show-all="showAllTags"
           :is-mobile="isMobile"
           :allow-new="false"
+          :enable-exclude="true"
           @update:modelValue="$emit('update:filterDetail', $event); $emit('change')"
+          @update:modelValueExclude="$emit('update:filterDetailExclude', $event); $emit('change')"
+          @update:noTagGroups="$emit('update:noTagGroups', $event); $emit('change')"
         />
       </div>
     </v-expand-transition>
@@ -217,6 +233,10 @@ export default {
     // Quick filter AND/OR toggle — only meaningful when filterTagMode === 'quick'.
     // false = AND (must have all tags), true = OR (must have at least one).
     filterTagOr:     { type: Boolean, default: false },
+    // Detail filter — exclude tags state (mirrors filterDetail shape: { groupName: [tag, ...] })
+    filterDetailExclude: { type: Object, default: () => ({}) },
+    // Detail filter — list of group names where "no tag in this group" is active
+    noTagGroups:     { type: Array,   default: () => [] },
   },
 
   emits: [
@@ -224,6 +244,7 @@ export default {
     'update:filterRatingMode', 'update:mediaType', 'update:filterQuick',
     'update:filterDetail', 'update:showAllTags', 'update:filterOwners',
     'update:filterOrphan', 'update:filterTagOr',
+    'update:filterDetailExclude', 'update:noTagGroups',
     'change',
   ],
 
@@ -236,6 +257,12 @@ export default {
     activeDetailTags() {
       const tags = []
       Object.values(this.filterDetail).forEach(arr => arr.forEach(t => tags.push(t.name)))
+      return tags
+    },
+
+    activeDetailExcludeTags() {
+      const tags = []
+      Object.values(this.filterDetailExclude).forEach(arr => arr.forEach(t => tags.push(t.name)))
       return tags
     },
 
@@ -269,6 +296,21 @@ export default {
         if (filtered.length) updated[group] = filtered
       })
       this.$emit('update:filterDetail', updated)
+      this.$emit('change')
+    },
+
+    removeDetailExcludeTag(tagName) {
+      const updated = {}
+      Object.entries(this.filterDetailExclude).forEach(([group, tags]) => {
+        const filtered = tags.filter(t => t.name !== tagName)
+        if (filtered.length) updated[group] = filtered
+      })
+      this.$emit('update:filterDetailExclude', updated)
+      this.$emit('change')
+    },
+
+    removeNoTagGroup(groupName) {
+      this.$emit('update:noTagGroups', this.noTagGroups.filter(g => g !== groupName))
       this.$emit('change')
     },
   },

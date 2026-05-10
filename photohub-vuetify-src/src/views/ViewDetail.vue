@@ -305,7 +305,14 @@
         <v-chip v-if="view.filter_mode === 'basic'" size="x-small" variant="tonal" prepend-icon="mdi-text-search-variant">Quick (AND)</v-chip>
         <v-chip v-if="view.filter_mode === 'basic_or'" size="x-small" variant="tonal" prepend-icon="mdi-text-search-variant">Quick (OR)</v-chip>
         <v-chip v-if="view.filter_mode === 'smart'" size="x-small" variant="tonal" prepend-icon="mdi-tag-search">Detailed</v-chip>
-        <v-chip v-for="tag in view.filter_tags" :key="tag.name" size="x-small" :color="tag.color" variant="tonal">{{ tag.name }}</v-chip>
+        <v-chip v-for="tag in view.filter_tags" :key="'inc-' + tag.name" size="x-small" :color="tag.color" variant="tonal">{{ tag.name }}</v-chip>
+        <!-- Excluded tags — strikethrough on the name -->
+        <v-chip v-for="tag in (view.filter_tags_exclude || [])" :key="'exc-' + tag.name"
+          size="x-small" :color="tag.color" variant="tonal"
+          style="text-decoration: line-through;">{{ tag.name }}</v-chip>
+        <!-- Groups flagged as "no tag in this group" -->
+        <v-chip v-for="g in (view.filter_no_tag_groups || [])" :key="'no-' + g"
+          size="x-small" variant="outlined" prepend-icon="mdi-tag-off-outline">{{ g }}: none</v-chip>
         <v-chip v-if="view.filter_favorite" size="x-small" color="red" variant="tonal" prepend-icon="mdi-heart">Favorites</v-chip>
         <v-chip v-if="view.filter_rating_value > 0" size="x-small" color="amber" variant="tonal" prepend-icon="mdi-star">
           {{ view.filter_rating_mode === 'eq' ? '=' : '≤' }}{{ view.filter_rating_value }}★

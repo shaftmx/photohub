@@ -174,6 +174,8 @@
       :show-orphan-filter="true"
       v-model:filterOrphan="filterOrphan"
       v-model:filterTagOr="filterTagOr"
+      v-model:filterDetailExclude="filterDetailExclude"
+      v-model:noTagGroups="noTagGroups"
       @update:filterTagMode="onFilterModeChange"
     />
 
@@ -238,6 +240,8 @@ export default {
     filter: [], // This is the actual computed filters used and displayed as query parameter
     filterQuick: [], // This is used by quick filter
     filterDetail: {}, // This is used by filter display with tags
+    filterDetailExclude: {}, // Excludes per group: { groupName: [tag, ...] }
+    noTagGroups: [],         // Groups flagged with "no tag in this group"
     filterFavorite: false, // If true, only show favorite photos
     filterRating: 0,       // 0 = no filter, 1-5 = filter by rating
     filterRatingMode: "lte", // lte = <= rating, eq = strictly equal
@@ -340,6 +344,22 @@ export default {
       this.doGetPhotos()
     },
 
+    "filterDetailExclude": {
+      handler() {
+        this.syncUrl()
+        this.doGetPhotos()
+      },
+      deep: true,
+    },
+
+    "noTagGroups": {
+      handler() {
+        this.syncUrl()
+        this.doGetPhotos()
+      },
+      deep: true,
+    },
+
     "mediaType"() {
       this.syncUrl()
       this.doGetPhotos()
@@ -354,12 +374,16 @@ export default {
   methods: {
     goToCreateView() {
       const tagNames = this.filter.slice()
+      const excludeTagNames = []
+      Object.values(this.filterDetailExclude).forEach(arr => arr.forEach(t => excludeTagNames.push(t.name)))
       this.$router.push({
         name: 'view-create',
         state: {
           filterConfig: {
-            filter_mode: this.filterMode,       // none / basic / smart / notags
+            filter_mode: this.filterMode,       // none / basic / basic_or / smart / notags
             filter_tag_names: tagNames,
+            filter_tag_names_exclude: excludeTagNames,
+            filter_no_tag_groups: this.noTagGroups.slice(),
             filter_favorite: this.filterFavorite ? true : null,
             filter_rating_value: this.filterRating,
             filter_rating_mode: this.filterRatingMode,
@@ -454,6 +478,8 @@ export default {
       if (value === 'none' || value === 'notags') {
         this.filterQuick = []
         this.filterDetail = {}
+        this.filterDetailExclude = {}
+        this.noTagGroups = []
         this.filter = []
         this.filterTagMode = value
       } else {
@@ -505,6 +531,20 @@ export default {
       if (q.media_type && ['photo', 'video'].includes(q.media_type)) this.mediaType = q.media_type
       // Orphan
       if (q.orphan === 'true') this.filterOrphan = true
+      // Exclude tags + no-tag groups (detail mode only — quick filter is include-only)
+      if (q.exclude_tags) {
+        const excludeNames = q.exclude_tags.split(',')
+        this.tags.forEach(tag => {
+          if (excludeNames.includes(tag.name)) {
+            const group = tag.group_name
+            if (!this.filterDetailExclude[group]) this.filterDetailExclude[group] = []
+            this.filterDetailExclude[group].push({ ...tag })
+          }
+        })
+      }
+      if (q.no_tag_groups) {
+        this.noTagGroups = q.no_tag_groups.split(',')
+      }
       // Filter mode — basic_or maps to quick + filterTagOr=true
       if (q.filter_mode) {
         const modeMap = { basic: 'quick', basic_or: 'quick', smart: 'detail', notags: 'notags', none: 'none' }
@@ -552,6 +592,11 @@ export default {
       if (this.mediaType !== 'all') q.media_type = this.mediaType
       // Orphan
       if (this.filterOrphan) q.orphan = 'true'
+      // Excludes & no-tag groups
+      const excludeNames = []
+      Object.values(this.filterDetailExclude).forEach(arr => arr.forEach(t => excludeNames.push(t.name)))
+      if (excludeNames.length > 0) q.exclude_tags = excludeNames.join(',')
+      if (this.noTagGroups.length > 0) q.no_tag_groups = this.noTagGroups.join(',')
       this.$router.replace({ query: q })
     },
 
@@ -608,6 +653,11 @@ export default {
       params.sort_dir = this.sortDir
       if (this.mediaType !== 'all') params.media_type = this.mediaType
       if (this.filterOrphan) params.orphan_only = 'true'
+      // Excludes & no-tag groups (detail mode)
+      const excludeNames = []
+      Object.values(this.filterDetailExclude).forEach(arr => arr.forEach(t => excludeNames.push(t.name)))
+      if (excludeNames.length > 0) params.exclude_tags = excludeNames.join(',')
+      if (this.noTagGroups.length > 0) params.no_tag_groups = this.noTagGroups.join(',')
 
       const appConfig = useAppConfigStore()
       params.limit = appConfig.galleryLimit(this.sharedDatas.isMobile)

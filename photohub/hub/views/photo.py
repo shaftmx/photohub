@@ -99,6 +99,27 @@ def get_photos(request):
             for group, tags in filter_tags.items():
                 photos_query = photos_query.filter(tags__in=tags)
 
+    # Excludes — specific tags + tags from "no tag in group" flagged groups.
+    # Combined into a single .exclude(tags__in=...) for SQL efficiency.
+    exclude_tag_ids = []
+    exclude_tags_query = request.GET.get('exclude_tags')
+    if exclude_tags_query:
+        for tag_name in exclude_tags_query.split(','):
+            try:
+                exclude_tag_ids.append(models.Tag.objects.get(name=tag_name).id)
+            except models.Tag.DoesNotExist:
+                continue
+    no_tag_groups_query = request.GET.get('no_tag_groups')
+    if no_tag_groups_query:
+        for group_name in no_tag_groups_query.split(','):
+            try:
+                group = models.TagGroup.objects.get(name=group_name)
+                exclude_tag_ids.extend(group.tag_set.values_list('id', flat=True))
+            except models.TagGroup.DoesNotExist:
+                continue
+    if exclude_tag_ids:
+        photos_query = photos_query.exclude(tags__in=exclude_tag_ids)
+
     photos_qs = apply_sort(photos_query, request.GET.get('sort_by', 'date'), request.GET.get('sort_dir', 'asc')).distinct()
     total = photos_qs.count()
 

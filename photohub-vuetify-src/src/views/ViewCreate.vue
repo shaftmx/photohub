@@ -162,6 +162,8 @@
       :photos="[]"
       :is-mobile="sharedDatas.isMobile"
       v-model:filterTagOr="filterTagOr"
+      v-model:filterDetailExclude="filterDetailExclude"
+      v-model:noTagGroups="noTagGroups"
       @update:filterTagMode="onFilterModeChange"
       @update:mediaType="filterMediaType = $event"
       @change="fetchPreview"
@@ -304,6 +306,8 @@ export default {
     filterTagOr: false,      // Quick mode AND/OR — mapped to basic vs basic_or in filterMode
     filterQuick: [],
     filterDetail: {},
+    filterDetailExclude: {},   // Excludes per group: { groupName: [tag, ...] }
+    noTagGroups: [],           // Group names with "no tag" toggle on
     filterFavorite: false,
     filterRating: 0,
     filterRatingMode: 'lte',
@@ -357,6 +361,13 @@ export default {
       return names
     },
 
+    // Flat list of excluded tag names (detail mode only)
+    filterExcludeTagNames() {
+      const names = []
+      Object.values(this.filterDetailExclude).forEach(tags => tags.forEach(t => names.push(t.name)))
+      return names
+    },
+
     // API filter_mode param
     filterMode() {
       if (this.filterTagMode === 'none') return 'none'
@@ -406,6 +417,21 @@ export default {
           this.filterDetail[t.group_name].push(t)
         })
       }
+      // Excludes (detail mode tri-state)
+      if (state.filter_tag_names_exclude?.length) {
+        const excludeSet = new Set(state.filter_tag_names_exclude)
+        const matched = this.allTagsFlat.filter(t => excludeSet.has(t.name))
+        const grouped = {}
+        matched.forEach(t => {
+          if (!grouped[t.group_name]) grouped[t.group_name] = []
+          grouped[t.group_name].push(t)
+        })
+        this.filterDetailExclude = grouped
+      }
+      // "No tag in group" toggles
+      if (state.filter_no_tag_groups?.length) {
+        this.noTagGroups = state.filter_no_tag_groups.slice()
+      }
     },
 
     async loadView() {
@@ -426,6 +452,8 @@ export default {
       this._applyFilterState({
         filter_mode: v.filter_mode,
         filter_tag_names: v.filter_tags.map(t => t.name),
+        filter_tag_names_exclude: (v.filter_tags_exclude || []).map(t => t.name),
+        filter_no_tag_groups: v.filter_no_tag_groups || [],
         filter_favorite: v.filter_favorite,
         filter_rating_value: v.filter_rating_value,
         filter_rating_mode: v.filter_rating_mode,
@@ -471,6 +499,9 @@ export default {
         params.set('rating_mode', this.filterRatingMode)
       }
       if (this.filterMediaType !== 'all') params.set('media_type', this.filterMediaType)
+      // Excludes & no-tag groups (detail mode)
+      if (this.filterExcludeTagNames.length) params.set('exclude_tags', this.filterExcludeTagNames.join(','))
+      if (this.noTagGroups.length) params.set('no_tag_groups', this.noTagGroups.join(','))
 
       const appConfig = useAppConfigStore()
       params.set('limit', appConfig.galleryLimit(this.sharedDatas.isMobile))
@@ -599,6 +630,8 @@ export default {
       if (newMode === 'none' || newMode === 'notags') {
         this.filterQuick = []
         this.filterDetail = {}
+        this.filterDetailExclude = {}
+        this.noTagGroups = []
       }
       this.filterTagMode = newMode
       // fetchPreview is triggered by @change from FilterBar
@@ -697,6 +730,8 @@ export default {
         public: this.isPublic,
         filter_mode: this.filterMode,
         filter_tag_names: this.filterTagNames,
+        filter_tag_names_exclude: this.filterExcludeTagNames,
+        filter_no_tag_groups: this.noTagGroups,
         filter_favorite: this.filterFavorite ? true : null,
         filter_rating_value: this.filterRating,
         filter_rating_mode: this.filterRatingMode,

@@ -37,6 +37,11 @@ def _serialize_view(v):
             {"id": t.id, "name": t.name, "color": t.color or t.tag_group.color, "group_name": t.tag_group.name}
             for t in v.filter_tags.all()
         ],
+        "filter_tags_exclude": [
+            {"id": t.id, "name": t.name, "color": t.color or t.tag_group.color, "group_name": t.tag_group.name}
+            for t in v.filter_tags_exclude.all()
+        ],
+        "filter_no_tag_groups": [g.name for g in v.filter_no_tag_groups.all()],
     }
     return data
 
@@ -70,6 +75,15 @@ def _apply_view_filters(v):
                 for group, tags in filter_tags_by_group.items():
                     for tag in tags:
                         photos_query = photos_query.filter(tags=tag)
+
+    # Excludes — combine specific tag excludes + tags from "no tag in group" toggles
+    # into a single .exclude(tags__in=...) for SQL efficiency. Semantically:
+    # NOT (a OR b OR c) = NOT a AND NOT b AND NOT c.
+    exclude_tag_ids = list(v.filter_tags_exclude.values_list('id', flat=True))
+    for group in v.filter_no_tag_groups.all():
+        exclude_tag_ids.extend(group.tag_set.values_list('id', flat=True))
+    if exclude_tag_ids:
+        photos_query = photos_query.exclude(tags__in=exclude_tag_ids)
 
     if v.filter_favorite is True:
         photos_query = photos_query.filter(favorite=True)
@@ -183,6 +197,18 @@ def create_view(request):
         tags = models.Tag.objects.filter(name__in=tag_names)
         v.filter_tags.set(tags)
 
+    # Tags to exclude (detail-mode tri-state "exclude")
+    exclude_tag_names = post.get("filter_tag_names_exclude", [])
+    if exclude_tag_names:
+        exclude_tags = models.Tag.objects.filter(name__in=exclude_tag_names)
+        v.filter_tags_exclude.set(exclude_tags)
+
+    # Groups for which the photo must have no tag at all (group-level "no tag" toggle)
+    no_tag_group_names = post.get("filter_no_tag_groups", [])
+    if no_tag_group_names:
+        no_tag_groups = models.TagGroup.objects.filter(name__in=no_tag_group_names)
+        v.filter_no_tag_groups.set(no_tag_groups)
+
     LOG.info("Created view '%s' (id=%s)" % (v.name, v.id))
     return Response(201, data={"view": _serialize_view(v)})
 
@@ -253,6 +279,16 @@ def update_view(request, view_id):
         tag_names = post["filter_tag_names"]
         tags = models.Tag.objects.filter(name__in=tag_names)
         v.filter_tags.set(tags)
+
+    if "filter_tag_names_exclude" in post:
+        exclude_tag_names = post["filter_tag_names_exclude"]
+        exclude_tags = models.Tag.objects.filter(name__in=exclude_tag_names)
+        v.filter_tags_exclude.set(exclude_tags)
+
+    if "filter_no_tag_groups" in post:
+        no_tag_group_names = post["filter_no_tag_groups"]
+        no_tag_groups = models.TagGroup.objects.filter(name__in=no_tag_group_names)
+        v.filter_no_tag_groups.set(no_tag_groups)
 
     # Cleanup orphan ViewPhotoOrder entries (photos no longer matching filters)
     current_filenames = set(_apply_view_filters(v).values_list('filename', flat=True))
