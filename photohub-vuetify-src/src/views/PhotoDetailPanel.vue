@@ -12,6 +12,23 @@
       <v-btn icon @click="close()"><v-icon>mdi-close</v-icon></v-btn>
       <v-toolbar-title class="text-body-1 font-weight-medium">Photo details</v-toolbar-title>
       <v-spacer></v-spacer>
+      <!-- Download menu (always visible — read action) -->
+      <v-menu v-if="photo">
+        <template #activator="{ props }">
+          <v-btn v-bind="props" icon variant="text" color="white" title="Download">
+            <v-icon>mdi-download-outline</v-icon>
+          </v-btn>
+        </template>
+        <v-card min-width="180">
+          <v-list density="compact" nav>
+            <v-list-subheader>Download</v-list-subheader>
+            <v-list-item v-for="size in downloadSizes" :key="size.key" :title="size.label"
+              @click="downloadAt(size.key)">
+              <template #prepend><v-icon size="18">mdi-download-outline</v-icon></template>
+            </v-list-item>
+          </v-list>
+        </v-card>
+      </v-menu>
       <template v-if="!readonly">
         <v-btn v-if="photo && photo.published" icon variant="text" color="white"
           :loading="loadingUnpublish" @click="confirmAction('unpublish')" title="Move back to unpublished">
@@ -92,6 +109,23 @@
         <v-chip v-if="photo.type === 'video' && photo.duration" size="small" variant="outlined" prepend-icon="mdi-clock-outline">{{ formatDuration(photo.duration) }}</v-chip>
         <v-chip v-if="photo.type === 'video' && photo.transcode_status !== 'done'" size="small" :color="photo.transcode_status === 'error' ? 'error' : 'warning'" variant="tonal" prepend-icon="mdi-cog-outline">{{ photo.transcode_status }}</v-chip>
         <v-spacer></v-spacer>
+        <!-- Download menu (always visible — read action) -->
+        <v-menu>
+          <template #activator="{ props }">
+            <v-btn v-bind="props" icon size="small" variant="text" title="Download">
+              <v-icon>mdi-download-outline</v-icon>
+            </v-btn>
+          </template>
+          <v-card min-width="180">
+            <v-list density="compact" nav>
+              <v-list-subheader>Download</v-list-subheader>
+              <v-list-item v-for="size in downloadSizes" :key="size.key" :title="size.label"
+                @click="downloadAt(size.key)">
+                <template #prepend><v-icon size="18">mdi-download-outline</v-icon></template>
+              </v-list-item>
+            </v-list>
+          </v-card>
+        </v-menu>
         <template v-if="!readonly">
           <v-btn v-if="viewId" icon size="small" variant="text" :color="isCover ? 'primary' : undefined"
             :loading="loadingCover" @click="setCover()" :title="isCover ? 'Remove cover' : 'Set as cover'">
@@ -182,6 +216,21 @@ export default defineComponent({
       const basePath = this.paths[size] || Object.values(this.paths)[0] || ''
       return `${basePath}/${this.photo.hash_path}/${thumbFilename(this.photo)}`
     },
+
+    // Available download sizes — same pattern as ViewDetail.downloadSizes.
+    // Samples (xs/s/m/l) sorted by max-pixel-size, raw (original) appended last.
+    downloadSizes() {
+      if (!this.paths || !this.photo) return []
+      const sizeMeta = this.paths._sizes || {}
+      const sizes = Object.keys(this.paths).filter(k => k !== '_sizes' && k !== 'raw')
+      sizes.sort((a, b) => (sizeMeta[a] || 0) - (sizeMeta[b] || 0))
+      const items = sizes.map(k => ({
+        key: k,
+        label: sizeMeta[k] ? `${k.toUpperCase()} (${sizeMeta[k]}px)` : k.toUpperCase(),
+      }))
+      items.push({ key: 'raw', label: 'RAW (original)' })
+      return items
+    },
   },
 
   watch: {
@@ -197,6 +246,21 @@ export default defineComponent({
 
   methods: {
     formatDuration,
+
+    // Trigger a browser download of the photo at the requested size.
+    // For 'raw' uses the original stored filename (jpg or mp4); for samples uses the .jpg thumbnail.
+    // Saved-as filename uses origin_filename when available so the user gets a meaningful name.
+    downloadAt(size) {
+      if (!this.photo || !this.paths || !this.paths[size]) return
+      const fname = size === 'raw' ? this.photo.filename : thumbFilename(this.photo)
+      const url = `${this.paths[size]}/${this.photo.hash_path}/${fname}`
+      const a = document.createElement('a')
+      a.href = url
+      a.download = this.photo.origin_filename || fname
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    },
 
     async open(filename) {
       if (!this.embedded) this.displayed = true
