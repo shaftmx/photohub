@@ -45,9 +45,10 @@
           :size="isMobile ? 'small' : 'default'"
           rounded="lg"
           density="compact"
-          variant="outlined"
+          :variant="tagState(group.name, tag) === 'off' ? 'outlined' : 'tonal'"
           :disabled="disabled"
           :color="tagState(group.name, tag) === 'off' ? undefined : tag.color"
+          :prepend-icon="tagState(group.name, tag) === 'exclude' ? 'mdi-minus-circle' : undefined"
           style="align-self: flex-start; cursor: pointer;"
           :style="tagState(group.name, tag) === 'exclude' ? { textDecoration: 'line-through' } : null"
           @click="cycleTag(group.name, tag)"
@@ -192,12 +193,20 @@ export default {
 
     filteredTagGroups() {
       if (this.showAll || this.photos.length === 0) return this.tagGroups
+      // Always keep visible:
+      //   - tags currently in include or exclude state (so user can untoggle them)
+      //   - groups flagged "no tag in group" (so user can see and untoggle the per-group button)
+      // Otherwise the act of excluding a tag would hide it, leaving the user unable to undo.
+      const pinnedTagNames = new Set()
+      Object.values(this.modelValue).forEach(tags => tags.forEach(t => pinnedTagNames.add(t.name)))
+      Object.values(this.modelValueExclude).forEach(tags => tags.forEach(t => pinnedTagNames.add(t.name)))
+      const pinnedGroupNames = new Set(this.noTagGroups)
       return this.tagGroups
         .map(group => ({
           ...group,
-          tags: group.tags.filter(tag => this.activeTagNames.has(tag.name)),
+          tags: group.tags.filter(tag => this.activeTagNames.has(tag.name) || pinnedTagNames.has(tag.name)),
         }))
-        .filter(group => group.tags.length > 0)
+        .filter(group => group.tags.length > 0 || pinnedGroupNames.has(group.name))
     },
   },
 

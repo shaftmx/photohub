@@ -306,9 +306,10 @@
         <v-chip v-if="view.filter_mode === 'basic_or'" size="x-small" variant="tonal" prepend-icon="mdi-text-search-variant">Quick (OR)</v-chip>
         <v-chip v-if="view.filter_mode === 'smart'" size="x-small" variant="tonal" prepend-icon="mdi-tag-search">Detailed</v-chip>
         <v-chip v-for="tag in view.filter_tags" :key="'inc-' + tag.name" size="x-small" :color="tag.color" variant="tonal">{{ tag.name }}</v-chip>
-        <!-- Excluded tags — strikethrough on the name -->
+        <!-- Excluded tags — strikethrough + minus icon -->
         <v-chip v-for="tag in (view.filter_tags_exclude || [])" :key="'exc-' + tag.name"
           size="x-small" :color="tag.color" variant="tonal"
+          prepend-icon="mdi-minus-circle"
           style="text-decoration: line-through;">{{ tag.name }}</v-chip>
         <!-- Groups flagged as "no tag in this group" -->
         <v-chip v-for="g in (view.filter_no_tag_groups || [])" :key="'no-' + g"

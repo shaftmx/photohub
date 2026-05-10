@@ -147,14 +147,23 @@
         variant="tonal" color="primary" density="compact" size="small"
         @click="filterPanelOpen = !filterPanelOpen"
       >{{ filterPanelOpen ? 'Hide filters' : 'Show filters' }}</v-btn>
+      <!-- Clear-all button — only visible when there's something to clear -->
+      <v-btn
+        v-if="hasActiveTagFilters"
+        icon="mdi-filter-remove-outline"
+        variant="text" density="compact" size="small"
+        title="Clear all tag filters (includes, excludes, no-tag toggles)"
+        @click="clearAllTagFilters"
+      ></v-btn>
       <template v-if="!filterPanelOpen">
         <!-- Includes -->
         <v-chip v-for="tag in activeDetailTags" :key="'inc-' + tag"
           size="x-small" color="secondary" closable
           @click:close="removeDetailTag(tag)">{{ tag }}</v-chip>
-        <!-- Excludes (strikethrough) -->
+        <!-- Excludes (strikethrough + minus icon) -->
         <v-chip v-for="tag in activeDetailExcludeTags" :key="'exc-' + tag"
           size="x-small" color="secondary" closable
+          prepend-icon="mdi-minus-circle"
           style="text-decoration: line-through;"
           @click:close="removeDetailExcludeTag(tag)">{{ tag }}</v-chip>
         <!-- No-tag-in-group toggles -->
@@ -266,6 +275,12 @@ export default {
       return tags
     },
 
+    hasActiveTagFilters() {
+      return this.activeDetailTags.length > 0
+        || this.activeDetailExcludeTags.length > 0
+        || this.noTagGroups.length > 0
+    },
+
     // Tags grouped by tag_group with a subheader (group name) and a divider
     // between groups. Subheaders & dividers are non-selectable list items
     // handled natively by v-list/v-autocomplete and filtered out on search.
@@ -311,6 +326,15 @@ export default {
 
     removeNoTagGroup(groupName) {
       this.$emit('update:noTagGroups', this.noTagGroups.filter(g => g !== groupName))
+      this.$emit('change')
+    },
+
+    // Clear all tag-related filters in detail mode (includes, excludes, no-tag toggles).
+    // Other filters (favorite, rating, media type) are unaffected.
+    clearAllTagFilters() {
+      this.$emit('update:filterDetail', {})
+      this.$emit('update:filterDetailExclude', {})
+      this.$emit('update:noTagGroups', [])
       this.$emit('change')
     },
   },
