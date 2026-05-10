@@ -7,7 +7,6 @@
 
           <!-- Floating toolbar -->
           <div class="photo-toolbar">
-            <span class="photo-toolbar-title ml-2">{{ currentPhotoName }}</span>
             <v-spacer></v-spacer>
             <!-- Mobile: back to photo when detail panel is open -->
             <v-btn v-if="showDetail && sharedDatas.isMobile" variant="text" size="x-small" color="white"
@@ -129,10 +128,6 @@ export default defineComponent({
     panelBg() {
       const surface = this.theme.global.current.value.colors.surface
       return surface || (this.appThemeName === 'dark' ? '#1a1a1a' : '#ffffff')
-    },
-    currentPhotoName() {
-      const photo = (this.photos || []).find(p => p.filename === this.displayedPhoto)
-      return (photo && photo.origin_filename) || this.displayedPhoto || 'Photo'
     },
   },
 
@@ -266,16 +261,6 @@ if (this.$route.query.displayPhoto) {
   height: 40px;
   background: transparent;
   color: white;
-}
-
-.photo-toolbar-title {
-  font-size: 0.75rem;
-  opacity: 0.85;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1 1 0;
-  min-width: 0;
 }
 
 .photo-toolbar .v-btn {
