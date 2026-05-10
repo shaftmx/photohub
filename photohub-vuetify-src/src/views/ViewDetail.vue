@@ -302,7 +302,8 @@
     <v-expand-transition>
       <v-sheet v-if="filtersOpen" class="d-flex flex-wrap align-center ga-1 mb-2">
         <v-chip v-if="view.filter_mode === 'notags'" size="x-small" color="primary" variant="tonal" prepend-icon="mdi-tag-off-outline">No tags</v-chip>
-        <v-chip v-if="view.filter_mode === 'basic'" size="x-small" variant="tonal" prepend-icon="mdi-text-search-variant">Quick</v-chip>
+        <v-chip v-if="view.filter_mode === 'basic'" size="x-small" variant="tonal" prepend-icon="mdi-text-search-variant">Quick (AND)</v-chip>
+        <v-chip v-if="view.filter_mode === 'basic_or'" size="x-small" variant="tonal" prepend-icon="mdi-text-search-variant">Quick (OR)</v-chip>
         <v-chip v-if="view.filter_mode === 'smart'" size="x-small" variant="tonal" prepend-icon="mdi-tag-search">Detailed</v-chip>
         <v-chip v-for="tag in view.filter_tags" :key="tag.name" size="x-small" :color="tag.color" variant="tonal">{{ tag.name }}</v-chip>
         <v-chip v-if="view.filter_favorite" size="x-small" color="red" variant="tonal" prepend-icon="mdi-heart">Favorites</v-chip>

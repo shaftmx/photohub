@@ -161,6 +161,7 @@
       :tag-groups="tagGroups"
       :photos="[]"
       :is-mobile="sharedDatas.isMobile"
+      v-model:filterTagOr="filterTagOr"
       @update:filterTagMode="onFilterModeChange"
       @update:mediaType="filterMediaType = $event"
       @change="fetchPreview"
@@ -299,7 +300,8 @@ export default {
     paths: {},
     sharedDatas: {},
     // Filters
-    filterTagMode: 'quick',  // quick / detail / notags
+    filterTagMode: 'quick',  // quick / detail / notags / none
+    filterTagOr: false,      // Quick mode AND/OR — mapped to basic vs basic_or in filterMode
     filterQuick: [],
     filterDetail: {},
     filterFavorite: false,
@@ -358,7 +360,7 @@ export default {
     // API filter_mode param
     filterMode() {
       if (this.filterTagMode === 'none') return 'none'
-      if (this.filterTagMode === 'quick') return 'basic'
+      if (this.filterTagMode === 'quick') return this.filterTagOr ? 'basic_or' : 'basic'
       if (this.filterTagMode === 'detail') return 'smart'
       return 'notags'
     },
@@ -387,8 +389,10 @@ export default {
     },
 
     _applyFilterState(state) {
-      const modeMap = { basic: 'quick', smart: 'detail', notags: 'notags', none: 'none' }
+      // basic_or maps back to quick mode + filterTagOr=true
+      const modeMap = { basic: 'quick', basic_or: 'quick', smart: 'detail', notags: 'notags', none: 'none' }
       this.filterTagMode = modeMap[state.filter_mode] || 'quick'
+      this.filterTagOr = state.filter_mode === 'basic_or'
       this.filterFavorite = !!state.filter_favorite
       this.filterRating = state.filter_rating_value || 0
       this.filterRatingMode = state.filter_rating_mode || 'lte'

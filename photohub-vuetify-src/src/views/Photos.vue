@@ -173,6 +173,7 @@
       :available-owners="availableOwners"
       :show-orphan-filter="true"
       v-model:filterOrphan="filterOrphan"
+      v-model:filterTagOr="filterTagOr"
       @update:filterTagMode="onFilterModeChange"
     />
 
@@ -232,6 +233,7 @@ export default {
     sortDir: 'asc',
     // Filters
     filterTagMode: 'quick', // 'none' | 'quick' | 'detail' | 'notags'
+    filterTagOr: false,     // Quick mode: false = AND (all tags), true = OR (any tag)
     showAllTags: true,      // true = all published-photo tags / false = only tags in current selection
     filter: [], // This is the actual computed filters used and displayed as query parameter
     filterQuick: [], // This is used by quick filter
@@ -251,7 +253,7 @@ export default {
   computed: {
     filterMode() {
       if (this.filterTagMode === 'none') return 'none'
-      if (this.filterTagMode === 'quick') return 'basic'
+      if (this.filterTagMode === 'quick') return this.filterTagOr ? 'basic_or' : 'basic'
       if (this.filterTagMode === 'detail') return 'smart'
       return 'notags'
     },
@@ -329,6 +331,11 @@ export default {
     },
 
     "filterTagMode"() {
+      this.syncUrl()
+      this.doGetPhotos()
+    },
+
+    "filterTagOr"() {
       this.syncUrl()
       this.doGetPhotos()
     },
@@ -498,10 +505,11 @@ export default {
       if (q.media_type && ['photo', 'video'].includes(q.media_type)) this.mediaType = q.media_type
       // Orphan
       if (q.orphan === 'true') this.filterOrphan = true
-      // Filter mode
+      // Filter mode — basic_or maps to quick + filterTagOr=true
       if (q.filter_mode) {
-        const modeMap = { basic: 'quick', smart: 'detail', notags: 'notags', none: 'none' }
+        const modeMap = { basic: 'quick', basic_or: 'quick', smart: 'detail', notags: 'notags', none: 'none' }
         this.filterTagMode = modeMap[q.filter_mode] || 'quick'
+        this.filterTagOr = q.filter_mode === 'basic_or'
       }
       // Tags (only in quick/detail modes)
       if (q.tags && this.filterTagMode !== 'none' && this.filterTagMode !== 'notags') {

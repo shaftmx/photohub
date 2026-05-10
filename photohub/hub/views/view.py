@@ -61,6 +61,10 @@ def _apply_view_filters(v):
                 # OR within group, AND across groups
                 for group, tags in filter_tags_by_group.items():
                     photos_query = photos_query.filter(tags__in=tags)
+            elif v.filter_mode == 'basic_or':
+                # OR across all selected tags (any one matches)
+                all_tags = [t for tags in filter_tags_by_group.values() for t in tags]
+                photos_query = photos_query.filter(tags__in=all_tags)
             else:
                 # basic: AND on every tag
                 for group, tags in filter_tags_by_group.items():

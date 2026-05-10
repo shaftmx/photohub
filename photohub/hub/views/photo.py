@@ -84,16 +84,20 @@ def get_photos(request):
         photos_query = photos_query.exclude(filename__in=covered)
 
     # Generate filters
-    # Smart: (OR on same groups, AND on other groups) Create a filter per group map
-    if filter_tags != {} and filter_mode != "basic":
-        for group, tags in filter_tags.items():
-            # __in is an embeded django feature to provide several many to many fields
-            photos_query = photos_query.filter(tags__in=tags)
-    # Basic: AND on each tags
-    elif filter_tags != {} and filter_mode == "basic":
-        for group, tags in filter_tags.items():
-            for tag in tags:
-                photos_query = photos_query.filter(tags=tag)
+    if filter_tags:
+        if filter_mode == 'basic_or':
+            # OR across all selected tags (any one matches)
+            all_tags = [t for tags in filter_tags.values() for t in tags]
+            photos_query = photos_query.filter(tags__in=all_tags)
+        elif filter_mode == 'basic':
+            # AND on each tag (photo must have all selected tags)
+            for group, tags in filter_tags.items():
+                for tag in tags:
+                    photos_query = photos_query.filter(tags=tag)
+        else:
+            # smart: OR within group, AND across groups
+            for group, tags in filter_tags.items():
+                photos_query = photos_query.filter(tags__in=tags)
 
     photos_qs = apply_sort(photos_query, request.GET.get('sort_by', 'date'), request.GET.get('sort_dir', 'asc')).distinct()
     total = photos_qs.count()

@@ -36,6 +36,17 @@
         @click="$emit('update:showAllTags', !showAllTags)"
       ></v-btn>
 
+      <!-- AND/OR toggle for quick filter — visible only in quick mode -->
+      <v-btn
+        v-if="filterTagMode === 'quick'"
+        :icon="filterTagOr ? 'mdi-vector-union' : 'mdi-vector-intersection'"
+        :color="filterTagOr ? 'primary' : 'default'"
+        :variant="filterTagOr ? 'tonal' : 'text'"
+        density="compact" size="small"
+        :title="filterTagOr ? 'Match ANY selected tag (OR) — click for ALL' : 'Match ALL selected tags (AND) — click for ANY'"
+        @click="$emit('update:filterTagOr', !filterTagOr); $emit('change')"
+      ></v-btn>
+
       <v-spacer v-if="isMobile"></v-spacer>
       <v-divider v-else vertical style="height: 24px; align-self: center;"></v-divider>
 
@@ -203,13 +214,16 @@ export default {
     // Orphan filter (Photos only) — heavy, intentionally not persisted on a View
     showOrphanFilter:{ type: Boolean, default: false },
     filterOrphan:    { type: Boolean, default: false },
+    // Quick filter AND/OR toggle — only meaningful when filterTagMode === 'quick'.
+    // false = AND (must have all tags), true = OR (must have at least one).
+    filterTagOr:     { type: Boolean, default: false },
   },
 
   emits: [
     'update:filterTagMode', 'update:filterFavorite', 'update:filterRating',
     'update:filterRatingMode', 'update:mediaType', 'update:filterQuick',
     'update:filterDetail', 'update:showAllTags', 'update:filterOwners',
-    'update:filterOrphan',
+    'update:filterOrphan', 'update:filterTagOr',
     'change',
   ],
 
