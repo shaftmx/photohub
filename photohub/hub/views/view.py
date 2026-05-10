@@ -348,7 +348,14 @@ def _build_view_photos_response(request, v):
     if sort_by_override and sort_by_override != 'custom':
         filtered_qs = apply_sort(filtered_qs, sort_by_override, sort_dir_override or v.sort_dir)
 
-    custom_order_qs = models.ViewPhotoOrder.objects.filter(view=v).select_related('photo').order_by('order')
+    # prefetch tags+tag_group on both querysets to avoid N+1 queries during
+    # serialization (see comment in photo.py for the full explanation).
+    filtered_qs = filtered_qs.prefetch_related('tags__tag_group')
+    custom_order_qs = (models.ViewPhotoOrder.objects
+                       .filter(view=v)
+                       .select_related('photo')
+                       .prefetch_related('photo__tags__tag_group')
+                       .order_by('order'))
     total = filtered_qs.count()
     limit = int(request.GET.get('limit') or get_setting('GALLERY_PAGE_SIZE_DESKTOP'))
 

@@ -99,7 +99,11 @@ def get_photos(request):
     total = photos_qs.count()
 
     limit = int(request.GET.get('limit') or get_setting('GALLERY_PAGE_SIZE_DESKTOP'))
-    photos = photos_qs[:limit]
+    # prefetch_related avoids an N+1 query storm: without it, accessing p.tags.all()
+    # and t.tag_group inside the serialization loop fires one SQL query per photo
+    # (and per tag). With prefetch, all tags+groups are batch-loaded in 2 extra queries
+    # total, regardless of the limit. Same trick applied in unpublished.py and view.py.
+    photos = photos_qs.prefetch_related('tags__tag_group')[:limit]
 
     fields = PHOTO_LIST_FIELDS
     data_photos = []

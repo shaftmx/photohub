@@ -29,7 +29,8 @@ def get_unpublished(request):
     total = photos_qs.count()
 
     limit = int(request.GET.get('limit') or get_setting('GALLERY_PAGE_SIZE_DESKTOP'))
-    photos = photos_qs[:limit]
+    # prefetch_related batches the tag+tag_group lookups (see comment in photo.py).
+    photos = photos_qs.prefetch_related('tags__tag_group')[:limit]
 
     fields = PHOTO_LIST_FIELDS
     data_photos = []
