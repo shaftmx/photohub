@@ -514,7 +514,7 @@ export default {
   async mounted() {
     await useAppConfigStore().load()
     this.sharedDatas = getSharedDatas(this)
-    this.loadView()
+    this.loadView({ initial: true })
   },
 
   watch: {
@@ -587,12 +587,19 @@ export default {
       return marked.parse(text || '')
     },
 
-    async loadView({ sortBy } = {}) {
+    async loadView({ sortBy, sortDir, initial = false } = {}) {
       this.loading = true
       const appConfig = useAppConfigStore()
       const limit = appConfig.galleryLimit(this.sharedDatas.isMobile)
       const params = new URLSearchParams({ limit })
-      if (sortBy) params.set('sort_by', sortBy)
+      // Sort state precedence: explicit args > current UI state > server's saved view sort.
+      // On initial load (mounted), don't send any sort param — let the server use v.sort_by/v.sort_dir.
+      if (!initial) {
+        const effectiveSortBy = sortBy ?? this.sortBy
+        const effectiveSortDir = sortDir ?? this.sortDir
+        if (effectiveSortBy) params.set('sort_by', effectiveSortBy)
+        if (effectiveSortDir) params.set('sort_dir', effectiveSortDir)
+      }
       const qs = '?' + params.toString()
       let result
 
@@ -645,8 +652,12 @@ export default {
       this.photos = result.data.value.data.photos
       this.total = result.data.value.data.total ?? this.photos.length
       this.paths = result.data.value.data.paths
-      this.sortBy = sortBy || this.view.sort_by
-      this.sortDir = this.view.sort_dir
+      // On initial load, seed sort state from the view's saved values.
+      // On subsequent loads (sort change, tag, bulk action…), preserve the user's UI state.
+      if (initial) {
+        this.sortBy = this.view.sort_by
+        this.sortDir = this.view.sort_dir
+      }
       if (this.view.share_link_expires_at) {
         const d = new Date(this.view.share_link_expires_at)
         this.expiryPreset = 'custom'
@@ -654,18 +665,11 @@ export default {
       }
     },
 
+    // Sort changes always trigger a server reload — same pattern as Photos / ViewCreate.
+    // The server applies the sort over the full filtered queryset (not just the loaded subset),
+    // which is required for 'random' to be meaningful and is consistent across screens.
     async applySort() {
-      if (this.sortBy === 'custom') {
-        await this.loadView({ sortBy: 'custom' })
-        return
-      }
-      const dir = this.sortDir === 'asc' ? 1 : -1
-      const field = this.sortBy
-      this.photos = [...this.photos].sort((a, b) => {
-        if (a[field] < b[field]) return -1 * dir
-        if (a[field] > b[field]) return 1 * dir
-        return 0
-      })
+      await this.loadView()
     },
 
     async toggleFavorite(photo) {

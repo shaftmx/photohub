@@ -339,9 +339,15 @@ def _build_view_photos_response(request, v):
 
     v_data = _serialize_view(v)
 
-    # Custom order: if sort_by == 'custom' (view default or overridden by query param) AND records exist
+    # Sort overrides from URL params — UI sort changes that don't modify the saved view.
+    # 'custom' is handled below via ViewPhotoOrder; other overrides re-apply order_by here.
     sort_by_override = request.GET.get('sort_by')
+    sort_dir_override = request.GET.get('sort_dir')
     effective_sort_by = sort_by_override if sort_by_override else v.sort_by
+
+    if sort_by_override and sort_by_override != 'custom':
+        filtered_qs = apply_sort(filtered_qs, sort_by_override, sort_dir_override or v.sort_dir)
+
     custom_order_qs = models.ViewPhotoOrder.objects.filter(view=v).select_related('photo').order_by('order')
     total = filtered_qs.count()
     limit = int(request.GET.get('limit') or get_setting('GALLERY_PAGE_SIZE_DESKTOP'))
