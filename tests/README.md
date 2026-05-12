@@ -66,11 +66,28 @@ npm test
 
 ## Required fixtures
 
+### Photos
 Place two small JPEG test photos in `tests/fixtures/`:
 - `test-photo.jpg`
 - `test-photo-2.jpg`
 
 Any valid JPEG works (even 1×1 px). They are used for upload tests.
+
+### Videos
+The video fixtures are committed to the repo (tiny, ~2–7 KB each):
+- `test-video.mp4` — H.264 64×64 1s (used by most video tests)
+- `test-video.mov` — H.264 in MOV container
+- `test-video.webm` — VP9 / WebM
+- `test-unsupported.avi` — MPEG-4 in AVI container (used to verify rejection)
+
+To regenerate them with `ffmpeg`:
+```bash
+cd tests/fixtures
+ffmpeg -y -f lavfi -i "color=c=blue:s=64x64:d=1:r=10"   -c:v libx264 -pix_fmt yuv420p -movflags +faststart test-video.mp4
+ffmpeg -y -f lavfi -i "color=c=green:s=64x64:d=1:r=10"  -c:v libx264 -pix_fmt yuv420p test-video.mov
+ffmpeg -y -f lavfi -i "color=c=red:s=64x64:d=1:r=10"    -c:v libvpx-vp9 -b:v 50k test-video.webm
+ffmpeg -y -f lavfi -i "color=c=yellow:s=64x64:d=1:r=10" -c:v mpeg4    test-unsupported.avi
+```
 
 ---
 
@@ -86,15 +103,21 @@ Any valid JPEG works (even 1×1 px). They are used for upload tests.
 ```
 tests/
   e2e/
-    helpers.ts              — shared auth, navigation, grid helpers
+    helpers.ts              — shared auth, navigation, grid, API, admin, upload, video helpers
     auth.spec.ts            — login / logout / redirect
     home.spec.ts            — home gallery, public access, AppBar menu, logo
     upload-publish.spec.ts  — upload JPEG, unpublished queue, publish, delete
     photos.spec.ts          — grid, filters, sort, selection mode, detail panel
     views.spec.ts           — create, list, detail, edit, delete, share link, custom order
+    admin.spec.ts           — admin tabs, Tags YAML editor, photo quality, video settings, backup
+    video.spec.ts           — video upload / transcode / playback / media-type filter
   fixtures/
     test-photo.jpg          — (add manually, any valid JPEG)
     test-photo-2.jpg        — (add manually, any valid JPEG)
+    test-video.mp4          — H.264 / 64×64 / 1s
+    test-video.mov          — H.264 / MOV container
+    test-video.webm         — VP9 / WebM
+    test-unsupported.avi    — MPEG-4 / AVI (rejection test)
   COVERAGE.md               — full list of what is and isn't tested
   playwright.config.ts
   package.json

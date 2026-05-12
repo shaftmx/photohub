@@ -1,6 +1,8 @@
 # PhotoHub — E2E Test Coverage
 
-Total: **124 tests** across 5 spec files.
+Total: **~195 tests** across 7 spec files. (~71 tests added covering admin, new filters, fullscreen UX, download menu, upload link decoupling, and video.)
+
+> Tests in the new `admin.spec.ts` and `video.spec.ts` files, plus the new `describe` blocks at the bottom of the older specs, mutate live state through the API helpers in `e2e/helpers.ts`. They clean up after themselves (`afterAll` hooks) but assume a working DB and, for video tests, a healthy transcode worker.
 
 ---
 
@@ -224,6 +226,20 @@ Total: **124 tests** across 5 spec files.
 - "Tag" bulk action opening the tag editor
 - Editing tags from the detail panel (EditTagsDialog)
 - GPS "Open in Google Maps" button (requires photo with GPS EXIF data)
+- AND/OR toggle in quick filter — match-all vs match-any of selected tags, URL persists `tags_match=all|any`
+- Tag exclude tri-state chips — neutral → include → exclude cycle on chip click
+- Per-group "no tag" toggle in the quick filter dropdown — filters photos with no tag in that group
+- "Clear all tags" button resets every active include/exclude tag in one click
+- Quick filter dropdown groups tags by `tag_group` with subheader and divider between groups
+- `showAllTags` regression — toggle reveals every tag (not just the active ones) without breaking the chip state
+- Orphan filter — `orphan=true` URL param shows only photos that match no view; persists on reload
+- Sort: "Mixed" option (renamed from Random) preserves the previous shuffle ordering
+- Sort: true "Random" option produces a different order on each reload (SQL `ORDER BY RANDOM`)
+- Sort: "Origin filename" option sorts by `origin_filename` field
+- Sort: default direction is ascending (regression — direction toggle starts at asc, not desc)
+- Fullscreen: deleting the current photo advances to the next one (viewer stays open) instead of closing
+- Fullscreen: closing the viewer restores the grid scroll position to the photo that was open
+- Photo detail download menu — sample sizes (xs / s / m / l) and raw original each download the correct file
 
 **Upload**
 - Duplicate file upload (same MD5 → "Picture already exist" response)
@@ -233,19 +249,30 @@ Total: **124 tests** across 5 spec files.
 - DPI field missing or `None` in EXIF — upload should not crash (PIL `save()` without dpi kwarg)
 - GPS ref null-byte suffix (`'N\x00'`) — upload should not crash on malformed EXIF
 - EXIF date in unrecognised format — upload continues with `date=None` instead of crashing
+- System files (`.DS_Store`, `Thumbs.db`, `desktop.ini`, files starting with `.`) silently skipped, no error notification
+- GPS EXIF with null or zero coordinates accepted without crashing (lat/lon=0 or None)
+- Per-file error handling: a single failed file does not abort the rest of the batch; each failure surfaces its own alert
+- `exif=None` on save path — upload completes when PIL returns no EXIF block
 
 **Views**
 - Bulk selection actions in ViewCreate edit mode (tag, delete, unpublish, favorites)
 - Custom order: actual drag & drop reorder (HTML5 drag events unreliable in Playwright)
 - Custom order: save persists and is restored on reload
 - Tag filter in views (creating a view with specific tags, verifying filter is applied)
-- Share link expiry: setting, displaying, and enforcing expiry
-- Photo detail panel in shared view context (token-based endpoint validation)
-- Photo detail panel in public view context
-- Upload link: photo outside the view's filters not accessible via token endpoint
+- ViewDetail: selection mode toggle — bulk actions (favorite, rating, tag, delete, unpublish) work the same as on Photos
+- ViewDetail: bulk-action row is right-aligned, matching Photos and Unpublished layout
+- ViewDetail: server-side sort — changing sort sends `sort_by` to the API instead of resorting client-side, photo order reflects the new request
+- ViewDetail: AND/OR tag-match toggle persists in the view config and applies on reload
+- Upload link decoupled from share link — upload link can be generated and used even when no share link exists
+- Upload link allowed on **public** views — generating the link does not require the view to be private
+- Revoking the share link no longer revokes the upload link (and vice versa)
 
 **Tags**
 - Tag & group description tooltips (hover on info icon in filter panel and tag editor)
+- Browser autocomplete disabled on tag combobox / autocomplete inputs (`autocomplete="off"` so the browser does not suggest stale values)
+- EditTagsDialog pre-selects the photo's current tags when opened (regression — they were missing after recent refactor)
+- TagPhotos adaptive grid size on mobile — chips wrap correctly, full-width groups, combobox `max-width` respected
+- TagGroupsWidget unified component renders both the filter panel and tag editor with the same chip / close behaviour
 
 **Photos / Gallery page size**
 - Warning chip appears when total photos > configured limit (backend cap hit)
@@ -255,22 +282,68 @@ Total: **124 tests** across 5 spec files.
 
 **Admin**
 - Admin panel tabs (Users, Tags, Photo quality, Backup/Export, Video)
-- Tag YAML editor
 - User create/delete/password reset
+
+**Admin → Tags tab (YAML editor)**
+- Empty state: "No tags yet" alert + "Load sample" button visible; clicking populates DB from `tags_sample.yml`
+- Active tab persists in URL query param (`?tab=tags`)
+- Tab is default for `contributor` role; hidden for `member` and anonymous
+- Add a new tag group via YAML — group appears in the Preview widget after save, then in filter bar and tag editor on reload
+- Add a new tag inside an existing group via YAML — tag appears in Preview, filter dropdown, and tag editor
+- Rename a tag while keeping its `id` — photo→tag associations preserved (regression — id-based rename test)
+- Rename a tag group while keeping its `id` — group's tags and photo associations preserved
+- Remove a tag from YAML and save → tag deleted from DB and removed from every photo that carried it
+- Remove a tag group from YAML and save → group + its tags deleted, photos no longer carry those tags
+- `type: checkbox` → group renders as chips in filter panel and tag editor
+- `type: combobox` → group renders as autocomplete input in filter panel and tag editor
+- Group-level `color` applied to all its chips (hex `#0055A4` and CSS name `blue` both accepted)
+- Tag-level `color` overrides group color
+- Group-level `description` shown in tooltip on info icon (filter panel + tag editor)
+- Tag-level `description` shown in tooltip on info icon
+- Invalid YAML → save surfaces parse error, no DB change, editor stays open
+- YAML missing required `name` → save rejected with clear error
+- Duplicate `id` in YAML → save rejected with clear error
+- Reorder groups in YAML → order respected in filter bar and tag editor
+- "YAML syntax reference" expansion panel expands/collapses
+- Save button shows loading state, success notification on completion, editor stays in sync after reload
+- Preview widget reflects the *saved* tag state (not unsaved edits)
 - Photo quality settings
 - Export/Import
 - Gallery page size fields (GALLERY_PAGE_SIZE_DESKTOP / GALLERY_PAGE_SIZE_MOBILE) visible and saveable in Photo quality tab
+- Configurable grid sizes (GRID_SIZE_XS / S / M / L / XL) editable in admin, persisted in `AppConfig`, applied on next navigation
+- Configurable display photo (fullscreen viewer) sample size editable in admin and applied on next photo open
+- `sharedDatas.js` falls back to defaults when `appConfig` store has not loaded yet (no crash on cold start)
 - KEEP_ORIGINAL_VIDEO toggle visible in Video tab with disk warning alert
 - KEEP_ORIGINAL_VIDEO=true: worker renames source file to `_original.<ext>` after transcoding
 - KEEP_ORIGINAL_VIDEO=true: ZIP download serves `_original.<ext>` when raw size is requested
 - KEEP_ORIGINAL_VIDEO=true: export/import preserves `_original` file alongside poster
 - TRANSCODE_TIMEOUT field visible and saveable in Video tab
+- TRANSCODE_POLL_INTERVAL field visible and saveable in Video tab
+- TRANSCODE_THREADS field visible and saveable (0 = auto)
+- TRANSCODE_PRESET select shows all 9 ffmpeg presets (ultrafast → veryslow), saveable
+- TRANSCODE_CRF field visible and saveable (range 0–51 hint)
+- KEEP_ORIGINAL_VIDEO warning alert appears only when toggle is on, disappears when off
+- Worker status refresh icon reloads status block without a page reload
+- Worker status chip color/icon reflects state (online / offline / encoding / idle)
+- Video transcode stats table shows pending / processing / error counts from API
+- "Retry" inline button visible only when `error > 0` in stats table
 - Save settings invalidates appConfig store cache (new limit applied immediately on next navigation)
 - Worker healthcheck: worker container waits for web healthcheck before starting
 
 **Video**
 - Upload an MP4 file when `ALLOW_VIDEO_UPLOAD=true` → appears in Unpublished with spinner overlay
+- Upload a MOV file → accepted, transcoded to MP4, appears with correct duration/poster
+- Upload a WebM file → accepted, transcoded to MP4
+- Upload an unsupported extension (e.g. `.avi`, `.mkv`) → rejected with a clear error notification
 - Upload rejected when `ALLOW_VIDEO_UPLOAD=false`
+- Upload a single batch mixing photos and videos — each handled independently, photos appear immediately, videos go through transcode pipeline
+- Duplicate video upload (same MD5) → "Picture already exist" response (same dedup path as photos)
+- Video poster (`.jpg`) extracted at upload time → thumbnail visible **before** transcode finishes
+- Spinner / "processing" overlay rendered on video tile while `transcode_status` is `pending` or `processing`
+- Transcode failure → `transcode_status=error`, error overlay visible on tile, count increments in admin Video tab
+- Video tagged → tag filter on Photos and on Views surfaces the video
+- Bulk publish on Unpublished includes selected videos
+- Bulk delete on Photos / Unpublished / ViewDetail removes both `.mp4` and poster `.jpg` from disk
 - Worker transcodes video → `transcode_status` becomes `done`, play icon overlay appears in grid
 - Duration badge visible on video thumbnail in grid
 - Click on video in grid → `<video>` player renders in DisplayPhoto carousel
@@ -288,10 +361,26 @@ Total: **124 tests** across 5 spec files.
 - Import: .mp4 file ingested, poster restored, `transcode_status=pending` if no poster
 - ZIP download: videos included as .mp4 regardless of size param
 - Delete video: .mp4 + poster .jpg removed from raw/
+- TRANSCODE_PRESET / TRANSCODE_CRF actually applied — encoded file size/quality differs between e.g. `ultrafast`+CRF18 and `veryslow`+CRF28
+- TRANSCODE_THREADS applied — ffmpeg invocation respects the configured thread count
+- TRANSCODE_TIMEOUT enforced — a transcode that exceeds the timeout is killed and marked `error`
+- TRANSCODE_POLL_INTERVAL respected — worker idles between polls at the configured cadence
+- Video upload through an **upload link** when ALLOW_VIDEO_UPLOAD=true → video accepted and queued for transcode
+- Video upload through an upload link when ALLOW_VIDEO_UPLOAD=false → rejected with the same error as authenticated upload
+- KEEP_ORIGINAL_VIDEO toggle change does not retroactively affect already-uploaded videos
+- RAW_PHOTO_OVERRIDE_EXISTS resets `original_ext` field for videos on re-upload
 
 **Navigation**
 - Middle-click / right-click → "Open in new tab" on photo cards, view cards, and gallery items
 - Favicon and app icon render correctly in browser tab and bookmarks
 
+**Backend / install**
+- Initial migration creates Django auth groups `member` and `contributor` (regression — lost during the migration squash, now restored in 0001_initial)
+- List endpoints (`/api/photos`, `/api/unpublished`, `/api/views/:id`) prefetch `tags` + `tag_group` — single query, not N+1 (would need a query-count assertion)
+- `PHOTO_LIST_FIELDS` constant — video-only fields are stripped from photo entries in non-video contexts
+- API responses are gzip-compressed by nginx (response header check)
+
 **Unpublished**
 - "Tag" bulk action (TagPhotos component flow)
+- Tag filter bar visible on Unpublished — filtering the queue by tag updates the grid and counter
+- Sort options on Unpublished mirror Photos (Mixed / Random / Origin filename) and default to ascending

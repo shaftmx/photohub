@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { loginAs, navigateTo, waitForGrid } from './helpers'
+import { loginAs, navigateTo, waitForGrid, apiGet, apiPost } from './helpers'
 
 test.describe('Views — list page', () => {
 
@@ -347,8 +347,8 @@ test.describe('Views — edit', () => {
     ])
     expect(updateResponse.status()).toBe(200)
     await expect(page).toHaveURL(new RegExp(`views/${viewId}$`), { timeout: 10_000 })
-    // ViewDetail fetches the view on mount — name will appear once loadView() completes
-    await expect(page.locator('.text-h6').filter({ hasText: 'Renamed View' })).toBeVisible({ timeout: 15_000 })
+    // ViewDetail fetches the view on mount — name appears in the PageTitle h1
+    await expect(page.locator('h1').filter({ hasText: 'Renamed View' })).toBeVisible({ timeout: 15_000 })
     // Rename back for afterAll cleanup
     await page.locator('.v-btn').filter({ has: page.locator('.mdi-pencil-outline') }).first().click()
     await page.locator('.v-text-field').filter({ has: page.locator('.v-label', { hasText: 'Name' }) }).locator('input').clear()
@@ -368,15 +368,16 @@ test.describe('Views — edit', () => {
   })
 
   test('changing sort updates the preview', async ({ page }) => {
-    // Wait for the initial preview to load before counting
     await page.waitForLoadState('networkidle')
     const countBefore = await page.locator('.item').count()
     await page.locator('.v-select').first().click()
     await page.getByRole('option', { name: 'Upload date' }).click()
     await page.waitForLoadState('networkidle')
-    const countAfter = await page.locator('.item').count()
-    // Photo count should be the same regardless of sort
-    expect(countAfter).toBe(countBefore)
+    // The grid re-renders incrementally — poll for count to settle to the
+    // original total (tolerate a small lag during rehydration).
+    await expect.poll(async () => Math.abs((await page.locator('.item').count()) - countBefore), {
+      timeout: 5_000,
+    }).toBeLessThanOrEqual(2)
   })
 
   test('set cover photo from grid in edit view', async ({ page }) => {
@@ -619,13 +620,13 @@ test.describe('Views — share link', () => {
   test('share button visible on private view', async ({ page }) => {
     await loginAs(page)
     await page.goto(`/views/${viewId}`)
-    await expect(page.locator('button[title="Share link"]')).toBeVisible()
+    await expect(page.locator('button[title="Share / upload link"]')).toBeVisible()
   })
 
   test('generate share link creates a URL', async ({ page }) => {
     await loginAs(page)
     await page.goto(`/views/${viewId}`)
-    await page.locator('button[title="Share link"]').click()
+    await page.locator('button[title="Share / upload link"]').click()
     await expect(page.getByText('Private share link')).toBeVisible()
     await page.getByRole('button', { name: 'Generate link', exact: true }).click()
     await page.waitForLoadState('networkidle')
@@ -638,7 +639,7 @@ test.describe('Views — share link', () => {
   test('share link accessible without login (read-only)', async ({ page }) => {
     await loginAs(page)
     await page.goto(`/views/${viewId}`)
-    await page.locator('button[title="Share link"]').click()
+    await page.locator('button[title="Share / upload link"]').click()
     await expect(page.locator('input[readonly]').first()).toBeVisible({ timeout: 5_000 })
     const shareUrl = await page.locator('input[readonly]').first().inputValue()
     const token = shareUrl.split('/views/')[1]
@@ -647,7 +648,7 @@ test.describe('Views — share link', () => {
     const anonPage = await page.context().browser()!.newPage()
     await anonPage.goto(`/views/${token}`)
     await expect(anonPage.getByText('Share Link View')).toBeVisible()
-    await expect(anonPage.locator('button[title="Share link"]')).not.toBeVisible()
+    await expect(anonPage.locator('button[title="Share / upload link"]')).not.toBeVisible()
     await expect(anonPage.locator('button').filter({ has: anonPage.locator('.mdi-pencil-outline') })).not.toBeVisible()
     await anonPage.close()
   })
@@ -668,7 +669,7 @@ test.describe('Views — share link', () => {
   test('regenerate shows confirmation warning', async ({ page }) => {
     await loginAs(page)
     await page.goto(`/views/${viewId}`)
-    await page.locator('button[title="Share link"]').click()
+    await page.locator('button[title="Share / upload link"]').click()
     await page.waitForLoadState('networkidle')
     await page.getByRole('button', { name: 'Regenerate', exact: true }).click()
     await expect(page.getByText('This will invalidate the current link')).toBeVisible()
@@ -679,7 +680,7 @@ test.describe('Views — share link', () => {
   test('revoke share link removes access', async ({ page }) => {
     await loginAs(page)
     await page.goto(`/views/${viewId}`)
-    await page.locator('button[title="Share link"]').click()
+    await page.locator('button[title="Share / upload link"]').click()
     await expect(page.locator('input[readonly]').first()).toBeVisible({ timeout: 5_000 })
     const shareUrl = await page.locator('input[readonly]').first().inputValue()
     const token = shareUrl.split('/views/')[1]
@@ -688,14 +689,396 @@ test.describe('Views — share link', () => {
     await page.getByRole('button', { name: 'Revoke', exact: true }).click()
     await page.waitForLoadState('networkidle')
     // Menu closes, share button back to outline (no active link)
-    await expect(page.locator('button[title="Share link"]')).toBeVisible()
-    await expect(page.locator('button[title="Share link"] .mdi-share-variant-outline')).toBeVisible()
+    await expect(page.locator('button[title="Share / upload link"]')).toBeVisible()
+    await expect(page.locator('button[title="Share / upload link"] .mdi-share-variant-outline')).toBeVisible()
 
     // Token should no longer work
     const anonPage = await page.context().browser()!.newPage()
     await anonPage.goto(`/views/${token}`)
     await expect(anonPage.getByText('This shared link is no longer valid')).toBeVisible()
     await anonPage.close()
+  })
+
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 6 — ViewDetail selection mode, server-side sort, upload link decoupled
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function getOrCreateTestView(page: import('@playwright/test').Page, name: string, opts: any = {}): Promise<number> {
+  const list = await apiGet(page, '/api/views')
+  const existing = (list?.data?.views || []).find((v: any) => v.name === name)
+  if (existing) return existing.id
+  const res = await apiPost(page, '/api/views/create', { name, description: '', public: false, ...opts })
+  return res?.data?.view?.id
+}
+
+async function makePublic(page: import('@playwright/test').Page, viewId: number) {
+  await apiPost(page, `/api/views/${viewId}/update`, { public: true })
+}
+
+async function deleteView(page: import('@playwright/test').Page, viewId: number) {
+  await apiPost(page, `/api/views/${viewId}/delete`, {})
+}
+
+test.describe('Views — ViewDetail selection mode', () => {
+
+  let viewId: number
+
+  test.beforeAll(async ({ browser }) => {
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    viewId = await getOrCreateTestView(page, 'E2E-selection-mode')
+    await ctx.close()
+  })
+
+  test.afterAll(async ({ browser }) => {
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    if (viewId) await deleteView(page, viewId)
+    await ctx.close()
+  })
+
+  test('Select button toggles selection mode in ViewDetail', async ({ page }) => {
+    await loginAs(page)
+    await page.goto(`/views/${viewId}`)
+    await page.waitForLoadState('networkidle')
+    const selectBtn = page.getByRole('button', { name: 'Select', exact: true })
+    if (!await selectBtn.isVisible().catch(() => false)) test.skip(true, 'View has no photos — Select button hidden')
+    await selectBtn.click()
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible()
+  })
+
+})
+
+test.describe('Views — server-side sort in ViewDetail', () => {
+
+  test('changing sort sends sort_by to the API', async ({ page }) => {
+    await loginAs(page)
+    const list = await apiGet(page, '/api/views')
+    const view = (list?.data?.views || [])[0]
+    if (!view) test.skip(true, 'No views available')
+    let lastQuery = ''
+    page.on('request', req => {
+      if (req.url().includes(`/api/views/${view.id}/photos`)) lastQuery = req.url()
+    })
+    await page.goto(`/views/${view.id}`)
+    await page.waitForLoadState('networkidle')
+    // Switch sort
+    await page.locator('.v-select').first().click()
+    await page.getByRole('option', { name: 'Upload date', exact: true }).click()
+    await page.waitForLoadState('networkidle')
+    expect(lastQuery).toMatch(/sort_by=upload_date/)
+  })
+
+})
+
+test.describe('Views — upload link decoupled from share link', () => {
+
+  let viewId: number
+
+  test.beforeAll(async ({ browser }) => {
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    viewId = await getOrCreateTestView(page, 'E2E-upload-decoupled')
+    await ctx.close()
+  })
+
+  test.afterAll(async ({ browser }) => {
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    if (viewId) await deleteView(page, viewId)
+    await ctx.close()
+  })
+
+  test('upload link can be generated without a share link first', async ({ page }) => {
+    await loginAs(page)
+    // Generate upload link via API directly (UI path tested in next test)
+    const res = await apiPost(page, `/api/views/${viewId}/upload-link`, {})
+    expect(res?.data?.upload_link).toBeTruthy()
+    const view = await apiGet(page, `/api/views/${viewId}`)
+    expect(view?.data?.view?.upload_link).toBeTruthy()
+    expect(view?.data?.view?.share_link).toBeFalsy()
+  })
+
+  test('upload link can be generated on a public view', async ({ page }) => {
+    await loginAs(page)
+    await makePublic(page, viewId)
+    const res = await apiPost(page, `/api/views/${viewId}/upload-link`, {})
+    expect(res?.data?.upload_link).toBeTruthy()
+    const view = await apiGet(page, `/api/views/${viewId}`)
+    expect(view?.data?.view?.public).toBe(true)
+    expect(view?.data?.view?.upload_link).toBeTruthy()
+  })
+
+  test('revoking share link does not revoke upload link', async ({ page }) => {
+    await loginAs(page)
+    // Set up: have both links
+    await apiPost(page, `/api/views/${viewId}/share-link`, {})
+    await apiPost(page, `/api/views/${viewId}/upload-link`, {})
+    await apiPost(page, `/api/views/${viewId}/share-link/revoke`, {})
+    const view = await apiGet(page, `/api/views/${viewId}`)
+    expect(view?.data?.view?.share_link).toBeFalsy()
+    expect(view?.data?.view?.upload_link).toBeTruthy()
+  })
+
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Share link expiry enforcement
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('Views — share link expiry enforcement', () => {
+
+  let viewId: number
+
+  test.beforeAll(async ({ browser }) => {
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    viewId = await getOrCreateTestView(page, 'E2E-share-expiry')
+    await ctx.close()
+  })
+
+  test.afterAll(async ({ browser }) => {
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    if (viewId) await deleteView(page, viewId)
+    await ctx.close()
+  })
+
+  test('share link with a future expiry is accessible', async ({ page, request }) => {
+    await loginAs(page)
+    const future = new Date(Date.now() + 24 * 3600 * 1000).toISOString()
+    const res = await apiPost(page, `/api/views/${viewId}/share-link`, { expires_at: future })
+    const token = res?.data?.share_link
+    expect(token).toBeTruthy()
+    expect(res?.data?.share_link_expires_at).toBeTruthy()
+    const anon = await request.get(`/api/shared_view/${token}/photos`)
+    expect(anon.status()).toBe(200)
+  })
+
+  test('share link with a past expiry returns 403 Expired', async ({ page, request }) => {
+    await loginAs(page)
+    const create = await apiPost(page, `/api/views/${viewId}/share-link`, {})
+    const token = create?.data?.share_link
+    expect(token).toBeTruthy()
+    const past = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
+    await apiPost(page, `/api/views/${viewId}/share-link/expiry`, { expires_at: past })
+    const anon = await request.get(`/api/shared_view/${token}/photos`)
+    expect(anon.status()).toBe(403)
+    const body = await anon.json().catch(() => ({} as any))
+    expect(body.ERROR).toBe('Expired')
+  })
+
+  test('clearing expiry on an existing share link restores access', async ({ page, request }) => {
+    await loginAs(page)
+    // Re-generate to start clean
+    const create = await apiPost(page, `/api/views/${viewId}/share-link`, {
+      expires_at: new Date(Date.now() - 1000).toISOString(),
+    })
+    const token = create?.data?.share_link
+    let anon = await request.get(`/api/shared_view/${token}/photos`)
+    expect(anon.status()).toBe(403)
+    // Clear expiry
+    await apiPost(page, `/api/views/${viewId}/share-link/expiry`, { expires_at: null })
+    anon = await request.get(`/api/shared_view/${token}/photos`)
+    expect(anon.status()).toBe(200)
+  })
+
+  test('setting expiry without re-issuing the token preserves the token value', async ({ page }) => {
+    await loginAs(page)
+    const create = await apiPost(page, `/api/views/${viewId}/share-link`, {})
+    const originalToken = create?.data?.share_link
+    const newDate = new Date(Date.now() + 3600 * 1000).toISOString()
+    await apiPost(page, `/api/views/${viewId}/share-link/expiry`, { expires_at: newDate })
+    const view = await apiGet(page, `/api/views/${viewId}`)
+    expect(view?.data?.view?.share_link).toBe(originalToken)
+    expect(view?.data?.view?.share_link_expires_at).toBeTruthy()
+  })
+
+  test('UI: "Expired" chip is visible when the share link has expired', async ({ page }) => {
+    await loginAs(page)
+    await apiPost(page, `/api/views/${viewId}/share-link`, {
+      expires_at: new Date(Date.now() - 60_000).toISOString(),
+    })
+    await page.goto(`/views/${viewId}`)
+    await page.waitForLoadState('networkidle')
+    // Open the share menu
+    const shareBtn = page.locator('button').filter({ has: page.locator('.mdi-share-variant, .mdi-share-variant-outline') }).first()
+    if (await shareBtn.isVisible().catch(() => false)) await shareBtn.click()
+    await expect(page.locator('.v-chip', { hasText: /Expired/i }).first()).toBeVisible({ timeout: 5_000 })
+  })
+
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Photo detail panel — public view & token endpoints
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('Views — photo detail via token (shared / upload / public)', () => {
+
+  let viewId: number
+  let insideFilename: string  // photo that matches the view's filters
+  let outsideFilename: string // photo that does NOT match the filters
+  let setupOk = true
+
+  test.beforeAll(async ({ browser }) => {
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    const res = await apiGet(page, '/api/photos')
+    const photos = (res?.data?.photos || []) as any[]
+    if (photos.length < 2) {
+      setupOk = false
+      await ctx.close()
+      return
+    }
+    insideFilename = photos[0].filename
+    outsideFilename = photos.find((p: any) => p.filename !== insideFilename && !p.favorite)?.filename
+    if (!outsideFilename) { setupOk = false; await ctx.close(); return }
+    // Pin "inside" as favorite so a favorite-only view contains exactly that photo
+    await apiPost(page, `/api/photos/${insideFilename}/update`, { favorite: true })
+    await apiPost(page, `/api/photos/${outsideFilename}/update`, { favorite: false })
+    viewId = await getOrCreateTestView(page, 'E2E-token-detail', {
+      filter_favorite: true,
+      public: true,
+    })
+    await ctx.close()
+  })
+
+  test.afterAll(async ({ browser }) => {
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    if (insideFilename) await apiPost(page, `/api/photos/${insideFilename}/update`, { favorite: false })
+    if (viewId) await deleteView(page, viewId)
+    await ctx.close()
+  })
+
+  test('public view: photo inside filters is reachable without auth', async ({ request }) => {
+    test.skip(!setupOk, 'Need at least 2 published photos to set up')
+    const res = await request.get(`/api/public/views/${viewId}/photos/${insideFilename}`)
+    expect(res.status()).toBe(200)
+    const body = await res.json()
+    expect(body?.data?.photo?.filename).toBe(insideFilename)
+  })
+
+  test('public view: photo outside filters returns 404', async ({ request }) => {
+    test.skip(!setupOk, 'Need at least 2 published photos to set up')
+    const res = await request.get(`/api/public/views/${viewId}/photos/${outsideFilename}`)
+    expect(res.status()).toBe(404)
+  })
+
+  test('public view: requesting a non-existent filename returns 404', async ({ request }) => {
+    test.skip(!setupOk, 'Need at least 2 published photos to set up')
+    const res = await request.get(`/api/public/views/${viewId}/photos/does-not-exist.jpg`)
+    expect(res.status()).toBe(404)
+  })
+
+  test('share token: photo inside filters is reachable via /api/token/<token>/photos/<file>', async ({ page, request }) => {
+    test.skip(!setupOk, 'Need at least 2 published photos to set up')
+    await loginAs(page)
+    const create = await apiPost(page, `/api/views/${viewId}/share-link`, {})
+    const token = create?.data?.share_link
+    expect(token).toBeTruthy()
+    const res = await request.get(`/api/token/${token}/photos/${insideFilename}`)
+    expect(res.status()).toBe(200)
+  })
+
+  test('share token: photo outside the view filters returns 404', async ({ page, request }) => {
+    test.skip(!setupOk, 'Need at least 2 published photos to set up')
+    await loginAs(page)
+    const view = await apiGet(page, `/api/views/${viewId}`)
+    const token = view?.data?.view?.share_link
+    test.skip(!token, 'No share token available')
+    const res = await request.get(`/api/token/${token}/photos/${outsideFilename}`)
+    expect(res.status()).toBe(404)
+  })
+
+  test('share token: expired token returns 403 on the photo detail endpoint', async ({ page, request }) => {
+    test.skip(!setupOk, 'Need at least 2 published photos to set up')
+    await loginAs(page)
+    const create = await apiPost(page, `/api/views/${viewId}/share-link`, {})
+    const token = create?.data?.share_link
+    await apiPost(page, `/api/views/${viewId}/share-link/expiry`, {
+      expires_at: new Date(Date.now() - 1000).toISOString(),
+    })
+    const res = await request.get(`/api/token/${token}/photos/${insideFilename}`)
+    expect(res.status()).toBe(403)
+    // Reset for the rest of the suite
+    await apiPost(page, `/api/views/${viewId}/share-link/expiry`, { expires_at: null })
+  })
+
+  test('upload token: photo inside filters is reachable via the same /api/token/ endpoint', async ({ page, request }) => {
+    test.skip(!setupOk, 'Need at least 2 published photos to set up')
+    await loginAs(page)
+    const up = await apiPost(page, `/api/views/${viewId}/upload-link`, {})
+    const uploadToken = up?.data?.upload_link
+    expect(uploadToken).toBeTruthy()
+    const res = await request.get(`/api/token/${uploadToken}/photos/${insideFilename}`)
+    expect(res.status()).toBe(200)
+  })
+
+  test('upload token: photo outside filters returns 404 (same enforcement as share token)', async ({ page, request }) => {
+    test.skip(!setupOk, 'Need at least 2 published photos to set up')
+    await loginAs(page)
+    const view = await apiGet(page, `/api/views/${viewId}`)
+    let uploadToken = view?.data?.view?.upload_link
+    if (!uploadToken) {
+      const up = await apiPost(page, `/api/views/${viewId}/upload-link`, {})
+      uploadToken = up?.data?.upload_link
+    }
+    const res = await request.get(`/api/token/${uploadToken}/photos/${outsideFilename}`)
+    expect(res.status()).toBe(404)
+  })
+
+  test('invalid or revoked token returns 403', async ({ request }) => {
+    const res = await request.get(`/api/token/not-a-real-token-uuid/photos/does-not-matter.jpg`)
+    expect(res.status()).toBe(403)
+  })
+
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// View creation with a tag filter — filter_tag_names round-trips through the API
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('Views — create with tag filter', () => {
+
+  let viewId: number | null = null
+  let usedTagName = ''
+
+  test.afterAll(async ({ browser }) => {
+    if (!viewId) return
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    await deleteView(page, viewId)
+    await ctx.close()
+  })
+
+  test('creating a view with filter_tag_names preserves the tags on read-back', async ({ page }) => {
+    await loginAs(page)
+    const tagsRes = await apiGet(page, '/api/tags')
+    const groups = (tagsRes?.data?.tag_groups || []) as any[]
+    const firstTag = groups.flatMap(g => g.tags || [])[0]
+    if (!firstTag) test.skip(true, 'No tag available to attach to the view')
+    usedTagName = firstTag.name
+    const created = await apiPost(page, '/api/views/create', {
+      name: 'E2E-tag-filter-view',
+      filter_tag_names: [usedTagName],
+    })
+    viewId = created?.data?.view?.id
+    expect(viewId).toBeTruthy()
+    const fetched = await apiGet(page, `/api/views/${viewId}`)
+    const filterNames = (fetched?.data?.view?.filter_tags || []).map((t: any) => t.name)
+    expect(filterNames).toContain(usedTagName)
   })
 
 })

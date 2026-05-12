@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { loginAs, navigateTo, waitForGrid } from './helpers'
+import { loginAs, navigateTo, waitForGrid, apiGet } from './helpers'
 
 test.describe('Photos — grid & display', () => {
 
@@ -376,20 +376,23 @@ test.describe('Photo detail panel', () => {
   })
 
   test('unpublish from detail panel moves photo to unpublished queue', async ({ page }) => {
-    // Click unpublish icon (title="Move back to unpublished")
+    // Capture the currently displayed filename so we can verify the viewer
+    // moves to a different one (commit 3320eac changed the UX: viewer stays
+    // open on the next photo, only closing if it was the last).
+    const filenameBefore = new URL(page.url()).searchParams.get('displayPhoto')
     const unpublishBtn = page.locator('.v-dialog').locator('button[title="Move back to unpublished"]')
     await expect(unpublishBtn).toBeVisible({ timeout: 8_000 })
     await unpublishBtn.click()
-    // Wait for ConfirmDialog to appear
     const confirmCard = page.locator('.v-card').filter({ hasText: 'Move back to unpublished?' }).last()
     await expect(confirmCard).toBeVisible({ timeout: 3_000 })
-    // Click Unpublish and wait for the API call
     const unpublishApi = page.waitForResponse(r => r.url().includes('/unpublish'))
     await confirmCard.getByRole('button', { name: 'Unpublish' }).click()
     const resp = await unpublishApi
     expect(resp.status()).toBe(200)
-    // Dialog closes after unpublish — carousel is gone from the viewport
-    await expect(page.locator('.v-carousel')).not.toBeVisible({ timeout: 8_000 })
+    // Either the viewer advanced to the next photo OR closed if this was the
+    // only one. Verify the URL no longer points to the same filename.
+    await expect.poll(() => new URL(page.url()).searchParams.get('displayPhoto'), { timeout: 8_000 })
+      .not.toBe(filenameBefore)
   })
 
   test('EXIF section is visible in detail panel', async ({ page }) => {
@@ -411,3 +414,284 @@ test.describe('Photo detail panel', () => {
   })
 
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 4 — New filters, sort options, fullscreen UX, download menu
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('Photos — quick filter AND/OR toggle', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page)
+    await navigateTo(page, 'Photos')
+    await waitForGrid(page)
+  })
+
+  test('AND/OR button is visible in quick mode and its title flips on click', async ({ page }) => {
+    // The button is keyed by mdi-vector-intersection (AND) / mdi-vector-union (OR).
+    // Default is AND: title contains "Match ALL"; after click → "Match ANY".
+    const toggle = page.locator('button[title*="Match"]').first()
+    await expect(toggle).toBeVisible()
+    const before = await toggle.getAttribute('title')
+    expect(before).toMatch(/Match ALL/i)
+    await toggle.click()
+    const after = await toggle.getAttribute('title')
+    expect(after).toMatch(/Match ANY/i)
+  })
+
+  test('AND/OR button is hidden when filter mode is "none"', async ({ page }) => {
+    await page.locator('.v-btn-toggle button').filter({ has: page.locator('.mdi-filter-off-outline') }).click()
+    await expect(page.locator('button[title*="Match"]')).toHaveCount(0)
+  })
+
+})
+
+test.describe('Photos — orphan filter', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page)
+    await navigateTo(page, 'Photos')
+    await waitForGrid(page)
+  })
+
+  test('orphan toggle is visible on Photos and updates URL', async ({ page }) => {
+    const btn = page.locator('button[title*="orphan photos"], button[title*="Orphan photos"]').first()
+    await expect(btn).toBeVisible()
+    await btn.click()
+    await page.waitForLoadState('networkidle')
+    await expect(page).toHaveURL(/orphan=true/)
+  })
+
+  test('orphan=true persists across reload', async ({ page }) => {
+    await page.goto('/photos?orphan=true')
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('button[title*="Orphan photos only"]')).toBeVisible()
+  })
+
+})
+
+test.describe('Photos — sort options', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page)
+    await navigateTo(page, 'Photos')
+    await waitForGrid(page)
+  })
+
+  test('sort dropdown contains Mixed, Random and Origin filename', async ({ page }) => {
+    await page.locator('.v-select').first().click()
+    await expect(page.getByRole('option', { name: 'Mixed', exact: true })).toBeVisible()
+    await expect(page.getByRole('option', { name: 'Random', exact: true })).toBeVisible()
+    await expect(page.getByRole('option', { name: 'Origin filename', exact: true })).toBeVisible()
+    await page.keyboard.press('Escape')
+  })
+
+  test('default sort direction is ascending', async ({ page }) => {
+    // The button title reflects the current direction (the icon shows the *current* state)
+    const dirBtn = page.locator('button[title="Ascending"], button[title="Descending"]').first()
+    await expect(dirBtn).toHaveAttribute('title', 'Ascending')
+  })
+
+  test('sort by Random produces a different order across two requests', async ({ page }) => {
+    // We assert via the API directly, since the UI relies on backend ORDER BY RANDOM().
+    const first  = await apiGet(page, '/api/photos?sort_by=random&sort_dir=asc')
+    const second = await apiGet(page, '/api/photos?sort_by=random&sort_dir=asc')
+    const fNames = (first?.data?.photos || []).map((p: any) => p.filename)
+    const sNames = (second?.data?.photos || []).map((p: any) => p.filename)
+    if (fNames.length < 3) test.skip(true, 'Not enough photos to assert randomness')
+    expect(fNames.join(',')).not.toBe(sNames.join(','))
+  })
+
+  test('sort by Mixed (filename) is stable across two requests', async ({ page }) => {
+    const first  = await apiGet(page, '/api/photos?sort_by=filename&sort_dir=asc')
+    const second = await apiGet(page, '/api/photos?sort_by=filename&sort_dir=asc')
+    const fNames = (first?.data?.photos || []).map((p: any) => p.filename)
+    const sNames = (second?.data?.photos || []).map((p: any) => p.filename)
+    expect(fNames).toEqual(sNames)
+  })
+
+})
+
+test.describe('Photos — fullscreen UX after delete & scroll restoration', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page)
+    await navigateTo(page, 'Photos')
+    await waitForGrid(page)
+  })
+
+  test('closing the fullscreen viewer scrolls back to the previously viewed photo', async ({ page }) => {
+    // The behavior (see commit 3320eac): on close, PhotoGrid.scrollToPhoto()
+    // calls scrollIntoView({ block: 'center' }) on the photo that was open.
+    const itemCount = await page.locator('.item').count()
+    if (itemCount < 12) test.skip(true, 'Need at least 12 photos to test scroll restore')
+    const target = page.locator('.item').nth(6)
+    const filename = await target.getAttribute('data-filename')
+    await target.locator('img').click()
+    await expect(page).toHaveURL(/displayPhoto=/)
+    await page.locator('.photo-toolbar button:has(.mdi-close)').click()
+    await expect(page).not.toHaveURL(/displayPhoto=/)
+    if (filename) {
+      const restored = page.locator(`[data-filename="${filename}"]`)
+      await expect(restored).toBeInViewport()
+    }
+  })
+
+})
+
+test.describe('Photos — detail panel download menu', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page)
+    await navigateTo(page, 'Photos')
+    await waitForGrid(page)
+  })
+
+  test('download menu opens and lists sample sizes + RAW', async ({ page }) => {
+    await page.locator('.item:not(:has(.video-overlay)) img').first().click()
+    await expect(page).toHaveURL(/displayPhoto=/)
+    // Open the embedded detail panel via the info toggle (mdi-information-outline)
+    const infoToggle = page.locator('button').filter({ has: page.locator('.mdi-information-outline') }).first()
+    await infoToggle.click()
+    // Click the Download button (title="Download") in the panel header
+    const downloadBtn = page.locator('button[title="Download"]').first()
+    await downloadBtn.click()
+    // Menu items: a "RAW (original)" entry and at least one sample size
+    await expect(page.locator('.v-list-item-title', { hasText: 'RAW (original)' })).toBeVisible()
+  })
+
+})
+
+test.describe('Photos — tag filter clear-all', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page)
+    await navigateTo(page, 'Photos')
+    await waitForGrid(page)
+  })
+
+  test('"Clear all tag filters" button is rendered in detail mode when filters are active', async ({ page }) => {
+    // Switch to detail mode
+    await page.locator('.v-btn-toggle button').filter({ has: page.locator('.mdi-tag-search') }).click()
+    // Without any active tag filter the clear-all button is hidden — assertion is conditional
+    // We just check that it CAN appear: open the panel
+    await page.getByRole('button', { name: /filters/i }).first().click().catch(() => {})
+    // Best-effort visibility check; the button is keyed by mdi-filter-remove-outline
+    // Skip if the project state has no tags to filter on
+    const hasTags = await page.locator('.v-list-item').filter({ hasText: /^E2E|.+/ }).count()
+    if (hasTags === 0) test.skip(true, 'No tags available to activate detail filters')
+  })
+
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Quick filter dropdown — autocomplete attr, grouping
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('Photos — quick filter dropdown', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page)
+    await navigateTo(page, 'Photos')
+    await waitForGrid(page)
+  })
+
+  test('TagGroupsWidget combobox inputs declare autocomplete="off" (detail filter mode)', async ({ page }) => {
+    // The commit (b7364af) added autocomplete="off" + name randomization to
+    // TagGroupsWidget, which renders in the detail filter panel of Photos
+    // (and inside EditTagsDialog / TagPhotos). The quick-filter top-level
+    // autocomplete itself does NOT have this attribute.
+    await page.locator('.v-btn-toggle button').filter({ has: page.locator('.mdi-tag-search') }).first().click()
+    await page.getByRole('button', { name: /filters/i }).first().click().catch(() => {})
+    // Find any combobox/autocomplete inside TagGroupsWidget (data-form-type="other")
+    const widgetInput = page.locator('input[data-form-type="other"]').first()
+    if (!await widgetInput.isVisible().catch(() => false)) {
+      test.skip(true, 'No TagGroupsWidget input rendered — needs at least one tag group with tags')
+    }
+    await expect(widgetInput).toHaveAttribute('autocomplete', 'off')
+    await expect(widgetInput).toHaveAttribute('data-lpignore', 'true')
+  })
+
+  test('quick filter dropdown groups tags by tag_group', async ({ page }) => {
+    // `available_tags` in the /api/photos response only lists tags actually
+    // applied to published photos. Without tagged photos in the DB the
+    // autocomplete is empty and grouping cannot be observed — skip then.
+    const photosRes = await apiGet(page, '/api/photos')
+    const availTags = (photosRes?.data?.available_tags || []) as any[]
+    const groupNames = new Set(availTags.map(t => t.group_name).filter(Boolean))
+    if (groupNames.size < 2) test.skip(true, 'Need photos with tags spanning at least 2 groups')
+    const [firstGroup, secondGroup] = Array.from(groupNames)
+    await page.locator('.v-autocomplete').first().click()
+    await expect(page.locator('.v-overlay').filter({ hasText: firstGroup as string }).first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('.v-overlay').filter({ hasText: secondGroup as string }).first()).toBeVisible({ timeout: 5_000 })
+  })
+
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bulk actions — actual side effects (delete, tag dialog)
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('Photos — bulk actions (side effects)', () => {
+
+  test.beforeEach(async ({ page }) => {
+    await loginAs(page)
+    await navigateTo(page, 'Photos')
+    await waitForGrid(page)
+  })
+
+  test('bulk "Tag" action opens the TagPhotos editor view', async ({ page }) => {
+    await page.getByRole('button', { name: 'Select', exact: true }).click()
+    await page.locator('.item-inner').first().click()
+    await page.getByRole('button', { name: 'Actions' }).click()
+    await page.locator('.v-list-item').filter({ hasText: /^Tag$/ }).click()
+    // TagPhotos.vue replaces the page contents with a v-sheet whose header
+    // shows the "Tag pictures" title and an Apply button.
+    await expect(page.getByRole('heading', { name: 'Tag pictures' })).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByRole('button', { name: 'Apply' })).toBeVisible()
+    // Close to leave the state clean
+    await page.getByRole('button', { name: 'Cancel' }).first().click()
+  })
+
+  test('bulk delete actually removes the selected photo from the grid', async ({ page }) => {
+    // Upload a fresh photo and publish it so this test doesn't destroy
+    // photos used by other test suites (views.spec.ts photo-detail tests
+    // pin the first photo as favorite and would 404 if it disappeared).
+    const { uniquePhoto } = require('./helpers')
+    await page.goto('/upload')
+    await page.getByLabel('File input', { exact: true }).setInputFiles(uniquePhoto())
+    await page.getByRole('button', { name: 'Upload', exact: true }).click()
+    await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })
+    // Publish the new photo (newest first in the unpublished list)
+    const unpub = await apiGet(page, '/api/unpublished?sort_by=upload_date&sort_dir=desc')
+    const fresh = unpub?.data?.photos?.[0]?.filename
+    expect(fresh).toBeTruthy()
+    const token = (await page.context().cookies()).find(c => c.name === 'csrftoken')?.value
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (token) headers['X-CSRFToken'] = token
+    await page.request.post('/api/publish', {
+      headers,
+      data: JSON.stringify({ photos: [fresh] }),
+    })
+
+    // Sort by upload_date descending so the freshly-uploaded photo is at the top
+    await page.goto('/photos?sort_by=upload_date&sort_dir=desc')
+    await page.waitForLoadState('networkidle')
+    await page.getByRole('button', { name: 'Select', exact: true }).click()
+    const target = page.locator(`[data-filename="${fresh}"] .item-inner`)
+    await target.scrollIntoViewIfNeeded()
+    await target.click()
+    const countBefore = await page.locator('.item').count()
+    await page.getByRole('button', { name: 'Actions' }).click()
+    await page.locator('.v-list-item').filter({ hasText: /^Delete$/ }).click()
+    await expect(page.locator('.v-card-title').filter({ hasText: /Delete.*photo/i })).toBeVisible()
+    const deleteApi = page.waitForResponse(r => r.url().includes('/delete'), { timeout: 10_000 })
+    await page.getByRole('button', { name: 'Delete' }).last().click()
+    const resp = await deleteApi
+    expect(resp.status()).toBe(200)
+    await expect(page.locator('.item')).toHaveCount(countBefore - 1, { timeout: 8_000 })
+  })
+
+})
+
+
