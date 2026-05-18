@@ -395,8 +395,8 @@
         <v-card-text>
           <v-form ref="uploadForm" v-model="uploadFormValid" @submit.prevent="onUploadSubmit">
             <v-file-input v-model="uploadFiles" :rules="[v => !!v?.length || 'Required']" :readonly="uploading"
-              accept="image/jpeg" multiple label="Select photos" prepend-icon="mdi-camera"
-              chips show-size counter variant="solo"></v-file-input>
+              :accept="acceptedUploadTypes" multiple :label="allowVideoUpload ? 'Select photos or videos' : 'Select photos'"
+              prepend-icon="mdi-camera" chips show-size counter variant="solo"></v-file-input>
             <div v-if="uploadedCount > 0" class="mt-3">
               <v-progress-linear :model-value="uploadProgress" color="primary" rounded height="6" class="mb-2"></v-progress-linear>
               <span class="text-caption text-medium-emphasis">{{ uploadedCount }} / {{ uploadTotalFiles }} uploaded</span>
@@ -416,7 +416,7 @@
       <v-card>
         <v-card-text class="d-flex flex-column align-center pa-8 ga-3">
           <v-icon size="48" color="success">mdi-check-circle-outline</v-icon>
-          <span class="text-body-1 font-weight-medium">{{ lastUploadedCount }} photo{{ lastUploadedCount !== 1 ? 's' : '' }} uploaded</span>
+          <span class="text-body-1 font-weight-medium">{{ lastUploadedCount }} file{{ lastUploadedCount !== 1 ? 's' : '' }} uploaded</span>
           <span class="text-caption text-medium-emphasis">They will appear in the view once reviewed.</span>
         </v-card-text>
         <v-card-actions>
@@ -518,6 +518,7 @@ export default {
     uploadProgress: 0,
     uploadSuccessDialog: false,
     lastUploadedCount: 0,
+    allowVideoUpload: false,
   }),
 
   async mounted() {
@@ -661,6 +662,7 @@ export default {
       this.photos = result.data.value.data.photos
       this.total = result.data.value.data.total ?? this.photos.length
       this.paths = result.data.value.data.paths
+      this.allowVideoUpload = result.data.value.data.allow_video_upload === true
       // On initial load, seed sort state from the view's saved values.
       // On subsequent loads (sort change, tag, bulk action…), preserve the user's UI state.
       if (initial) {
@@ -838,6 +840,11 @@ export default {
   computed: {
     isUploadMode() {
       return this.$route.name === 'upload-view'
+    },
+    acceptedUploadTypes() {
+      return this.allowVideoUpload
+        ? 'image/jpeg,video/mp4,video/quicktime,video/webm'
+        : 'image/jpeg'
     },
     photoDetailEndpoint() {
       if (this.isUploadMode) return `/api/token/${this.$route.params.token}/photos`

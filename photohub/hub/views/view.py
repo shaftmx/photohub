@@ -422,6 +422,7 @@ def _build_view_photos_response(request, v):
         "total": total,
         "paths": get_photo_root_paths(),
         "view": v_data,
+        "allow_video_upload": bool(get_setting('ALLOW_VIDEO_UPLOAD')),
     })
 
 
@@ -596,7 +597,16 @@ def upload_view_photo(request, token):
             LOG.info("Skipping system file: %s" % file.name)
             continue
 
-        photo_filename = "%s.jpg" % getMd5(file)
+        mime = getattr(file, 'content_type', '') or ''
+        is_video = mime.startswith('video/')
+
+        if is_video and not get_setting('ALLOW_VIDEO_UPLOAD'):
+            return Response(400, data="Video upload is disabled")
+
+        if is_video:
+            photo_filename = "%s.mp4" % getMd5(file)
+        else:
+            photo_filename = "%s.jpg" % getMd5(file)
         photo_path = getRawPath(photo_filename)
 
         if default_storage.exists(photo_path):
@@ -608,9 +618,11 @@ def upload_view_photo(request, token):
         err = save_photo(file, photo_path, owner="guest")
         if err is not None:
             if isinstance(err, UnidentifiedImageError):
-                return ErrorRequest(message="Unsupported file format", details="'%s' is not a supported image file" % file.name)
+                return ErrorRequest(message="Unsupported file format", details="'%s' is not a supported image or video file" % file.name)
             return ErrorUnexpected(details="save_photo '%s' - %s" % (file.name, err), trace=err)
 
+        if is_video:
+            generate_video_poster(photo_filename)
         if get_setting('GENERATE_SAMPLES_ON_UPLOAD'):
             generate_photo_samples(photo_filename)
 
