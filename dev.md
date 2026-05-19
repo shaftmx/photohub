@@ -294,7 +294,7 @@ Polling toutes les `TRANSCODE_POLL_INTERVAL` secondes :
 
 1. `Photo.objects.filter(type='video', transcode_status='pending')` → la liste des candidates.
 2. `transcode_status='processing'` est posé en DB.
-3. ffmpeg encode `raw/<md5>.mp4` → `raw/<md5>.mp4.transcoding.mp4` (`libx264`, `-preset $TRANSCODE_PRESET`, `-crf $TRANSCODE_CRF`, `-threads $TRANSCODE_THREADS`, `+faststart`, audio AAC 128k). Le run est borné par `TRANSCODE_TIMEOUT` (sinon `subprocess.TimeoutExpired` → status `error`).
+3. ffmpeg encode `raw/<md5>.mp4` → `raw/<md5>.mp4.transcoding.mp4`. Codec selon `TRANSCODE_CODEC` (`h265` = `libx265` + tag `hvc1` pour la compat Apple/Safari, par défaut ; `h264` = `libx264` pour compat universelle). Avec `-preset $TRANSCODE_PRESET`, `-crf $TRANSCODE_CRF`, `-threads $TRANSCODE_THREADS`, `+faststart`, audio AAC 128k. Le run est borné par `TRANSCODE_TIMEOUT` (sinon `subprocess.TimeoutExpired` → status `error`).
 4. Replacement atomique :
    - Si `original_ext` est set : `raw/<md5>.mp4` est d'abord renommé en `raw/<md5>_original.<ext>` (préservation de l'original), puis `os.replace(tmp, raw/<md5>.mp4)` met la version transcodée en place.
    - Sinon : `os.replace` écrase directement l'original, qui est perdu.
@@ -325,9 +325,10 @@ Avec `KEEP_ORIGINAL_VIDEO=false`, la 3e colonne reste vide et l'original est dé
 | Clé | Effet |
 |---|---|
 | `ALLOW_VIDEO_UPLOAD` | Active/désactive l'upload vidéo (gate côté API : 400 si désactivé) |
-| `KEEP_ORIGINAL_VIDEO` | Préserve le fichier source après transcode sous `_original.<ext>` |
-| `TRANSCODE_PRESET` | Preset ffmpeg `libx264` (`ultrafast` → `veryslow`) |
-| `TRANSCODE_CRF` | Quality (lower = better quality, larger file) |
+| `KEEP_ORIGINAL_VIDEO` | Préserve le fichier source après transcode sous `_original.<ext>`. Default `True` |
+| `TRANSCODE_CODEC` | `h265` (libx265, default) ou `h264` (libx264). HEVC ≈ 30-50% plus petit mais encode plus lent et Firefox/Linux n'a pas le decoder OS-level |
+| `TRANSCODE_PRESET` | Preset ffmpeg (`ultrafast` → `veryslow`). Default `medium` |
+| `TRANSCODE_CRF` | Quality (lower = better quality, larger file). Default `28`. ⚠ Les valeurs CRF entre H.264 et H.265 ne sont **pas équivalentes** — H.265 CRF 28 ≈ H.264 CRF 23 en quality perçue |
 | `TRANSCODE_THREADS` | Threads alloués à ffmpeg |
 | `TRANSCODE_TIMEOUT` | Timeout subprocess (s) |
 | `TRANSCODE_POLL_INTERVAL` | Cadence de poll DB du worker (s) |

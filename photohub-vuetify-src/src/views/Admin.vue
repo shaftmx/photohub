@@ -554,11 +554,20 @@
             ></v-text-field>
 
             <v-select
+              v-model="qualityConfig.TRANSCODE_CODEC"
+              :items="[{title: 'H.265 / HEVC (smaller files, slower encode)', value: 'h265'}, {title: 'H.264 / AVC (universal compatibility)', value: 'h264'}]"
+              label="Video codec"
+              density="compact" variant="outlined" class="mb-3"
+              hint="H.265 ≈ 30–50% smaller than H.264 at same quality but heavier to encode and not decoded natively by Firefox on Linux. Default: h265"
+              persistent-hint clearable
+            ></v-select>
+
+            <v-select
               v-model="qualityConfig.TRANSCODE_PRESET"
               :items="['ultrafast','superfast','veryfast','faster','fast','medium','slow','slower','veryslow']"
               label="Encoding preset"
               density="compact" variant="outlined" class="mb-3"
-              hint="Slower preset = better compression, more CPU. Default: fast"
+              hint="Slower preset = better compression, more CPU. Default: medium"
               persistent-hint clearable
             ></v-select>
 
@@ -566,7 +575,7 @@
               v-model="qualityConfig.TRANSCODE_CRF"
               type="number" label="CRF quality (0–51, lower = better)"
               density="compact" variant="outlined" class="mb-3"
-              hint="Quality factor — 18 high quality, 23 default, 28 smaller files"
+              hint="Quality factor — 18 high quality, 28 default, 32 smaller files. (H.265 CRF runs ~6 points 'higher' than H.264 for the same quality.)"
               persistent-hint clearable
             ></v-text-field>
 
@@ -1209,6 +1218,7 @@ export default {
         KEEP_ORIGINAL_VIDEO:        this.qualityConfig.KEEP_ORIGINAL_VIDEO ? 'True' : 'False',
         TRANSCODE_POLL_INTERVAL:    this.qualityConfig.TRANSCODE_POLL_INTERVAL || '',
         TRANSCODE_THREADS:          this.qualityConfig.TRANSCODE_THREADS || '',
+        TRANSCODE_CODEC:            this.qualityConfig.TRANSCODE_CODEC || '',
         TRANSCODE_PRESET:           this.qualityConfig.TRANSCODE_PRESET || '',
         TRANSCODE_CRF:              this.qualityConfig.TRANSCODE_CRF || '',
         TRANSCODE_TIMEOUT:          this.qualityConfig.TRANSCODE_TIMEOUT || '',

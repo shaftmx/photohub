@@ -205,11 +205,15 @@ RAW_PHOTO_OVERRIDE_EXISTS = strtobool(os.environ.get('RAW_PHOTO_OVERRIDE_EXISTS'
 GENERATE_SAMPLES_ON_UPLOAD = strtobool(os.environ.get('GENERATE_SAMPLES_ON_UPLOAD', 'False'))
 
 ALLOW_VIDEO_UPLOAD      = strtobool(os.environ.get('ALLOW_VIDEO_UPLOAD', 'False'))
-KEEP_ORIGINAL_VIDEO     = strtobool(os.environ.get('KEEP_ORIGINAL_VIDEO', 'False'))
+KEEP_ORIGINAL_VIDEO     = strtobool(os.environ.get('KEEP_ORIGINAL_VIDEO', 'True'))
 TRANSCODE_POLL_INTERVAL = int(os.environ.get('TRANSCODE_POLL_INTERVAL', '10'))
 TRANSCODE_THREADS       = int(os.environ.get('TRANSCODE_THREADS', '0'))
-TRANSCODE_PRESET        = os.environ.get('TRANSCODE_PRESET', 'fast')
-TRANSCODE_CRF           = int(os.environ.get('TRANSCODE_CRF', '23'))
+# h264 (libx264) — universal browser support, larger files.
+# h265 (libx265) — ~30-50% smaller at same quality but heavier CPU and not
+# decoded natively by Firefox on Linux without an OS-level codec.
+TRANSCODE_CODEC         = os.environ.get('TRANSCODE_CODEC', 'h265')
+TRANSCODE_PRESET        = os.environ.get('TRANSCODE_PRESET', 'medium')
+TRANSCODE_CRF           = int(os.environ.get('TRANSCODE_CRF', '28'))
 TRANSCODE_TIMEOUT       = int(os.environ.get('TRANSCODE_TIMEOUT', '3600'))
 
 GALLERY_PAGE_SIZE_DESKTOP = int(os.environ.get('GALLERY_PAGE_SIZE_DESKTOP', '600'))

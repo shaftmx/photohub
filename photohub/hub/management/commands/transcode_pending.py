@@ -30,8 +30,16 @@ def _transcode_video(photo):
     threads = get_setting('TRANSCODE_THREADS')
     preset  = get_setting('TRANSCODE_PRESET')
     crf     = get_setting('TRANSCODE_CRF')
+    codec   = (get_setting('TRANSCODE_CODEC') or 'h265').lower()
 
-    LOG.info("[transcode] original_ext=%r  input=%s" % (photo.original_ext, abs_path))
+    # h265 = libx265 (HEVC) — needs hvc1 tag for Apple/Safari playback.
+    # h264 = libx264 (AVC) — universal compatibility.
+    if codec == 'h265':
+        video_codec_args = ['-c:v', 'libx265', '-tag:v', 'hvc1']
+    else:
+        video_codec_args = ['-c:v', 'libx264']
+
+    LOG.info("[transcode] codec=%s original_ext=%r input=%s" % (codec, photo.original_ext, abs_path))
 
     timeout = get_setting('TRANSCODE_TIMEOUT') or 3600
 
@@ -44,7 +52,7 @@ def _transcode_video(photo):
 
     result = subprocess.run(
         ['ffmpeg', '-y', '-i', abs_path,
-         '-c:v', 'libx264', '-preset', preset, '-crf', str(crf),
+         *video_codec_args, '-preset', preset, '-crf', str(crf),
          '-threads', str(threads),
          '-movflags', '+faststart',
          '-c:a', 'aac', '-b:a', '128k',
