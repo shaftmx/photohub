@@ -1,6 +1,6 @@
 # PhotoHub — E2E Test Coverage
 
-Total: **~200 tests** across 7 spec files. (~71 tests added covering admin, new filters, fullscreen UX, download menu, upload link decoupling, and video; +5 guest-upload tests.)
+Total: **~201 tests** across 7 spec files. (~71 tests added covering admin, new filters, fullscreen UX, download menu, upload link decoupling, and video; +5 guest-upload tests; +1 video capture-date.)
 
 > Tests in the new `admin.spec.ts` and `video.spec.ts` files, plus the new `describe` blocks at the bottom of the older specs, mutate live state through the API helpers in `e2e/helpers.ts`. They clean up after themselves (`afterAll` hooks) but assume a working DB and, for video tests, a healthy transcode worker.
 

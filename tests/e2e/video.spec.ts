@@ -3,6 +3,7 @@ import {
   loginAs, navigateTo, waitForGrid,
   FIXTURE_PHOTO,
   FIXTURE_VIDEO_MP4, FIXTURE_VIDEO_MOV, FIXTURE_VIDEO_WEBM, FIXTURE_UNSUPPORTED,
+  FIXTURE_VIDEO_DATED_MP4, FIXTURE_VIDEO_DATED_CREATION_TIME,
   apiGet, apiPost, setAppConfig, uploadFiles, uniqueFile, waitForTranscode,
 } from './helpers'
 
@@ -66,6 +67,22 @@ test.describe('Video — upload & transcode', () => {
     await uploadFiles(page, file)
     await expect(page.locator('.v-snackbar, .v-alert').filter({ hasText: /uploaded|success/i }).first())
       .toBeVisible({ timeout: 15_000 })
+  })
+
+  test('video creation_time from container metadata is stored as Photo.date', async ({ page }) => {
+    const file = uniqueFile(FIXTURE_VIDEO_DATED_MP4)
+    const filename = require('path').basename(file)
+    await uploadFiles(page, file)
+    await expect(page.locator('.v-snackbar, .v-alert').filter({ hasText: /uploaded|success/i }).first())
+      .toBeVisible({ timeout: 15_000 })
+    // Locate the uploaded video by its origin_filename — date field on it
+    // must match the creation_time injected into the fixture, not the upload
+    // time (which would be ~now).
+    const res = await apiGet(page, '/api/unpublished?media_type=video&limit=500')
+    const photos = (res?.data?.photos || []) as any[]
+    const uploaded = photos.find(p => p.origin_filename === filename)
+    expect(uploaded, `uploaded video '${filename}' not found in /api/unpublished`).toBeTruthy()
+    expect(new Date(uploaded.date).getTime()).toBe(new Date(FIXTURE_VIDEO_DATED_CREATION_TIME).getTime())
   })
 
   test('file input accept attribute exposes image/* and video/* when video upload is enabled', async ({ page }) => {

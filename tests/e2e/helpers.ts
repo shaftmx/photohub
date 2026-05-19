@@ -17,6 +17,10 @@ export const FIXTURE_PHOTO_2 = path.join(__dirname, '../fixtures/test-photo-2.jp
 export const FIXTURE_VIDEO_MP4 = path.join(__dirname, '../fixtures/test-video.mp4')
 export const FIXTURE_VIDEO_MOV = path.join(__dirname, '../fixtures/test-video.mov')
 export const FIXTURE_VIDEO_WEBM = path.join(__dirname, '../fixtures/test-video.webm')
+// Same as test-video.mp4 but with creation_time=2023-06-15T10:30:00.000000Z
+// injected in the container metadata — used to assert capture-date extraction.
+export const FIXTURE_VIDEO_DATED_MP4 = path.join(__dirname, '../fixtures/test-video-dated.mp4')
+export const FIXTURE_VIDEO_DATED_CREATION_TIME = '2023-06-15T10:30:00Z'
 export const FIXTURE_UNSUPPORTED = path.join(__dirname, '../fixtures/test-unsupported.avi')
 
 /**
