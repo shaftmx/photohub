@@ -77,7 +77,14 @@ def admin_or_contributor_required(func):
 
 #Response
 def Response(status=200, data={}):
-    return JsonResponse({"status": status, "data": data}, status=status)
+    # no-store: API JSON is always dynamic; without this header browsers apply
+    # heuristic caching and serve stale responses (the upload-link page on a
+    # phone kept showing an old payload without `allow_video_upload` until the
+    # user manually cleared the cache). no-store also disables bfcache, which
+    # is a useful side-effect for token-authenticated pages.
+    resp = JsonResponse({"status": status, "data": data}, status=status)
+    resp['Cache-Control'] = 'no-store'
+    return resp
 
 _SYSTEM_FILENAMES = frozenset({'thumbs.db', '.ds_store', 'desktop.ini', 'ehthumbs.db', '.thumbsdb'})
 
