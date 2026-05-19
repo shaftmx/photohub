@@ -39,12 +39,32 @@
                 :key="photo.filename"
                 :value="photo.filename"
               >
-                <video
-                  v-if="photo.type === 'video'"
-                  :src="(paths.raw || paths[sharedDatas.displayPhotoSize]) + '/' + photo['hash_path'] + '/' + photo['filename']"
-                  controls
-                  style="width:100%; height:100%; object-fit:contain; background:#000;"
-                ></video>
+                <template v-if="photo.type === 'video'">
+                  <video
+                    v-if="photo.transcode_status === 'done'"
+                    :src="(paths.raw || paths[sharedDatas.displayPhotoSize]) + '/' + photo['hash_path'] + '/' + photo['filename']"
+                    controls
+                    style="width:100%; height:100%; object-fit:contain; background:#000;"
+                  ></video>
+                  <div
+                    v-else
+                    class="d-flex flex-column align-center justify-center"
+                    style="width:100%; height:100%; background:#000; color:#fff; position:relative;"
+                  >
+                    <img
+                      :src="(paths[sharedDatas.displayPhotoSize] || paths.raw) + '/' + photo['hash_path'] + '/' + thumbFilename(photo)"
+                      style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; opacity:0.4;"
+                    />
+                    <template v-if="photo.transcode_status === 'error'">
+                      <v-icon size="48" color="error" style="z-index:1;">mdi-alert-circle-outline</v-icon>
+                      <span class="text-body-2 mt-2" style="z-index:1;">Transcoding failed — video can't be played</span>
+                    </template>
+                    <template v-else>
+                      <v-progress-circular indeterminate color="white" size="48" style="z-index:1;"></v-progress-circular>
+                      <span class="text-body-2 mt-3" style="z-index:1;">Transcoding in progress…</span>
+                    </template>
+                  </div>
+                </template>
                 <img
                   v-else
                   :src="(sharedDatas.displayPhotoSize === 'raw' ? paths.raw : (paths[sharedDatas.displayPhotoSize] || paths.raw)) + '/' + photo['hash_path'] + '/' + photo['filename']"
@@ -91,6 +111,7 @@
 import { defineComponent, computed } from 'vue'
 import { useTheme } from 'vuetify'
 import { getSharedDatas } from '../sharedDatas.js'
+import { thumbFilename } from '../photoUtils.js'
 import PhotoDetail from '../views/PhotoDetailPanel.vue'
 
 export default defineComponent({
@@ -99,7 +120,7 @@ export default defineComponent({
   setup() {
     const theme = useTheme()
     const appThemeName = computed(() => theme.global.name.value)
-    return { theme, appThemeName }
+    return { theme, appThemeName, thumbFilename }
   },
 
   props: {

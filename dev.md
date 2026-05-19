@@ -276,6 +276,70 @@ docker compose -f docker-compose.yml -f docker-compose-dev.yml exec web python /
 docker compose -f docker-compose.yml -f docker-compose-dev.yml exec db mysql -uphotohub -psecret photohub
 ```
 
+## Video transcoding
+
+Le service `worker` (`manage.py transcode_pending`) tourne en boucle et re-encode toute nouvelle vidéo en H.264 + AAC + `+faststart` (MP4 web-optimisé). Le flow complet :
+
+### Upload
+
+1. Le fichier brut arrive sur `POST /api/upload` (auth) ou `POST /api/upload_view/<token>/upload` (anonyme via upload link).
+2. `save_video()` ([utils.py:331](photohub/hub/utils.py)) le sauve **toujours sous l'extension `.mp4`** : `raw/<md5>.mp4`, peu importe le format source réel (`.mov`, `.webm`, `.avi`, …). Le contenu n'est pas transformé à ce stade.
+3. Une entrée `Photo` est créée avec `type='video'` et `transcode_status='pending'`.
+4. Si `KEEP_ORIGINAL_VIDEO=true`, l'extension d'origine (lowercased, fallback `mp4` si absente) est enregistrée dans `original_ext`. Le fichier source est encore à `raw/<md5>.mp4` à ce stade ; il sera renommé après le transcodage.
+5. `generate_video_poster()` extrait une vignette JPG du raw via ffmpeg → `raw/<md5>.jpg`. C'est elle qui est utilisée comme thumbnail et comme placeholder pendant que le transcodage tourne.
+
+### Worker loop
+
+Polling toutes les `TRANSCODE_POLL_INTERVAL` secondes :
+
+1. `Photo.objects.filter(type='video', transcode_status='pending')` → la liste des candidates.
+2. `transcode_status='processing'` est posé en DB.
+3. ffmpeg encode `raw/<md5>.mp4` → `raw/<md5>.mp4.transcoding.mp4` (`libx264`, `-preset $TRANSCODE_PRESET`, `-crf $TRANSCODE_CRF`, `-threads $TRANSCODE_THREADS`, `+faststart`, audio AAC 128k). Le run est borné par `TRANSCODE_TIMEOUT` (sinon `subprocess.TimeoutExpired` → status `error`).
+4. Replacement atomique :
+   - Si `original_ext` est set : `raw/<md5>.mp4` est d'abord renommé en `raw/<md5>_original.<ext>` (préservation de l'original), puis `os.replace(tmp, raw/<md5>.mp4)` met la version transcodée en place.
+   - Sinon : `os.replace` écrase directement l'original, qui est perdu.
+5. `transcode_status='done'` (ou `'error'` en cas d'échec ffmpeg).
+
+Au démarrage le worker remet à `'pending'` toute vidéo coincée en `'processing'` (crash précédent).
+
+### Lecture côté frontend
+
+- `<video>` dans [DisplayPhoto.vue](photohub-vuetify-src/src/components/DisplayPhoto.vue) pointe toujours sur `raw/<md5>.mp4`. Le contenu de ce fichier change en cours de route — c'est l'écrasement atomique qui fait la bascule.
+- Tant que `transcode_status !== 'done'`, le player est **gaté** : on affiche le poster JPG + un spinner "Transcoding in progress…" (ou une icône d'erreur si status `'error'`). Cohérent avec le spinner overlay déjà présent sur [PhotoGrid.vue](photohub-vuetify-src/src/components/PhotoGrid.vue).
+- Le gating évite : lecture aléatoire selon codec/container du raw (HEVC, AV1, container exotique = écran noir silencieux), hoquet du player si l'écrasement arrive en plein playback, absence de `+faststart` sur le raw (gros fichier → buffering long).
+
+### Fichiers sur disque (récap)
+
+Pour une vidéo `vacation.mov` (MD5 `abc...`) uploadée avec `KEEP_ORIGINAL_VIDEO=true` :
+
+| État | `raw/abc.mp4` | `raw/abc.jpg` | `raw/abc_original.mov` |
+|---|---|---|---|
+| Upload | source MOV (extension mensongère) | poster JPG | — |
+| Pendant transcode | source MOV (idem) | poster JPG | — |
+| Après transcode | MP4 transcodé H.264+AAC+faststart | poster JPG | source MOV originale |
+
+Avec `KEEP_ORIGINAL_VIDEO=false`, la 3e colonne reste vide et l'original est définitivement perdu après transcode.
+
+### Settings ([Admin → Video](docs/architecture-dev.svg))
+
+| Clé | Effet |
+|---|---|
+| `ALLOW_VIDEO_UPLOAD` | Active/désactive l'upload vidéo (gate côté API : 400 si désactivé) |
+| `KEEP_ORIGINAL_VIDEO` | Préserve le fichier source après transcode sous `_original.<ext>` |
+| `TRANSCODE_PRESET` | Preset ffmpeg `libx264` (`ultrafast` → `veryslow`) |
+| `TRANSCODE_CRF` | Quality (lower = better quality, larger file) |
+| `TRANSCODE_THREADS` | Threads alloués à ffmpeg |
+| `TRANSCODE_TIMEOUT` | Timeout subprocess (s) |
+| `TRANSCODE_POLL_INTERVAL` | Cadence de poll DB du worker (s) |
+
+### Heartbeat
+
+Le worker écrit dans `AppConfig` :
+- `WORKER_LAST_SEEN` : timestamp ISO mis à jour à chaque poll + toutes les 30s pendant un encode (thread daemon `_keep_alive`).
+- `WORKER_ENCODING_SINCE` / `WORKER_ENCODING_FILE` / `WORKER_ENCODING_INTERNAL` : présents uniquement quand un encode est en cours. Servent à l'admin UI pour afficher "encoding `vacation.mov` since…".
+
+---
+
 ## Migrations Django
 
 ```bash
