@@ -409,6 +409,10 @@ def get_exif(file):
         exifs["ExifVersion"] = exif_ifd.get(ExifTags.Base.ExifVersion)
         exifs["FNumber"] = exif_ifd.get(ExifTags.Base.FNumber)
         exifs["DateTimeOriginal"] = exif_ifd.get(ExifTags.Base.DateTimeOriginal)
+        # EXIF 2.31+ camera timezone offsets — modern Android/iOS emit these.
+        # Without them DateTime* is naive (camera-local) and we lose UTC-fidelity.
+        exifs["OffsetTimeOriginal"] = exif_ifd.get(ExifTags.Base.OffsetTimeOriginal)
+        exifs["OffsetTime"] = exif_ifd.get(ExifTags.Base.OffsetTime)
         exifs["ISOSpeedRatings"] = exif_ifd.get(ExifTags.Base.ISOSpeedRatings)
         exifs["LensModel"] = exif_ifd.get(ExifTags.Base.LensModel)
         exifs["ExposureTime"] = exif_ifd.get(ExifTags.Base.ExposureTime)
@@ -530,9 +534,9 @@ def create_photo_in_db(file, filename, owner):
         }
 
         # Try to get the more accurate date, if nothing in exif use default upload date
-        # DateTimeOriginal 2021:09:12 21:00:34
-        # DateTime 2023:01:31 22:04:00
-        pdate = exifs.get("DateTimeOriginal", exifs.get("DateTime"))
+        # DateTimeOriginal 2021:09:12 21:00:34   (paired with OffsetTimeOriginal '+02:00' in EXIF 2.31+)
+        # DateTime         2023:01:31 22:04:00   (paired with OffsetTime)
+        pdate = exifs.get("DateTimeOriginal") or exifs.get("DateTime")
         if pdate is not None:
             pdate = pdate.strip('\x00').strip()
             # Extract only the date/time portion — strip trailing garbage (e.g. "2019-03-01 15:17:54Adobe Photoshop")
@@ -540,7 +544,19 @@ def create_photo_in_db(file, filename, owner):
             pdate = m.group(0).strip() if m else pdate
             # Normalize EXIF date separators: 2021:09:12 → 2021-09-12 (dateutil doesn't handle colons as date sep)
             normalized = pdate[:10].replace(':', '-') + pdate[10:]
-            defaults["date"] = dateutil_parser.parse(normalized).astimezone(tz=datetime.timezone.utc)
+            # Pair with the matching offset tag if present: this turns the
+            # naive camera-local datetime into an aware datetime that converts
+            # to the correct UTC. Without an offset we assume UTC — wrong if
+            # the camera was in a non-UTC TZ but deterministic (doesn't depend
+            # on the server's TZ) and consistent with the video flow (ffprobe
+            # creation_time is already UTC).
+            offset = exifs.get("OffsetTimeOriginal") if exifs.get("DateTimeOriginal") else exifs.get("OffsetTime")
+            if offset:
+                normalized = normalized.rstrip() + offset.strip()
+            parsed = dateutil_parser.parse(normalized)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+            defaults["date"] = parsed.astimezone(tz=datetime.timezone.utc)
         LOG.info(defaults)
         # defaults: if the photo already exists in DB, only the fields listed in defaults are overwritten.
         # Fields not in defaults (tags, favorite, rating, description) are preserved.

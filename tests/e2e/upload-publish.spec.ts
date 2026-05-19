@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test'
 import {
   loginAs, navigateTo, FIXTURE_PHOTO, FIXTURE_PHOTO_2, waitForGrid,
   uniquePhoto, tempFile, apiGet,
+  FIXTURE_PHOTO_DATED_CET, FIXTURE_PHOTO_DATED_CET_UTC,
 } from './helpers'
+import path from 'path'
 
 test.describe('Upload', () => {
 
@@ -39,6 +41,22 @@ test.describe('Upload', () => {
     await page.getByLabel('File input', { exact: true }).setInputFiles([FIXTURE_PHOTO, FIXTURE_PHOTO_2])
     await page.getByRole('button', { name: 'Upload', exact: true }).click()
     await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 20_000 })
+  })
+
+  // Fixture EXIF: DateTimeOriginal=2023:06:15 14:30:00, OffsetTimeOriginal=+02:00
+  // Expected stored UTC: 2023-06-15T12:30:00Z. Without the OffsetTimeOriginal
+  // wiring, a server in UTC would store 14:30Z — a 2h drift vs videos taken
+  // at the same instant (whose creation_time is already UTC).
+  test('photo EXIF DateTimeOriginal + OffsetTimeOriginal → stored as the correct UTC', async ({ page }) => {
+    const file = uniquePhoto(FIXTURE_PHOTO_DATED_CET)
+    const filename = path.basename(file)
+    await page.getByLabel('File input', { exact: true }).setInputFiles(file)
+    await page.getByRole('button', { name: 'Upload', exact: true }).click()
+    await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })
+    const res = await apiGet(page, '/api/unpublished?sort_by=upload_date&sort_dir=desc&limit=500')
+    const uploaded = (res?.data?.photos || []).find((p: any) => p.origin_filename === filename)
+    expect(uploaded, `uploaded photo '${filename}' not found in /api/unpublished`).toBeTruthy()
+    expect(new Date(uploaded.date).getTime()).toBe(new Date(FIXTURE_PHOTO_DATED_CET_UTC).getTime())
   })
 
 })

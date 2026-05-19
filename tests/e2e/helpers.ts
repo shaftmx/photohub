@@ -12,6 +12,10 @@ export const TEST_PASSWORD = process.env.TEST_PASSWORD || 'admin'
 // Small fixture JPEG placed in tests/fixtures/
 export const FIXTURE_PHOTO = path.join(__dirname, '../fixtures/test-photo.jpg')
 export const FIXTURE_PHOTO_2 = path.join(__dirname, '../fixtures/test-photo-2.jpg')
+// JPEG with EXIF DateTimeOriginal=2023:06:15 14:30:00 + OffsetTimeOriginal=+02:00
+// — used to assert that the camera timezone is honoured (stored UTC = 12:30).
+export const FIXTURE_PHOTO_DATED_CET = path.join(__dirname, '../fixtures/test-photo-dated-cet.jpg')
+export const FIXTURE_PHOTO_DATED_CET_UTC = '2023-06-15T12:30:00Z'
 
 // Video fixtures — generated once with ffmpeg, see tests/README.md
 export const FIXTURE_VIDEO_MP4 = path.join(__dirname, '../fixtures/test-video.mp4')
