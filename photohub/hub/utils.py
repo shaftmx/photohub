@@ -488,6 +488,46 @@ def get_exif(file):
 from django.utils import timezone
 from . import models
 import datetime
+
+
+def parse_exif_capture_date(exifs):
+    """Return an aware UTC datetime from an exifs dict (as produced by get_exif),
+    or None if there is no usable DateTimeOriginal / DateTime tag.
+
+    Honours EXIF 2.31 OffsetTimeOriginal / OffsetTime when present; otherwise
+    assumes the naive datetime is already UTC (consistent with the video flow
+    and deterministic across host timezones)."""
+    pdate = exifs.get("DateTimeOriginal") or exifs.get("DateTime")
+    if pdate is None:
+        return None
+    pdate = pdate.strip('\x00').strip()
+    m = re.match(r'[\d:/ T.+-]+', pdate)
+    pdate = m.group(0).strip() if m else pdate
+    normalized = pdate[:10].replace(':', '-') + pdate[10:]
+    offset = exifs.get("OffsetTimeOriginal") if exifs.get("DateTimeOriginal") else exifs.get("OffsetTime")
+    if offset:
+        normalized = normalized.rstrip() + offset.strip()
+    try:
+        parsed = dateutil_parser.parse(normalized)
+    except (ValueError, TypeError):
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+    return parsed.astimezone(tz=datetime.timezone.utc)
+
+
+def parse_video_creation_time(creation_time):
+    """Return an aware UTC datetime from a video container creation_time string,
+    or None if missing/unparseable. Apple's quicktime tag carries its own
+    offset, format-level creation_time is already UTC."""
+    if not creation_time:
+        return None
+    try:
+        return dateutil_parser.parse(creation_time).astimezone(tz=datetime.timezone.utc)
+    except (ValueError, TypeError):
+        return None
+
+
 def create_video_in_db(file, filename, owner, width, height, duration, original_ext=None, creation_time=None):
     if not get_setting('RAW_PHOTO_OVERRIDE_EXISTS') and models.Photo.objects.filter(filename=filename).exists():
         LOG.info("Video already in db, skip")
@@ -505,13 +545,13 @@ def create_video_in_db(file, filename, owner, width, height, duration, original_
     }
     # Mirror the photo flow: if the container has a real capture date, use it
     # so the gallery sort 'by date' is meaningful for videos too. Otherwise the
-    # model default (datetime.now) records the upload time — same fallback as
+    # model default (timezone.now) records the upload time — same fallback as
     # photos without DateTimeOriginal.
-    if creation_time:
-        try:
-            defaults["date"] = dateutil_parser.parse(creation_time).astimezone(tz=datetime.timezone.utc)
-        except Exception as e:
-            LOG.warning("create_video_in_db: couldn't parse creation_time '%s': %s" % (creation_time, e))
+    parsed_date = parse_video_creation_time(creation_time)
+    if parsed_date:
+        defaults["date"] = parsed_date
+    elif creation_time:
+        LOG.warning("create_video_in_db: couldn't parse creation_time '%s'" % creation_time)
     p, _ = models.Photo.objects.update_or_create(filename=filename, defaults=defaults)
 
 
@@ -533,30 +573,11 @@ def create_photo_in_db(file, filename, owner):
             "height": exifs["Height"],
         }
 
-        # Try to get the more accurate date, if nothing in exif use default upload date
-        # DateTimeOriginal 2021:09:12 21:00:34   (paired with OffsetTimeOriginal '+02:00' in EXIF 2.31+)
-        # DateTime         2023:01:31 22:04:00   (paired with OffsetTime)
-        pdate = exifs.get("DateTimeOriginal") or exifs.get("DateTime")
-        if pdate is not None:
-            pdate = pdate.strip('\x00').strip()
-            # Extract only the date/time portion — strip trailing garbage (e.g. "2019-03-01 15:17:54Adobe Photoshop")
-            m = re.match(r'[\d:/ T.+-]+', pdate)
-            pdate = m.group(0).strip() if m else pdate
-            # Normalize EXIF date separators: 2021:09:12 → 2021-09-12 (dateutil doesn't handle colons as date sep)
-            normalized = pdate[:10].replace(':', '-') + pdate[10:]
-            # Pair with the matching offset tag if present: this turns the
-            # naive camera-local datetime into an aware datetime that converts
-            # to the correct UTC. Without an offset we assume UTC — wrong if
-            # the camera was in a non-UTC TZ but deterministic (doesn't depend
-            # on the server's TZ) and consistent with the video flow (ffprobe
-            # creation_time is already UTC).
-            offset = exifs.get("OffsetTimeOriginal") if exifs.get("DateTimeOriginal") else exifs.get("OffsetTime")
-            if offset:
-                normalized = normalized.rstrip() + offset.strip()
-            parsed = dateutil_parser.parse(normalized)
-            if parsed.tzinfo is None:
-                parsed = parsed.replace(tzinfo=datetime.timezone.utc)
-            defaults["date"] = parsed.astimezone(tz=datetime.timezone.utc)
+        # Honour the EXIF capture date (with OffsetTimeOriginal if present);
+        # otherwise the model default (timezone.now) records the upload time.
+        parsed_date = parse_exif_capture_date(exifs)
+        if parsed_date:
+            defaults["date"] = parsed_date
         LOG.info(defaults)
         # defaults: if the photo already exists in DB, only the fields listed in defaults are overwritten.
         # Fields not in defaults (tags, favorite, rating, description) are preserved.
