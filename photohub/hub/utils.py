@@ -429,19 +429,32 @@ def get_exif(file):
 
         gps_ifd = exif.get_ifd(ExifTags.Base.GPSInfo)
         if gps_ifd != {}:
-            exifs["GPSAltitude"] = gps_ifd.get(ExifTags.GPS.GPSAltitude, 0)
+            # A real ref is one of N/S/E/W. Phones with GPS disabled still
+            # write all the GPS tags but with placeholder bytes (ref = '\x00',
+            # coords = '0.0;0.0;0.0', altitude = nan). Skip the whole block
+            # in that case so we don't persist junk Exif rows.
+            def _clean_ref(v):
+                return (v or '').strip('\x00').strip().upper() if isinstance(v, str) else ''
+            lat_ref = _clean_ref(gps_ifd.get(ExifTags.GPS.GPSLatitudeRef))
+            lon_ref = _clean_ref(gps_ifd.get(ExifTags.GPS.GPSLongitudeRef))
 
-            if gps_ifd.get(ExifTags.GPS.GPSLatitudeRef) is not None:
-                exifs["GPSLatitudeRef"] = gps_ifd.get(ExifTags.GPS.GPSLatitudeRef)
+            if lat_ref in ('N', 'S'):
+                exifs["GPSLatitudeRef"] = lat_ref
                 lat = [str(_safe_float(i)) for i in gps_ifd.get(ExifTags.GPS.GPSLatitude)]
                 exifs["GPSLatitude"] = ";".join(lat)
 
-            if gps_ifd.get(ExifTags.GPS.GPSLongitudeRef) is not None:
-                exifs["GPSLongitudeRef"] = gps_ifd.get(ExifTags.GPS.GPSLongitudeRef)
+            if lon_ref in ('E', 'W'):
+                exifs["GPSLongitudeRef"] = lon_ref
                 long = [str(_safe_float(i)) for i in gps_ifd.get(ExifTags.GPS.GPSLongitude)]
                 exifs["GPSLongitude"] = ";".join(long)
 
-            LOG.error(exifs)
+            # Altitude only makes sense if we also have a real fix; nan and 0
+            # at 0,0 are placeholder values from GPS-off cameras.
+            if lat_ref and lon_ref:
+                alt = gps_ifd.get(ExifTags.GPS.GPSAltitude, None)
+                alt_f = _safe_float(alt) if alt is not None else None
+                if alt_f is not None and alt_f == alt_f:  # NaN check (NaN != NaN)
+                    exifs["GPSAltitude"] = alt_f
 
             if "GPSLatitudeRef" in exifs and "GPSLongitudeRef" in exifs:
                 lat_dd = dms_to_dd(gps_ifd.get(ExifTags.GPS.GPSLatitude), exifs["GPSLatitudeRef"])
