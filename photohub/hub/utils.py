@@ -181,10 +181,12 @@ def _get_absolute_path(storage_path):
 
 
 def _ffprobe_video(abs_path):
-    """Run ffprobe and return (width, height, duration) or raise on error."""
+    """Run ffprobe and return (width, height, duration, creation_time) or raise on error.
+    creation_time is the ISO timestamp from the container metadata (None if unavailable).
+    """
     result = subprocess.run(
         ['ffprobe', '-v', 'error', '-select_streams', 'v:0',
-         '-show_entries', 'stream=width,height,duration,tags',
+         '-show_entries', 'stream=width,height,duration,tags:format_tags=creation_time,com.apple.quicktime.creationdate',
          '-of', 'json', abs_path],
         capture_output=True, text=True, timeout=60,
     )
@@ -205,7 +207,16 @@ def _ffprobe_video(abs_path):
     rotate = int(s.get('tags', {}).get('rotate', 0))
     if rotate in (90, 270, -90, -270):
         width, height = height, width
-    return width, height, duration
+    # Creation date: prefer Apple's tag (carries timezone) over the generic
+    # UTC-normalized creation_time. Fall back to the stream-level tag if neither
+    # is present at format level (rare).
+    format_tags = info.get('format', {}).get('tags', {}) or {}
+    creation_time = (
+        format_tags.get('com.apple.quicktime.creationdate')
+        or format_tags.get('creation_time')
+        or s.get('tags', {}).get('creation_time')
+    )
+    return width, height, duration, creation_time
 
 
 def generate_video_poster(filename):
@@ -339,14 +350,14 @@ def save_video(file, photo_path, owner):
     try:
         write_raw_photo(file, photo_path)
         abs_path = _get_absolute_path(photo_path)
-        width, height, duration = _ffprobe_video(abs_path)
+        width, height, duration, creation_time = _ffprobe_video(abs_path)
         filename = basename(photo_path)
         original_ext = None
         if get_setting('KEEP_ORIGINAL_VIDEO'):
             # Record the original extension — worker will rename after successful transcode
             original_ext = (file.name.rsplit('.', 1)[-1].lower()) if '.' in (file.name or '') else 'mp4'
             LOG.info("save_video: KEEP_ORIGINAL_VIDEO enabled, original_ext=%s" % original_ext)
-        create_video_in_db(file, filename, owner, width, height, duration, original_ext=original_ext)
+        create_video_in_db(file, filename, owner, width, height, duration, original_ext=original_ext, creation_time=creation_time)
         return
     except Exception as e:
         return e
@@ -473,7 +484,7 @@ def get_exif(file):
 from django.utils import timezone
 from . import models
 import datetime
-def create_video_in_db(file, filename, owner, width, height, duration, original_ext=None):
+def create_video_in_db(file, filename, owner, width, height, duration, original_ext=None, creation_time=None):
     if not get_setting('RAW_PHOTO_OVERRIDE_EXISTS') and models.Photo.objects.filter(filename=filename).exists():
         LOG.info("Video already in db, skip")
         return
@@ -488,6 +499,15 @@ def create_video_in_db(file, filename, owner, width, height, duration, original_
         "duration": duration or None,
         "original_ext": original_ext,
     }
+    # Mirror the photo flow: if the container has a real capture date, use it
+    # so the gallery sort 'by date' is meaningful for videos too. Otherwise the
+    # model default (datetime.now) records the upload time — same fallback as
+    # photos without DateTimeOriginal.
+    if creation_time:
+        try:
+            defaults["date"] = dateutil_parser.parse(creation_time).astimezone(tz=datetime.timezone.utc)
+        except Exception as e:
+            LOG.warning("create_video_in_db: couldn't parse creation_time '%s': %s" % (creation_time, e))
     p, _ = models.Photo.objects.update_or_create(filename=filename, defaults=defaults)
 
 
