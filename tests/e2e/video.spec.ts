@@ -110,11 +110,18 @@ test.describe('Video — upload & transcode', () => {
     const video = uniqueFile(FIXTURE_VIDEO_MP4)
     const photo = uniqueFile(FIXTURE_PHOTO)
     await uploadFiles(page, [video, photo])
-    await page.waitForLoadState('networkidle')
-    const res = await apiGet(page, '/api/unpublished')
-    const photos = res?.data?.photos || []
-    expect(photos.some((p: any) => p.type === 'video')).toBe(true)
-    expect(photos.some((p: any) => p.type !== 'video')).toBe(true)
+    // waitForLoadState('networkidle') is unreliable behind the Vite dev server
+    // (HMR websocket keeps connections alive). Wait for the success snackbar
+    // instead — same pattern as the single-file upload tests above.
+    await expect(page.locator('.v-snackbar, .v-alert').filter({ hasText: /uploaded|success/i }).first())
+      .toBeVisible({ timeout: 30_000 })
+    // The success toast fires after the last upload's response. Poll briefly
+    // for both types to appear — covers any DB commit lag.
+    await expect.poll(async () => {
+      const res = await apiGet(page, '/api/unpublished')
+      const all = res?.data?.photos || []
+      return all.some((p: any) => p.type === 'video') && all.some((p: any) => p.type !== 'video')
+    }, { timeout: 10_000, message: 'expected both video and non-video in /api/unpublished' }).toBe(true)
   })
 
   test('duplicate video upload (same MD5) returns 202 "File already exist" from the API', async ({ page }) => {
