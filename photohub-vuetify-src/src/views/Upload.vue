@@ -83,9 +83,10 @@ export default {
   }),
   computed: {
     acceptedTypes() {
-      return this.allowVideoUpload
-        ? 'image/jpeg,video/mp4,video/quicktime,video/webm'
-        : 'image/jpeg'
+      // Wildcards (not specific MIME) so Android Photo Picker on Pixel honours
+      // the video category. Backend re-encodes non-JPEG images to JPEG and
+      // accepts any video/* (ffmpeg deals with what it can).
+      return this.allowVideoUpload ? 'image/*,video/*' : 'image/*'
     },
   },
   async mounted() {

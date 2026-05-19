@@ -68,19 +68,16 @@ test.describe('Video — upload & transcode', () => {
       .toBeVisible({ timeout: 15_000 })
   })
 
-  test('file input accept attribute filters out AVI (.avi) and other unsupported extensions', async ({ page }) => {
-    // The backend has no extension allow-list — it accepts anything with a
-    // video/* mime type. The actual gate is the file-picker accept attribute
-    // ('image/jpeg,video/mp4,video/quicktime,video/webm' when video is on),
-    // which hides .avi / .mkv from the OS picker.
-    // Upload.vue's mounted() hook fetches /api/admin/config asynchronously and
-    // only then updates the accept attribute — poll for the video mime to show.
+  test('file input accept attribute exposes image/* and video/* when video upload is enabled', async ({ page }) => {
+    // We use wildcard MIME categories so the Android Photo Picker on Pixel
+    // surfaces videos (it ignored specific MIME like video/mp4). Upload.vue's
+    // mounted() hook fetches /api/admin/config asynchronously and only then
+    // updates the accept attribute — poll until video/* shows up.
     const input = page.getByLabel('File input', { exact: true })
     await expect.poll(async () => await input.getAttribute('accept'), { timeout: 8_000 })
-      .toMatch(/video\/mp4/)
+      .toMatch(/video\/\*/)
     const accept = await input.getAttribute('accept')
-    expect(accept).not.toMatch(/video\/x-msvideo/) // AVI not allowed
-    expect(accept).not.toMatch(/video\/x-matroska/) // MKV not allowed
+    expect(accept).toMatch(/image\/\*/)
   })
 
   test('upload is rejected at the API level when ALLOW_VIDEO_UPLOAD=false', async ({ page }) => {
