@@ -1,6 +1,5 @@
 from django.db import models
-from datetime import datetime
-# from datetime import date
+from django.utils import timezone
 
 # Create your models here.
 
@@ -38,7 +37,7 @@ class Photo(models.Model):
     filename = models.CharField(max_length=250, unique=True)
     origin_filename = models.TextField(blank=True)
     original_ext = models.CharField(max_length=10, null=True, blank=True)  # set when KEEP_ORIGINAL_VIDEO saved the source file
-    date = models.DateTimeField(default=datetime.now)
+    date = models.DateTimeField(default=timezone.now)
     upload_date = models.DateTimeField(auto_now_add=True)
     tags = models.ManyToManyField(Tag)
 

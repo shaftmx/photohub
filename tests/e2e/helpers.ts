@@ -16,6 +16,9 @@ export const FIXTURE_PHOTO_2 = path.join(__dirname, '../fixtures/test-photo-2.jp
 // — used to assert that the camera timezone is honoured (stored UTC = 12:30).
 export const FIXTURE_PHOTO_DATED_CET = path.join(__dirname, '../fixtures/test-photo-dated-cet.jpg')
 export const FIXTURE_PHOTO_DATED_CET_UTC = '2023-06-15T12:30:00Z'
+// JPEG stripped of all EXIF — used to exercise the now-UTC fallback when no
+// DateTimeOriginal / DateTime is available.
+export const FIXTURE_PHOTO_NO_EXIF = path.join(__dirname, '../fixtures/test-photo-no-exif.jpg')
 
 // Video fixtures — generated once with ffmpeg, see tests/README.md
 export const FIXTURE_VIDEO_MP4 = path.join(__dirname, '../fixtures/test-video.mp4')

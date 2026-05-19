@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import {
   loginAs, navigateTo, FIXTURE_PHOTO, FIXTURE_PHOTO_2, waitForGrid,
   uniquePhoto, tempFile, apiGet,
-  FIXTURE_PHOTO_DATED_CET, FIXTURE_PHOTO_DATED_CET_UTC,
+  FIXTURE_PHOTO_DATED_CET, FIXTURE_PHOTO_DATED_CET_UTC, FIXTURE_PHOTO_NO_EXIF,
 } from './helpers'
 import path from 'path'
 
@@ -57,6 +57,28 @@ test.describe('Upload', () => {
     const uploaded = (res?.data?.photos || []).find((p: any) => p.origin_filename === filename)
     expect(uploaded, `uploaded photo '${filename}' not found in /api/unpublished`).toBeTruthy()
     expect(new Date(uploaded.date).getTime()).toBe(new Date(FIXTURE_PHOTO_DATED_CET_UTC).getTime())
+  })
+
+  // No EXIF at all → model default (timezone.now) kicks in. Asserts the
+  // fallback is real UTC, not the server's system-local clock (which the
+  // pre-fix datetime.now would have leaked through whenever the container
+  // wasn't in UTC).
+  test('photo with no EXIF → date falls back to current UTC (within a small window)', async ({ page }) => {
+    const file = uniquePhoto(FIXTURE_PHOTO_NO_EXIF)
+    const filename = path.basename(file)
+    const beforeMs = Date.now()
+    await page.getByLabel('File input', { exact: true }).setInputFiles(file)
+    await page.getByRole('button', { name: 'Upload', exact: true }).click()
+    await expect(page.locator('.v-snackbar').filter({ hasText: /file.* uploaded/ })).toBeVisible({ timeout: 15_000 })
+    const afterMs = Date.now()
+    const res = await apiGet(page, '/api/unpublished?sort_by=upload_date&sort_dir=desc&limit=500')
+    const uploaded = (res?.data?.photos || []).find((p: any) => p.origin_filename === filename)
+    expect(uploaded, `uploaded photo '${filename}' not found in /api/unpublished`).toBeTruthy()
+    const stored = new Date(uploaded.date).getTime()
+    // Allow a 30s slack on both sides — covers clock skew between host/container
+    // and any latency between Date.now() snapshots and the actual model save.
+    expect(stored).toBeGreaterThanOrEqual(beforeMs - 30_000)
+    expect(stored).toBeLessThanOrEqual(afterMs + 30_000)
   })
 
 })
