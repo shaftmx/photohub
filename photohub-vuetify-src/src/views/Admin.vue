@@ -649,8 +649,48 @@
               Errors are logged to stdout of the worker container.<br>
               <code>docker compose logs worker</code>
             </p>
+
+            <v-divider class="my-4"></v-divider>
+            <p class="text-subtitle-2 text-medium-emphasis text-uppercase mb-2" style="letter-spacing:.08em">Re-encode existing videos</p>
+            <p class="text-caption text-medium-emphasis mb-2">
+              Re-queues already-transcoded videos so the worker re-encodes them with the current codec / preset / CRF.
+              Videos with a preserved original (KEEP_ORIGINAL_VIDEO was on at first transcode) re-encode from source — no quality loss.
+              Without it, ffmpeg reads the current MP4 and you accrue generation loss.
+            </p>
+            <v-btn color="warning" variant="tonal" size="small" class="text-none"
+              :loading="reencodeLoading" @click="openReencodeDialog">
+              Re-encode videos…
+            </v-btn>
           </v-col>
         </v-row>
+
+        <v-dialog v-model="reencodeDialog" max-width="540">
+          <v-card>
+            <v-card-title class="text-h6">Re-encode videos</v-card-title>
+            <v-card-text>
+              <p class="mb-3">Currently <strong>{{ reencodeStats.total }}</strong> videos are in the <code>done</code> state.</p>
+              <v-radio-group v-model="reencodeOnlyWithOriginal" hide-details density="compact">
+                <v-radio :value="true">
+                  <template #label>
+                    <span><strong>Safe — only videos with preserved original ({{ reencodeStats.with_original }})</strong><br>
+                    <span class="text-caption text-medium-emphasis">No quality loss; reads <code>&lt;md5&gt;_original.&lt;ext&gt;</code> as ffmpeg input.</span></span>
+                  </template>
+                </v-radio>
+                <v-radio :value="false" class="mt-2">
+                  <template #label>
+                    <span><strong>All — {{ reencodeStats.total }} videos</strong><br>
+                    <span class="text-caption text-warning">⚠ {{ reencodeStats.without_original }} have no preserved original and will be re-encoded from the existing MP4, losing generation quality.</span></span>
+                  </template>
+                </v-radio>
+              </v-radio-group>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn variant="text" @click="reencodeDialog = false" :disabled="reencodeLoading">Cancel</v-btn>
+              <v-btn color="warning" variant="flat" :loading="reencodeLoading" @click="confirmReencode">Re-queue</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
       </v-window-item>
 
       <!-- ─────────────── Tab: Backup / Export ─────────────── -->
@@ -887,6 +927,10 @@ export default {
     // Video tab
     videoStatusLoading: false,
     retryLoading: false,
+    reencodeDialog: false,
+    reencodeLoading: false,
+    reencodeOnlyWithOriginal: true,
+    reencodeStats: { total: 0, with_original: 0, without_original: 0 },
 
     // Photo quality tab
     qualityConfig: {},
@@ -1159,6 +1203,33 @@ export default {
       await useAsyncPost('/api/admin/retry-errors', {})
       await this.loadConfig()
       this.retryLoading = false
+    },
+
+    async openReencodeDialog() {
+      this.reencodeLoading = true
+      const { data } = await useAsyncFetch('/api/admin/reencode-videos')
+      this.reencodeLoading = false
+      if (data.value && !data.value.ERROR) {
+        this.reencodeStats = data.value.data
+        this.reencodeOnlyWithOriginal = true
+        this.reencodeDialog = true
+      }
+    },
+
+    async confirmReencode() {
+      const { triggerAlert } = useAlertStore()
+      this.reencodeLoading = true
+      const { data, error } = await useAsyncPost('/api/admin/reencode-videos', {
+        only_with_original: this.reencodeOnlyWithOriginal,
+      })
+      this.reencodeLoading = false
+      if (error.value || data.value?.ERROR) {
+        triggerAlert('error', 'Re-encode failed', data.value?.message || error.value)
+        return
+      }
+      this.reencodeDialog = false
+      triggerAlert('success', `${data.value.data.requeued} video(s) re-queued`, '')
+      await this.loadConfig()
     },
 
     // ── Photo quality ─────────────────────────────────────────────────────

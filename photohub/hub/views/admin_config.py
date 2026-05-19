@@ -152,6 +152,37 @@ def retry_errors(request):
 
 
 @admin_required
+@require_http_methods(["GET", "POST"])
+def reencode_videos(request):
+    """Re-queue 'done' videos for transcode. The worker re-reads its codec /
+    preset / CRF config so this is how admins apply new encoding settings to
+    existing videos.
+
+    GET  → preview counts:
+           { total, with_original (safe), without_original (lossy re-encode) }
+    POST → set transcode_status='pending' on the selected subset.
+           Body { only_with_original: true|false } (default true)."""
+    done = models.Photo.objects.filter(type='video', transcode_status='done')
+    with_orig = done.exclude(original_ext__isnull=True).exclude(original_ext='')
+    without_orig = done.filter(original_ext__isnull=True) | done.filter(original_ext='')
+
+    if request.method == 'GET':
+        return Response(200, data={
+            "total": done.count(),
+            "with_original": with_orig.count(),
+            "without_original": without_orig.distinct().count(),
+        })
+
+    body, err = json_decode(request.body)
+    if err:
+        return ErrorRequest(details=err)
+    only_with_original = bool(body.get('only_with_original', True))
+    qs = with_orig if only_with_original else done
+    requeued = qs.update(transcode_status='pending')
+    return Response(200, data={"requeued": requeued, "only_with_original": only_with_original})
+
+
+@admin_required
 @require_http_methods(["POST"])
 def flush_samples(request):
     """Delete all sample files. They will be regenerated lazily on next access."""

@@ -27,6 +27,19 @@ def _transcode_video(photo):
     abs_path = _get_absolute_path(raw_path)
     tmp_path = abs_path + '.transcoding.mp4'
 
+    # Pick the best input source. On a fresh upload <md5>.mp4 IS the raw
+    # untouched file. On a re-encode (admin Re-encode action) <md5>.mp4 is
+    # the previously transcoded artefact — feeding that back into ffmpeg
+    # would compound generation loss. Prefer <md5>_original.<ext> when it
+    # exists (KEEP_ORIGINAL_VIDEO kept it at the previous transcode).
+    input_path = abs_path
+    original_already_preserved = False
+    if photo.original_ext:
+        orig_abs_path = _get_absolute_path(get_video_original_path(filename, photo.original_ext))
+        if os.path.exists(orig_abs_path):
+            input_path = orig_abs_path
+            original_already_preserved = True
+
     threads = get_setting('TRANSCODE_THREADS')
     preset  = get_setting('TRANSCODE_PRESET')
     crf     = get_setting('TRANSCODE_CRF')
@@ -39,7 +52,7 @@ def _transcode_video(photo):
     else:
         video_codec_args = ['-c:v', 'libx264']
 
-    LOG.info("[transcode] codec=%s original_ext=%r input=%s" % (codec, photo.original_ext, abs_path))
+    LOG.info("[transcode] codec=%s original_ext=%r input=%s" % (codec, photo.original_ext, input_path))
 
     timeout = get_setting('TRANSCODE_TIMEOUT') or 3600
 
@@ -51,7 +64,7 @@ def _transcode_video(photo):
     threading.Thread(target=_keep_alive, daemon=True).start()
 
     result = subprocess.run(
-        ['ffmpeg', '-y', '-i', abs_path,
+        ['ffmpeg', '-y', '-i', input_path,
          *video_codec_args, '-preset', preset, '-crf', str(crf),
          '-threads', str(threads),
          '-movflags', '+faststart',
@@ -65,14 +78,18 @@ def _transcode_video(photo):
 
     LOG.info("[transcode] ffmpeg done, tmp=%s" % tmp_path)
 
-    # If original must be kept: rename raw/<md5>.mp4 → raw/<md5>_original.<ext>, then temp → raw/<md5>.mp4
-    if photo.original_ext:
+    # Preservation step — only on first transcode. If <md5>_original.<ext>
+    # already exists we read from it and must NOT rename the current
+    # <md5>.mp4 over the top of the original (that would destroy the source).
+    if photo.original_ext and not original_already_preserved:
         orig_abs_path = _get_absolute_path(get_video_original_path(filename, photo.original_ext))
         os.makedirs(os.path.dirname(orig_abs_path), exist_ok=True)
         LOG.info("[transcode] preserving original: %s → %s" % (abs_path, orig_abs_path))
         os.rename(abs_path, orig_abs_path)
-    else:
+    elif not photo.original_ext:
         LOG.info("[transcode] no original_ext — original file will be overwritten by transcoded version")
+    else:
+        LOG.info("[transcode] preserved original already on disk, keeping it intact")
 
     os.replace(tmp_path, abs_path)
     LOG.info("[transcode] transcoded file in place: %s" % abs_path)

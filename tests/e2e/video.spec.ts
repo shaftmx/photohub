@@ -270,6 +270,54 @@ test.describe('Video — admin Video tab integration', () => {
     expect(typeof stats.error).toBe('number')
   })
 
+  test('reencode-videos GET returns the safe/unsafe split', async ({ page }) => {
+    await loginAs(page)
+    const res = await apiGet(page, '/api/admin/reencode-videos')
+    const d = res?.data
+    expect(d).toBeTruthy()
+    expect(typeof d.total).toBe('number')
+    expect(typeof d.with_original).toBe('number')
+    expect(typeof d.without_original).toBe('number')
+    // Conservation: with + without = total
+    expect(d.with_original + d.without_original).toBe(d.total)
+  })
+
+  test('reencode-videos POST flips done→pending only for the chosen subset', async ({ page, browser }) => {
+    // Setup: enable KEEP_ORIGINAL_VIDEO + upload a MOV so we get a video
+    // with original_ext set, then wait for it to land in 'done'.
+    const adminCtx = await browser.newContext()
+    const adminPage = await adminCtx.newPage()
+    await loginAs(adminPage)
+    const originalKeep = (await apiGet(adminPage, '/api/admin/config'))?.data?.KEEP_ORIGINAL_VIDEO
+    await setAppConfig(adminPage, { ALLOW_VIDEO_UPLOAD: true, KEEP_ORIGINAL_VIDEO: true })
+    await adminPage.goto('/upload')
+    const file = uniqueFile(FIXTURE_VIDEO_MOV)
+    const originName = require('path').basename(file)
+    await uploadFiles(adminPage, file)
+    await expect(adminPage.locator('.v-snackbar, .v-alert').filter({ hasText: /uploaded|success/i }).first())
+      .toBeVisible({ timeout: 15_000 })
+    const photo = await waitForTranscode(adminPage, originName, 90_000).catch(() => null)
+    await adminCtx.close()
+    test.skip(!photo, 'Worker did not transcode in time')
+
+    await loginAs(page)
+    // Safe re-queue
+    const safe = await apiPost(page, '/api/admin/reencode-videos', { only_with_original: true })
+    expect(safe?.data?.requeued).toBeGreaterThanOrEqual(1)
+    // Our uploaded video should now be back to 'pending'
+    const reloaded = (await apiGet(page, '/api/unpublished?media_type=video&limit=500'))?.data?.photos || []
+    const ours = (reloaded as any[]).find(p => p.filename === photo.filename)
+    expect(ours?.transcode_status).toBe('pending')
+
+    // Clean up
+    const restoreCtx = await browser.newContext()
+    const restorePage = await restoreCtx.newPage()
+    await loginAs(restorePage)
+    if (originalKeep !== undefined) await setAppConfig(restorePage, { KEEP_ORIGINAL_VIDEO: originalKeep })
+    await apiPost(restorePage, `/api/photos/${photo.filename}/delete`, {}).catch(() => null)
+    await restoreCtx.close()
+  })
+
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
