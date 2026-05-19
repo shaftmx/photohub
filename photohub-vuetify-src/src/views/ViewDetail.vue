@@ -5,7 +5,7 @@
     :photos="photos"
     :view-id="isUploadMode ? undefined : $route.params.id"
     :cover-filename="view.cover_filename"
-    :readonly="!authStore.canEdit || isUploadMode"
+    :readonly="!authStore.canEdit"
     :photo-detail-endpoint="photoDetailEndpoint"
     @photoDeleted="onPhotoDeleted"
     @photoUnpublished="onPhotoUnpublished"
@@ -27,7 +27,7 @@
     <v-sheet class="mb-2">
       <PageTitle :title="view.name" :is-mobile="sharedDatas.isMobile" :count="photos.length" :total="total">
         <template #prepend>
-          <v-btn v-if="isAuthenticated && !isUploadMode" icon="mdi-arrow-left" variant="text" density="compact" size="small"
+          <v-btn v-if="authStore.canEdit" icon="mdi-arrow-left" variant="text" density="compact" size="small"
             title="Back to views" :to="{ name: 'Views' }"></v-btn>
         </template>
         <template #chips>
@@ -57,8 +57,28 @@
         </v-btn>
       </template>
 
-      <!-- Normal mode: auth controls -->
-      <template v-else-if="authStore.canEdit">
+      <!-- Download ZIP — available to editors in every mode (upload/share/normal) -->
+      <v-menu v-if="authStore.canEdit" v-model="downloadMenu" :close-on-content-click="true" location="bottom end">
+        <template #activator="{ props: menuProps }">
+          <v-tooltip text="Download ZIP" location="bottom">
+            <template #activator="{ props: tooltipProps }">
+              <v-btn v-bind="{ ...menuProps, ...tooltipProps }" icon="mdi-download-outline" variant="text" density="compact" size="small" title="Download ZIP"></v-btn>
+            </template>
+          </v-tooltip>
+        </template>
+        <v-card min-width="180">
+          <v-list density="compact" nav>
+            <v-list-subheader>Download ZIP</v-list-subheader>
+            <v-list-item v-for="size in downloadSizes" :key="size.key" :title="size.label"
+              @click="downloadZip(size.key)">
+              <template #prepend><v-icon size="18">mdi-folder-zip-outline</v-icon></template>
+            </v-list-item>
+          </v-list>
+        </v-card>
+      </v-menu>
+
+      <!-- Normal mode: share + edit/delete/select (kept hidden in upload mode to keep the guest preview clean) -->
+      <template v-if="authStore.canEdit && !isUploadMode">
         <!-- Share/upload menu — available for both private and public views.
              Private views show the share-link section; public views skip it. -->
         <v-menu v-model="shareMenu" :close-on-content-click="false" location="bottom end">
@@ -209,25 +229,6 @@
           </v-card>
         </v-menu>
 
-        <!-- Download ZIP -->
-        <v-menu v-if="isAuthenticated" v-model="downloadMenu" :close-on-content-click="true" location="bottom end">
-          <template #activator="{ props: menuProps }">
-            <v-tooltip text="Download ZIP" location="bottom">
-              <template #activator="{ props: tooltipProps }">
-                <v-btn v-bind="{ ...menuProps, ...tooltipProps }" icon="mdi-download-outline" variant="text" density="compact" size="small"></v-btn>
-              </template>
-            </v-tooltip>
-          </template>
-          <v-card min-width="180">
-            <v-list density="compact" nav>
-              <v-list-subheader>Download ZIP</v-list-subheader>
-              <v-list-item v-for="size in downloadSizes" :key="size.key" :title="size.label"
-                @click="downloadZip(size.key)">
-                <template #prepend><v-icon size="18">mdi-folder-zip-outline</v-icon></template>
-              </v-list-item>
-            </v-list>
-          </v-card>
-        </v-menu>
         <v-btn icon="mdi-pencil-outline" variant="text" density="compact" size="small"
           :to="{ name: 'view-edit', params: { id: $route.params.id } }"></v-btn>
         <v-btn icon="mdi-delete-outline" variant="text" density="compact" size="small" color="error"
@@ -334,7 +335,7 @@
 
     <!-- Photo grid -->
     <PhotoGrid ref="photoGrid" :photos="photos" :paths="paths" :shared-datas="sharedDatas"
-      :show-favorite="authStore.canEdit && !isUploadMode && !selectionMode"
+      :show-favorite="authStore.canEdit && !selectionMode"
       @item-click="(photo, index, event) => selectionMode ? selectDeselect(photo, index, event) : $refs.displayPhoto.displayPhoto(photo.filename)"
       @toggle-favorite="toggleFavorite">
       <template v-if="selectionMode" #overlay="{ photo, index }">

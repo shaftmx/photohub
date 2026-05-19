@@ -1,6 +1,6 @@
 # PhotoHub — E2E Test Coverage
 
-Total: **~195 tests** across 7 spec files. (~71 tests added covering admin, new filters, fullscreen UX, download menu, upload link decoupling, and video.)
+Total: **~200 tests** across 7 spec files. (~71 tests added covering admin, new filters, fullscreen UX, download menu, upload link decoupling, and video; +5 guest-upload tests.)
 
 > Tests in the new `admin.spec.ts` and `video.spec.ts` files, plus the new `describe` blocks at the bottom of the older specs, mutate live state through the API helpers in `e2e/helpers.ts`. They clean up after themselves (`afterAll` hooks) but assume a working DB and, for video tests, a healthy transcode worker.
 
@@ -211,6 +211,13 @@ Total: **~195 tests** across 7 spec files. (~71 tests added covering admin, new 
 - Upload via revoked token shows invalid/expired error
 - Upload via expired token shows invalid/expired error
 - Photo detail panel accessible on upload view (info button opens panel)
+
+### Views — guest upload via upload link (5 tests)
+- Anonymous JPEG upload via upload link (fresh context, no session, no csrftoken cookie) returns 201
+- Anonymous video upload via upload link when ALLOW_VIDEO_UPLOAD=true returns 201
+- Anonymous video upload via upload link when ALLOW_VIDEO_UPLOAD=false rejected with 400
+- Anonymous upload with an invalid/revoked token returns 403
+- Logged-in admin opening the upload link sees admin controls (back-to-views, download menu) — was hidden before fix
 
 ---
 

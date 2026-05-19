@@ -7,6 +7,7 @@ from django.http import StreamingHttpResponse
 from ..logger import LOG
 from ..utils import *
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from .. import models
 from django.forms.models import model_to_dict
 from PIL import UnidentifiedImageError
@@ -585,6 +586,10 @@ def revoke_upload_link(request, view_id):
 #
 # POST /api/upload_view/<token>/upload — upload a photo in the view context
 #
+# CSRF-exempt: this endpoint is for anonymous guests who hit the upload page
+# via a UUID upload link — they have no Django session and no CSRF cookie.
+# The opaque token in the URL is the authentication secret.
+@csrf_exempt
 @require_http_methods(["POST"])
 def upload_view_photo(request, token):
     v, err = _resolve_token(token)

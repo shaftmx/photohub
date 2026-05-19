@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { loginAs, navigateTo, waitForGrid, apiGet, apiPost } from './helpers'
+import {
+  loginAs, navigateTo, waitForGrid, apiGet, apiPost, setAppConfig,
+  uniquePhoto, uniqueFile, FIXTURE_VIDEO_MP4,
+} from './helpers'
+import fs from 'fs'
+import path from 'path'
 
 test.describe('Views — list page', () => {
 
@@ -1079,6 +1084,130 @@ test.describe('Views — create with tag filter', () => {
     const fetched = await apiGet(page, `/api/views/${viewId}`)
     const filterNames = (fetched?.data?.view?.filter_tags || []).map((t: any) => t.name)
     expect(filterNames).toContain(usedTagName)
+  })
+
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Guest upload via upload link — anonymous POST + admin-on-upload-link UI
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('Views — guest upload via upload link', () => {
+
+  test.describe.configure({ mode: 'serial' })
+
+  let viewId: number | null = null
+  let uploadToken = ''
+  let originalAllowVideo: any = null
+
+  test.beforeAll(async ({ browser }) => {
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    const created = await apiPost(page, '/api/views/create', {
+      name: 'E2E-guest-upload-view', description: '', public: false,
+    })
+    viewId = created?.data?.view?.id
+    const up = await apiPost(page, `/api/views/${viewId}/upload-link`, {})
+    uploadToken = up?.data?.upload_link
+    const cfg = (await apiGet(page, '/api/app-config'))?.data || {}
+    originalAllowVideo = cfg.ALLOW_VIDEO_UPLOAD
+    await ctx.close()
+  })
+
+  test.afterAll(async ({ browser }) => {
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    if (originalAllowVideo !== null && originalAllowVideo !== undefined) {
+      await setAppConfig(page, { ALLOW_VIDEO_UPLOAD: originalAllowVideo })
+    }
+    if (viewId) await deleteView(page, viewId)
+    await ctx.close()
+  })
+
+  // Anonymous request from a fresh context: no Django session and no csrftoken
+  // cookie — proves the endpoint accepts the upload purely on the strength of
+  // the UUID token in the URL (matches the prod-only CSRF behaviour).
+  test('anonymous JPEG upload via upload link returns 201', async ({ browser }) => {
+    expect(uploadToken).toBeTruthy()
+    const ctx = await browser.newContext()
+    try {
+      const filePath = uniquePhoto()
+      const buf = fs.readFileSync(filePath)
+      const name = path.basename(filePath)
+      const res = await ctx.request.post(`/api/upload_view/${uploadToken}/upload`, {
+        multipart: { [name]: { name, mimeType: 'image/jpeg', buffer: buf } },
+      })
+      expect(res.status()).toBe(201)
+      const body = await res.json()
+      expect(body?.data?.uploaded).toBe(1)
+    } finally {
+      await ctx.close()
+    }
+  })
+
+  test('anonymous video upload accepted when ALLOW_VIDEO_UPLOAD=true returns 201', async ({ browser }) => {
+    expect(uploadToken).toBeTruthy()
+    const adminCtx = await browser.newContext()
+    const adminPage = await adminCtx.newPage()
+    await loginAs(adminPage)
+    await setAppConfig(adminPage, { ALLOW_VIDEO_UPLOAD: true })
+    await adminCtx.close()
+
+    const ctx = await browser.newContext()
+    try {
+      const filePath = uniqueFile(FIXTURE_VIDEO_MP4)
+      const buf = fs.readFileSync(filePath)
+      const name = path.basename(filePath)
+      const res = await ctx.request.post(`/api/upload_view/${uploadToken}/upload`, {
+        multipart: { [name]: { name, mimeType: 'video/mp4', buffer: buf } },
+      })
+      expect(res.status()).toBe(201)
+      const body = await res.json()
+      expect(body?.data?.uploaded).toBe(1)
+    } finally {
+      await ctx.close()
+    }
+  })
+
+  test('anonymous video upload rejected with 400 when ALLOW_VIDEO_UPLOAD=false', async ({ browser }) => {
+    expect(uploadToken).toBeTruthy()
+    const adminCtx = await browser.newContext()
+    const adminPage = await adminCtx.newPage()
+    await loginAs(adminPage)
+    await setAppConfig(adminPage, { ALLOW_VIDEO_UPLOAD: false })
+    await adminCtx.close()
+
+    const ctx = await browser.newContext()
+    try {
+      const buf = fs.readFileSync(FIXTURE_VIDEO_MP4)
+      const res = await ctx.request.post(`/api/upload_view/${uploadToken}/upload`, {
+        multipart: { 'test-video.mp4': { name: 'test-video.mp4', mimeType: 'video/mp4', buffer: buf } },
+      })
+      expect(res.status()).toBe(400)
+      const body = await res.json()
+      expect(JSON.stringify(body)).toMatch(/disabled/i)
+    } finally {
+      await ctx.close()
+    }
+  })
+
+  test('anonymous upload with an invalid token returns 403', async ({ request }) => {
+    const res = await request.post('/api/upload_view/not-a-real-token-uuid/upload', {
+      multipart: { 'x.jpg': { name: 'x.jpg', mimeType: 'image/jpeg', buffer: Buffer.from('fake') } },
+    })
+    expect(res.status()).toBe(403)
+  })
+
+  test('logged-in admin on upload link sees admin controls (back, download)', async ({ page }) => {
+    expect(uploadToken).toBeTruthy()
+    await loginAs(page)
+    await page.goto(`/upload_view/${uploadToken}`)
+    await page.waitForLoadState('networkidle')
+    // v-btn with :to renders an <a>, v-btn without :to renders a <button>; use a tag-agnostic selector.
+    await expect(page.locator('[title="Back to views"]').first()).toBeVisible({ timeout: 8_000 })
+    await expect(page.locator('[title="Download ZIP"]').first()).toBeVisible()
   })
 
 })
