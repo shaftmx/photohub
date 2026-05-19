@@ -248,15 +248,37 @@ export default defineComponent({
     formatDuration,
 
     // Trigger a browser download of the photo at the requested size.
-    // For 'raw' uses the original stored filename (jpg or mp4); for samples uses the .jpg thumbnail.
-    // Saved-as filename uses origin_filename when available so the user gets a meaningful name.
+    //   photo : xs/s/m/l → JPG sample at the requested size, raw → original JPG.
+    //   video : there is no per-size video rendition on disk (samples are JPG
+    //           posters), so xs/s/m/l all serve the transcoded MP4. raw serves
+    //           the preserved source file (<md5>_original.<ext>) when
+    //           KEEP_ORIGINAL_VIDEO kept one, otherwise the transcoded MP4.
+    // Saved-as filename mirrors the served bytes: keeps origin_filename when
+    // its extension matches what we ship, otherwise rewrites the extension so
+    // the user doesn't end up with a .mov that's actually .mp4.
     downloadAt(size) {
       if (!this.photo || !this.paths || !this.paths[size]) return
-      const fname = size === 'raw' ? this.photo.filename : thumbFilename(this.photo)
-      const url = `${this.paths[size]}/${this.photo.hash_path}/${fname}`
+      const photo = this.photo
+      let url
+      let savedAs
+      if (photo.type === 'video') {
+        const stem = (photo.origin_filename || photo.filename).replace(/\.[^.]+$/, '')
+        if (size === 'raw' && photo.original_ext) {
+          const fileStem = photo.filename.replace(/\.[^.]+$/, '')
+          url = `${this.paths.raw}/${photo.hash_path}/${fileStem}_original.${photo.original_ext}`
+          savedAs = photo.origin_filename || `${stem}.${photo.original_ext}`
+        } else {
+          url = `${this.paths.raw}/${photo.hash_path}/${photo.filename}`
+          savedAs = `${stem}.mp4`
+        }
+      } else {
+        const fname = size === 'raw' ? photo.filename : thumbFilename(photo)
+        url = `${this.paths[size]}/${photo.hash_path}/${fname}`
+        savedAs = photo.origin_filename || fname
+      }
       const a = document.createElement('a')
       a.href = url
-      a.download = this.photo.origin_filename || fname
+      a.download = savedAs
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
