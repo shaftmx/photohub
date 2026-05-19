@@ -525,23 +525,52 @@ def download_view_zip(request, view_id):
 
     photo_map = {p.filename: p for p in photos}
 
-    def _get_photo_path(filename):
+    def _get_photo_entry(filename):
+        """Return (abs_path, arcname) for a given photo at the requested size.
+        Videos: XS/S/M/L all yield the transcoded MP4 (the encoded version is
+        the only 'compressed' artefact we have — there are no per-size video
+        renditions). RAW yields the preserved source file with its original
+        filename + extension if KEEP_ORIGINAL_VIDEO kept one; otherwise the
+        encoded MP4.
+        """
         photo = photo_map.get(filename)
         if photo and photo.type == 'video':
             if size == 'raw' and photo.original_ext:
-                return p_join(settings.MEDIA_ROOT, get_video_original_path(filename, photo.original_ext))
-            return p_join(settings.MEDIA_ROOT, getRawPath(filename))
+                abs_path = p_join(settings.MEDIA_ROOT, get_video_original_path(filename, photo.original_ext))
+                # arcname carries the original extension so the file inside the
+                # ZIP isn't a .mov mislabelled as .mp4. Prefer the uploaded
+                # filename if known (basename only, to neutralise any path
+                # components that may have slipped in).
+                if photo.origin_filename:
+                    arcname = os.path.basename(photo.origin_filename) or filename
+                else:
+                    stem = filename.rsplit('.', 1)[0]
+                    arcname = '%s_original.%s' % (stem, photo.original_ext)
+                return abs_path, arcname
+            return p_join(settings.MEDIA_ROOT, getRawPath(filename)), filename
         if size == 'raw':
-            return p_join(settings.MEDIA_ROOT, getRawPath(filename))
-        return p_join(settings.MEDIA_ROOT, getSamplePath(filename, size))
+            return p_join(settings.MEDIA_ROOT, getRawPath(filename)), filename
+        return p_join(settings.MEDIA_ROOT, getSamplePath(filename, size)), filename
 
     def zip_generator():
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, mode='w', compression=zipfile.ZIP_STORED, allowZip64=True) as zf:
+            used_names = set()
             for photo in photos:
-                path = _get_photo_path(photo.filename)
-                if os.path.exists(path):
-                    zf.write(path, arcname=photo.filename)
+                abs_path, arcname = _get_photo_entry(photo.filename)
+                if not os.path.exists(abs_path):
+                    continue
+                # Two uploads with the same origin_filename would collide on
+                # arcname; append _2, _3, ... so every entry is reachable.
+                unique = arcname
+                if unique in used_names:
+                    stem, ext = os.path.splitext(unique)
+                    i = 2
+                    while ('%s_%d%s' % (stem, i, ext)) in used_names:
+                        i += 1
+                    unique = '%s_%d%s' % (stem, i, ext)
+                used_names.add(unique)
+                zf.write(abs_path, arcname=unique)
         yield buf.getvalue()
 
     safe_name = "".join(c if c.isalnum() or c in "-_ " else "_" for c in v.name).strip()

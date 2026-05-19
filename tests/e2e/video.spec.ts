@@ -271,3 +271,93 @@ test.describe('Video — admin Video tab integration', () => {
   })
 
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Video — view-level ZIP download
+//   XS/S/M/L all yield the transcoded MP4 (no per-size video rendition).
+//   RAW yields the preserved source (with original filename+ext) when
+//   KEEP_ORIGINAL_VIDEO=true, otherwise the transcoded MP4.
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('Video — view ZIP download', () => {
+
+  test.describe.configure({ mode: 'serial' })
+
+  let viewId: number | null = null
+  let videoFilename = ''
+  let videoOriginFilename = ''
+  let originalKeep: any = null
+  let originalAllow: any = null
+
+  test.beforeAll(async ({ browser }) => {
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    const cfg = (await apiGet(page, '/api/admin/config'))?.data || {}
+    originalAllow = cfg.ALLOW_VIDEO_UPLOAD
+    originalKeep = cfg.KEEP_ORIGINAL_VIDEO
+    // KEEP_ORIGINAL_VIDEO=true so save_video records the original extension
+    // and the worker preserves <md5>_original.<ext> after transcode.
+    await setAppConfig(page, { ALLOW_VIDEO_UPLOAD: true, KEEP_ORIGINAL_VIDEO: true })
+    // Upload a MOV — the storage extension is .mp4 (internal), the original
+    // is .mov, so we can prove that RAW download carries the .mov, not .mp4.
+    await page.goto('/upload')
+    const file = uniqueFile(FIXTURE_VIDEO_MOV)
+    videoOriginFilename = require('path').basename(file)
+    await uploadFiles(page, file)
+    await expect(page.locator('.v-snackbar, .v-alert').filter({ hasText: /uploaded|success/i }).first())
+      .toBeVisible({ timeout: 15_000 })
+    // The transcoded artefact + preserved original only land on disk after
+    // the worker finishes. Generous timeout for slow runners.
+    const photo = await waitForTranscode(page, videoOriginFilename, 90_000).catch(() => null)
+    if (photo) {
+      videoFilename = photo.filename
+      await apiPost(page, '/api/publish', { photos: [videoFilename] })
+      // View with no filters → contains all published photos including ours.
+      const created = await apiPost(page, '/api/views/create', {
+        name: `E2E-video-download-${Date.now()}`,
+        description: '',
+        public: false,
+      })
+      viewId = created?.data?.view?.id
+    }
+    await ctx.close()
+  })
+
+  test.afterAll(async ({ browser }) => {
+    const ctx = await browser.newContext()
+    const page = await ctx.newPage()
+    await loginAs(page)
+    if (viewId) await apiPost(page, `/api/views/${viewId}/delete`, {})
+    if (videoFilename) await apiPost(page, `/api/photos/${videoFilename}/delete`, {}).catch(() => {})
+    const restore: Record<string, any> = {}
+    if (originalAllow !== undefined) restore.ALLOW_VIDEO_UPLOAD = originalAllow
+    if (originalKeep !== undefined) restore.KEEP_ORIGINAL_VIDEO = originalKeep
+    if (Object.keys(restore).length) await setAppConfig(page, restore)
+    await ctx.close()
+  })
+
+  // ZIP_STORED (no compression) embeds entry filenames as plain ASCII bytes
+  // in each local file header, so a substring search on the body is enough
+  // to assert which arcname was written. Avoids pulling in a zip parser.
+  test('size=raw with KEEP_ORIGINAL_VIDEO ⇒ ZIP carries the original filename + extension', async ({ page }) => {
+    test.skip(!viewId, 'setup failed — worker may have been unhealthy')
+    await loginAs(page)
+    const res = await page.request.get(`/api/views/${viewId}/download?size=raw`)
+    expect(res.status()).toBe(200)
+    const body = (await res.body()).toString('binary')
+    expect(body).toContain(videoOriginFilename) // e.g. photohub-test-…-….mov
+    expect(body).not.toContain(videoFilename)   // not <md5>.mp4
+  })
+
+  test('size=xs ⇒ video shows up as the transcoded <md5>.mp4, not the .mov', async ({ page }) => {
+    test.skip(!viewId || !videoFilename, 'setup failed')
+    await loginAs(page)
+    const res = await page.request.get(`/api/views/${viewId}/download?size=xs`)
+    expect(res.status()).toBe(200)
+    const body = (await res.body()).toString('binary')
+    expect(body).toContain(videoFilename)         // <md5>.mp4
+    expect(body).not.toContain(videoOriginFilename) // original name absent
+  })
+
+})
